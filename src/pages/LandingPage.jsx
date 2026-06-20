@@ -5,6 +5,8 @@
  */
 import { useState, useEffect, useRef } from 'react'
 
+import logoImg from '/images/logo.png'
+
 const C = {
   forest:'#12382A', teal:'#0A6B5E', mint:'#3A9A6B',
   saffron:'#D4510E', cream:'#FDFAF3', ink:'#0D1520',
@@ -302,7 +304,7 @@ export default function LandingPage({ onGoToDashboard, mapplsKey }) {
       <nav style={{ position:'sticky', top:0, zIndex:100, background: scrolled?'rgba(253,250,243,.97)':'transparent', backdropFilter:scrolled?'blur(12px)':'none', borderBottom:scrolled?'1px solid #DDE4EF':'none', padding:'0 5%', transition:'all .3s' }}>
         <div style={{ maxWidth:1160, margin:'0 auto', display:'flex', alignItems:'center', justifyContent:'space-between', height:62 }}>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-            <div style={{ width:34, height:34, background:'#12382A', borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontWeight:700, fontSize:16 }}>✚</div>
+            <img src={logoImg} alt="PhysioDrishti" style={{ height:'44px', width:'auto' }} />
             <div>
               <div className="pd" style={{ fontWeight:900, fontSize:17, color: scrolled?'#12382A':'#fff' }}>PhysioDrishti</div>
               <div className="pj" style={{ fontSize:8, color: scrolled?'#5C6878':'rgba(255,255,255,.55)', letterSpacing:2, textTransform:'uppercase' }}>Online Physiotherapy</div>
