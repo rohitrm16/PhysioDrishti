@@ -4,7 +4,8 @@
  * Props: onGoToLanding, mapplsKey, setMapplsKey
  */
 import { useState, useEffect, useRef } from 'react'
-import logoImg from '/images/logo.png' 
+
+import logoImg from '../assets/logo.png'
 
 const C = {
   forest:'#12382A', teal:'#0A6B5E', mint:'#3A9A6B',
