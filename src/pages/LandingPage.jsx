@@ -4,6 +4,7 @@
  * Props: onGoToDashboard, mapplsKey, setMapplsKey
  */
 import { useState, useEffect, useRef } from 'react'
+import { db } from '../supabase.js'
 
 import logoImg from '../assets/logo_forest_green.png'
 
@@ -167,11 +168,27 @@ function BookingModal({ onClose, onSuccess }) {
   const ok1 = f.name.trim() && f.phone.trim()
   const ok2 = f.area && f.pain && f.agree
 
-  const submit = () => {
+  const submit = async () => {
     if (!ok2) return
     setBusy(true)
-    setTimeout(() => { setBusy(false); onSuccess(f) }, 1200)
-  }
+    setBusy(true)
+try {
+  const { error } = await db.from('bookings').insert({
+    name:  f.name,
+    phone: f.phone,
+    email: f.email  || null,
+    area:  f.area,
+    pain:  f.pain,
+    note:  f.note   || null,
+  })
+  if (error) throw error
+  onSuccess(f)
+} catch (err) {
+  console.error(err)
+  alert('Something went wrong. Please try again.')
+} finally {
+  setBusy(false)
+}
 
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.6)', zIndex:999, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }} onClick={onClose}>
