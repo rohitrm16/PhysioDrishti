@@ -6,7 +6,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../supabase.js'
 
-import logoImg from '../assets/logo_forest_green.png'
+import logoImg from '../assets/physiodrishti-logo.png'
 
 const C = {
   forest:'#12382A', teal:'#0A6B5E', mint:'#3A9A6B',
