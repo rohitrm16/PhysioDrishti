@@ -4,6 +4,7 @@
  * Props: onGoToDashboard, mapplsKey, setMapplsKey
  */
 import { useState, useEffect, useRef } from 'react'
+import { supabase } from '../supabase.js'
 
 import logoImg from '../assets/logo_forest_green.png'
 
@@ -163,14 +164,28 @@ function BookingModal({ onClose, onSuccess }) {
   const [f, setF]     = useState({ name:'', phone:'', email:'', area:'', pain:'', note:'', agree:false })
   const [step, setStep] = useState(1)
   const [busy, setBusy] = useState(false)
+  const [err, setErr]   = useState('')
   const set = (k, v) => setF(p => ({ ...p, [k]: v }))
   const ok1 = f.name.trim() && f.phone.trim()
   const ok2 = f.area && f.pain && f.agree
 
-  const submit = () => {
+  const submit = async () => {
     if (!ok2) return
     setBusy(true)
-    setTimeout(() => { setBusy(false); onSuccess(f) }, 1200)
+    setErr('')
+    const { error } = await supabase.from('leads').insert({
+      name:     f.name.trim(),
+      phone:    f.phone.trim(),
+      email:    f.email.trim() || null,
+      area:     f.area,
+      pain:     f.pain,
+      note:     f.note.trim() || null,
+      stage:    'new',
+      priority: 'medium',
+    })
+    setBusy(false)
+    if (error) { setErr('Something went wrong. Please try again.'); return }
+    onSuccess(f)
   }
 
   return (
@@ -247,7 +262,9 @@ function BookingModal({ onClose, onSuccess }) {
             </div>
           )}
 
-          <div style={{ display:'flex', gap:10, marginTop:20 }}>
+          {err && <div className="pj" style={{ fontSize:12, color:'#B83232', background:'#FFF0F0', border:'1px solid #F5C6C6', borderRadius:7, padding:'8px 12px', marginTop:12 }}>{err}</div>}
+
+          <div style={{ display:'flex', gap:10, marginTop:12 }}>
             {step === 2 && (
               <button onClick={()=>setStep(1)} className="pj"
                 style={{ flex:'0 0 90px', padding:13, border:'1.5px solid #DDE4EF', borderRadius:8, background:'#fff', color:'#5C6878', fontSize:14, fontWeight:600, cursor:'pointer' }}>

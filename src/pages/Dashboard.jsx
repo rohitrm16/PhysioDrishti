@@ -4,6 +4,7 @@
  * Props: onGoToLanding, mapplsKey, setMapplsKey
  */
 import { useState, useEffect, useRef } from 'react'
+import { supabase } from '../supabase.js'
 
 import logoImg from '../assets/logo_forest_green.png'
 
@@ -351,6 +352,28 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
   const [w, setW]                 = useState(window.innerWidth)
   const [notif, setNotif]         = useState(3)
   const [kwFilter, setKwFilter]   = useState('all')
+  const [dbLoaded, setDbLoaded]   = useState(false)
+
+  useEffect(() => {
+    supabase.from('leads').select('*').order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (!error && data?.length) {
+          setPatients(data.map(r => ({
+            id:       r.id,
+            name:     r.name,
+            phone:    r.phone,
+            email:    r.email || '',
+            area:     r.area || '',
+            pain:     r.pain || '',
+            stage:    r.stage || 'new',
+            note:     r.note || '',
+            priority: r.priority || 'medium',
+            time:     r.created_at ? new Date(r.created_at).toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' }) : 'Just now',
+          })))
+        }
+        setDbLoaded(true)
+      })
+  }, [])
 
   useEffect(() => {
     const h = () => setW(window.innerWidth)
@@ -368,15 +391,29 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
   const mob = w < 768
   const showLabel = w >= 1024
 
-  const advance = (id) => setPatients(p => p.map(pt => {
-    if (pt.id !== id) return pt
+  const advance = async (id) => {
+    const pt = patients.find(p => p.id === id)
+    if (!pt) return
     const idx = STAGES.indexOf(pt.stage)
-    return idx < STAGES.length - 1 ? { ...pt, stage: STAGES[idx + 1] } : pt
-  }))
+    if (idx >= STAGES.length - 1) return
+    const nextStage = STAGES[idx + 1]
+    setPatients(p => p.map(x => x.id === id ? { ...x, stage: nextStage } : x))
+    await supabase.from('leads').update({ stage: nextStage }).eq('id', id)
+  }
 
-  const addPatient = (form) => {
-    const newP = { id: Date.now(), name:form.name, phone:form.phone, area:form.area, pain:form.pain, stage:'new', note:form.note, time:'Just now', priority:'medium' }
-    setPatients(p => [newP, ...p])
+  const addPatient = async (form) => {
+    const { data, error } = await supabase.from('leads').insert({
+      name: form.name, phone: form.phone, area: form.area,
+      pain: form.pain, note: form.note || null,
+      stage: 'new', priority: 'medium',
+    }).select().single()
+    const newP = {
+      id: data?.id || Date.now(),
+      name: form.name, phone: form.phone, area: form.area,
+      pain: form.pain, stage: 'new', note: form.note,
+      time: 'Just now', priority: 'medium',
+    }
+    if (!error) setPatients(p => [newP, ...p])
     setModal(null)
   }
 
