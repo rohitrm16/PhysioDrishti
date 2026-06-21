@@ -4,8 +4,7 @@
  * Props: onGoToLanding, mapplsKey, setMapplsKey
  */
 import { useState, useEffect, useRef } from 'react'
-
-import logoImg from '../assets/logo_forest_green.png'
+import { db } from '../supabase.js'
 
 const C = {
   forest:'#12382A', teal:'#0A6B5E', mint:'#3A9A6B',
@@ -262,8 +261,8 @@ function PatientModal({ mode, prefill, onClose, onSave }) {
           </div>
           <button onClick={onClose} style={{ background:'rgba(255,255,255,.15)', border:'none', borderRadius:8, width:30, height:30, cursor:'pointer', color:'#fff', fontSize:15 }}>✕</button>
         </div>
-
-        <div style={{ padding:'22px 24px' }}>
+      
+      <div style={{ padding:'22px 24px' }}>
           {[['Patient name','name','text','e.g. Rahul Sharma'],['Phone number','phone','tel','e.g. 98XXXXXXXX']].map(([l,k,t,ph])=>(
             <div key={k} style={{ marginBottom:14 }}>
               <label className="pj" style={{ fontSize:12, fontWeight:700, color:'#0A6B5E', display:'block', marginBottom:5 }}>{l}</label>
@@ -343,13 +342,50 @@ function PatientModal({ mode, prefill, onClose, onSave }) {
 export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
   const [tab, setTab]             = useState('overview')
   const [patients, setPatients]   = useState(INITIAL_PATIENTS)
+
+  // ── Fetch real bookings from Supabase ──────────────────────────
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        const { data, error } = await db
+          .from('bookings')
+          .select('*')
+          .order('created_at', { ascending: false })
+        if (error) throw error
+        if (data && data.length > 0) {
+          const newOnes = data.filter(b => b.status === 'new').length
+          setNotif(newOnes)
+          setPatients(data.map(b => ({
+            id:       b.id,
+            name:     b.name,
+            phone:    b.phone,
+            area:     b.area      || '',
+            pain:     b.pain      || '',
+            note:     b.note      || '',
+            stage:    b.status    || 'new',
+            priority: 'medium',
+            time:     new Date(b.created_at).toLocaleTimeString('en-IN', {
+                        hour: '2-digit', minute: '2-digit'
+                      }),
+          })))
+        }
+      } catch (err) {
+        console.error('Supabase fetch error:', err)
+      }
+    }
+    fetchBookings()
+
+    // Poll every 30 seconds for new bookings
+    const interval = setInterval(fetchBookings, 30000)
+    return () => clearInterval(interval)
+  }, [])
   const [sessions, setSessions]   = useState(SESSIONS_TODAY)
   const [sideOpen, setSideOpen]   = useState(false)
   const [liveSession, setLiveSession] = useState(null)
   const [modal, setModal]         = useState(null)  // null | { mode:'add'|'schedule', prefill? }
   const [selected, setSelected]   = useState(null)  // selected patient
   const [w, setW]                 = useState(window.innerWidth)
-  const [notif, setNotif]         = useState(3)
+  const [notif, setNotif]         = useState(0)
   const [kwFilter, setKwFilter]   = useState('all')
 
   useEffect(() => {
@@ -809,5 +845,5 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
       {modal?.mode === 'schedule' && <PatientModal mode="schedule" prefill={modal.prefill} onClose={()=>setModal(null)} onSave={scheduleSession} />}
       {liveSession && <VideoCall session={liveSession} onClose={()=>setLiveSession(null)} />}
     </div>
-  )    
-}
+  )
+          }
