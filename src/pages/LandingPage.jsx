@@ -91,7 +91,45 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:#FDFAF3;color:#0D1520
   .market-cols{display:flex}
   .footer-cols{grid-template-columns:2fr 1fr 1fr}
 }
-`
+
+function LogoMark({ size = 40 }) {
+  const h = Math.round(size * 0.88)
+  return (
+    <svg width={size} height={h} viewBox="0 0 300 264" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="lgL" x1="70" y1="24" x2="100" y2="230" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#6EE87A"/>
+          <stop offset="50%" stopColor="#26C69A"/>
+          <stop offset="100%" stopColor="#0A7A70"/>
+        </linearGradient>
+        <linearGradient id="lgC" x1="150" y1="77" x2="150" y2="232" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#3AD8C8"/>
+          <stop offset="55%" stopColor="#0CA898"/>
+          <stop offset="100%" stopColor="#077068"/>
+        </linearGradient>
+        <linearGradient id="lgR" x1="230" y1="30" x2="200" y2="230" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#26C8A0"/>
+          <stop offset="55%" stopColor="#0A9A80"/>
+          <stop offset="100%" stopColor="#077068"/>
+        </linearGradient>
+      </defs>
+      <circle cx="72" cy="46" r="24" fill="url(#lgL)"/>
+      <path d="M 58,69 C 47,86 37,112 33,140 C 29,165 29,188 33,207 C 37,224 48,234 61,230 C 72,226 76,212 73,196 C 70,180 66,162 64,144 C 62,128 65,110 71,97" stroke="url(#lgL)" strokeWidth="27" strokeLinecap="round" fill="none"/>
+      <path d="M 86,118 C 90,139 93,162 92,182 C 91,199 87,215 81,226" stroke="url(#lgL)" strokeWidth="23" strokeLinecap="round" fill="none"/>
+      <path d="M 92,83 C 110,71 133,70 153,85 C 161,91 167,102 169,115" stroke="url(#lgL)" strokeWidth="23" strokeLinecap="round" fill="none"/>
+      <circle cx="150" cy="96" r="18" fill="url(#lgC)"/>
+      <path d="M 140,114 C 135,134 131,156 129,177 C 127,196 128,213 133,225 C 137,234 147,237 153,232" stroke="url(#lgC)" strokeWidth="20" strokeLinecap="round" fill="none"/>
+      <path d="M 160,114 C 165,134 169,156 171,177 C 173,196 172,213 167,225 C 163,234 153,237 147,232" stroke="url(#lgC)" strokeWidth="20" strokeLinecap="round" fill="none"/>
+      <circle cx="228" cy="50" r="21" fill="url(#lgR)"/>
+      <path d="M 242,72 C 253,89 263,115 267,143 C 271,168 271,191 267,210 C 263,227 252,237 239,233 C 228,229 224,215 227,199 C 230,183 234,165 236,147 C 238,129 235,111 229,98" stroke="url(#lgR)" strokeWidth="25" strokeLinecap="round" fill="none"/>
+      <path d="M 214,122 C 210,143 207,166 208,186 C 209,203 213,219 219,230" stroke="url(#lgR)" strokeWidth="21" strokeLinecap="round" fill="none"/>
+      <path d="M 208,87 C 190,75 167,74 147,89 C 139,95 133,106 131,119" stroke="url(#lgR)" strokeWidth="21" strokeLinecap="round" fill="none"/>
+    </svg>
+  )
+}
+
+
+
 
 
 
