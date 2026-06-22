@@ -357,8 +357,8 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
   useEffect(() => {
     supabase.from('leads').select('*').order('created_at', { ascending: false })
       .then(({ data, error }) => {
-        if (!error && data?.length) {
-          setPatients(data.map(r => ({
+        if (!error) {
+          setPatients((data ?? []).map(r => ({
             id:       r.id,
             name:     r.name,
             phone:    r.phone,
@@ -391,14 +391,17 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
   const mob = w < 768
   const showLabel = w >= 1024
 
-  const advance = async (id) => {
+  const changeStage = async (id, newStage) => {
+    setPatients(p => p.map(x => x.id === id ? { ...x, stage: newStage } : x))
+    if (selected?.id === id) setSelected(s => s ? { ...s, stage: newStage } : s)
+    await supabase.from('leads').update({ stage: newStage }).eq('id', id)
+  }
+
+  const advance = (id) => {
     const pt = patients.find(p => p.id === id)
     if (!pt) return
     const idx = STAGES.indexOf(pt.stage)
-    if (idx >= STAGES.length - 1) return
-    const nextStage = STAGES[idx + 1]
-    setPatients(p => p.map(x => x.id === id ? { ...x, stage: nextStage } : x))
-    await supabase.from('leads').update({ stage: nextStage }).eq('id', id)
+    if (idx < STAGES.length - 1) changeStage(id, STAGES[idx + 1])
   }
 
   const addPatient = async (form) => {
@@ -407,13 +410,12 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
       pain: form.pain, note: form.note || null,
       stage: 'new', priority: 'medium',
     }).select().single()
-    const newP = {
-      id: data?.id || Date.now(),
-      name: form.name, phone: form.phone, area: form.area,
+    if (error) { alert('Could not save patient. Please try again.'); return }
+    setPatients(p => [{
+      id: data.id, name: form.name, phone: form.phone, area: form.area,
       pain: form.pain, stage: 'new', note: form.note,
       time: 'Just now', priority: 'medium',
-    }
-    if (!error) setPatients(p => [newP, ...p])
+    }, ...p])
     setModal(null)
   }
 
@@ -506,6 +508,12 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
         </header>
 
         <main style={{ padding:'20px 18px', flex:1, overflowY:'auto' }}>
+          {!dbLoaded && (
+            <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', background:'#fff', borderRadius:8, border:`1px solid ${C.border}`, marginBottom:16 }}>
+              <div style={{ width:16, height:16, border:`2px solid ${C.border}`, borderTop:`2px solid ${C.teal}`, borderRadius:'50%', animation:'spin .9s linear infinite', flexShrink:0 }}/>
+              <span className="pj" style={{ fontSize:13, color:C.gray }}>Loading patient data…</span>
+            </div>
+          )}
 
           {/* ── OVERVIEW ── */}
           {tab === 'overview' && (
@@ -738,7 +746,7 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
                         <td>
                           <span className="pj" style={{ fontSize:13, fontWeight:700 }}>{k.searches}</span>
                           <div style={{ width:80, height:3, background:C.border, borderRadius:2, marginTop:4 }}>
-                            <div style={{ height:'100%', width:`${parseInt(k.searches)/81}%`, background:`linear-gradient(90deg,${C.mint},${C.saffron})`, borderRadius:2 }}/>
+                            <div style={{ height:'100%', width:`${Math.min(100, parseInt(k.searches.replace(/[^0-9]/g,''))/81)}%`, background:`linear-gradient(90deg,${C.mint},${C.saffron})`, borderRadius:2 }}/>
                           </div>
                         </td>
                         <td>
@@ -826,7 +834,7 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
               <div className="pj" style={{ fontSize:12, fontWeight:700, color:C.teal, marginBottom:8 }}>Move to</div>
               <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
                 {STAGES.map(s=>(
-                  <button key={s} onClick={()=>{setPatients(p=>p.map(pt=>pt.id===selected.id?{...pt,stage:s}:pt));setSelected({...selected,stage:s})}}
+                  <button key={s} onClick={()=>changeStage(selected.id, s)}
                     style={{ padding:'5px 11px', border:`1.5px solid ${selected.stage===s?STAGE_COLOR[s]:C.border}`, borderRadius:6, background:selected.stage===s?`${STAGE_COLOR[s]}18`:'transparent', color:selected.stage===s?STAGE_COLOR[s]:C.gray, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Plus Jakarta Sans,sans-serif' }}>
                     {STAGE_ICON[s]} {STAGE_LABEL[s]}
                   </button>

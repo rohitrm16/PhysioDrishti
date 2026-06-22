@@ -266,14 +266,14 @@ function BookingModal({ onClose, onSuccess }) {
 
           <div style={{ display:'flex', gap:10, marginTop:12 }}>
             {step === 2 && (
-              <button onClick={()=>setStep(1)} className="pj"
+              <button onClick={()=>{ setStep(1); setErr('') }} className="pj"
                 style={{ flex:'0 0 90px', padding:13, border:'1.5px solid #DDE4EF', borderRadius:8, background:'#fff', color:'#5C6878', fontSize:14, fontWeight:600, cursor:'pointer' }}>
                 ← Back
               </button>
             )}
             {step === 1
               ? <button className="btn-main" style={{ flex:1, padding:13, opacity:ok1?1:.5 }} onClick={()=>ok1&&setStep(2)}>Next →</button>
-              : <button className="btn-main" style={{ flex:1, padding:13, opacity:ok2?1:.5 }} onClick={submit}>
+              : <button className="btn-main" style={{ flex:1, padding:13, opacity:(ok2&&!busy)?1:.5 }} disabled={busy||!ok2} onClick={submit}>
                   {busy ? '⏳ Booking…' : 'Book my free call →'}
                 </button>
             }
