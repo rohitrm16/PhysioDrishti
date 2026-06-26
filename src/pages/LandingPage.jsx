@@ -170,22 +170,38 @@ function BookingModal({ onClose, onSuccess }) {
   const ok2 = f.area && f.pain && f.agree
 
   const submit = async () => {
-    if (!ok2) return
+    if (!ok2 || busy) return
     setBusy(true)
     setErr('')
-    const { error } = await supabase.from('leads').insert({
-      name:     f.name.trim(),
-      phone:    f.phone.trim(),
-      email:    f.email.trim() || null,
-      area:     f.area,
-      pain:     f.pain,
-      note:     f.note.trim() || null,
-      stage:    'new',
-      priority: 'medium',
-    })
-    setBusy(false)
-    if (error) { setErr('Something went wrong. Please try again.'); return }
-    onSuccess(f)
+    try {
+      const { error } = await supabase.from('leads').insert({
+        name:     f.name.trim(),
+        phone:    f.phone.trim(),
+        email:    f.email.trim() || null,
+        area:     f.area,
+        pain:     f.pain,
+        note:     f.note.trim() || null,
+        stage:    'new',
+        priority: 'medium',
+      })
+      if (error) {
+        console.error('[BookingModal] Supabase insert error:', error)
+        if (error.code === '42P01')
+          setErr('Database table missing. Please run the SQL setup in your Supabase dashboard.')
+        else if (error.code === '42501' || error.message?.includes('policy'))
+          setErr('Permission denied. Enable anon insert policy on the leads table in Supabase.')
+        else
+          setErr(`Booking failed: ${error.message || 'Unknown error'} (code: ${error.code ?? '—'})`)
+        setBusy(false)
+        return
+      }
+      setBusy(false)
+      onSuccess(f)
+    } catch (e) {
+      console.error('[BookingModal] Unexpected error:', e)
+      setErr('Network error — please check your connection and try again.')
+      setBusy(false)
+    }
   }
 
   return (
@@ -262,7 +278,33 @@ function BookingModal({ onClose, onSuccess }) {
             </div>
           )}
 
-          {err && <div className="pj" style={{ fontSize:12, color:'#B83232', background:'#FFF0F0', border:'1px solid #F5C6C6', borderRadius:7, padding:'8px 12px', marginTop:12 }}>{err}</div>}
+          {err && (
+            <div className="pj" style={{ fontSize:12, color:'#B83232', background:'#FFF0F0', border:'1px solid #F5C6C6', borderRadius:7, padding:'10px 14px', marginTop:12, lineHeight:1.6 }}>
+              ⚠️ {err}
+              {err.includes('table missing') && (
+                <div style={{ marginTop:8, padding:'8px 10px', background:'#fff', borderRadius:5, fontSize:11, color:'#5C6878', fontFamily:'monospace', whiteSpace:'pre-wrap' }}>
+{`Run in Supabase SQL Editor:
+
+CREATE TABLE leads (
+  id         bigint primary key generated always as identity,
+  created_at timestamptz default now(),
+  name       text not null,
+  phone      text not null,
+  email      text,
+  area       text,
+  pain       text,
+  note       text,
+  stage      text default 'new',
+  priority   text default 'medium'
+);
+ALTER TABLE leads ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "anon insert" ON leads FOR INSERT TO anon WITH CHECK (true);
+CREATE POLICY "anon select" ON leads FOR SELECT TO anon USING (true);
+CREATE POLICY "anon update" ON leads FOR UPDATE TO anon USING (true);`}
+                </div>
+              )}
+            </div>
+          )}
 
           <div style={{ display:'flex', gap:10, marginTop:12 }}>
             {step === 2 && (
