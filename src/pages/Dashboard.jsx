@@ -250,8 +250,18 @@ function PatientModal({ mode, prefill, onClose, onSave }) {
     time: '',
     sessionType: 'Video',
   })
+  const [busy, setBusy] = useState(false)
+  const [errMsg, setErrMsg] = useState('')
   const set = (k,v) => setF(p=>({...p,[k]:v}))
   const canSave = f.name && f.phone && (isSchedule ? (f.date && f.time) : f.area)
+
+  const handleSave = async () => {
+    if (!canSave || busy) return
+    setBusy(true)
+    setErrMsg('')
+    const err = await onSave(f)
+    if (err) { setErrMsg(err); setBusy(false) }
+  }
 
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.55)', zIndex:800, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }} onClick={onClose}>
@@ -328,10 +338,15 @@ function PatientModal({ mode, prefill, onClose, onSave }) {
             <textarea className="field-d" placeholder="Any extra info about the patient or session…" value={f.note} onChange={e=>set('note',e.target.value)} style={{ minHeight:60, resize:'none', lineHeight:1.5 }} />
           </div>
 
+          {errMsg && (
+            <div className="pj" style={{ color:'#c0392b', fontSize:12, marginBottom:10, padding:'8px 12px', background:'#fff0ee', borderRadius:7, border:'1px solid #f5c6c2' }}>
+              ⚠️ {errMsg}
+            </div>
+          )}
           <div style={{ display:'flex', gap:10 }}>
             <button onClick={onClose} className="btn-soft" style={{ flex:'0 0 90px' }}>Cancel</button>
-            <button onClick={()=>canSave&&onSave(f)} className="btn-g" style={{ flex:1, opacity:canSave?1:.5 }}>
-              {isSchedule ? 'Schedule session' : 'Add patient'}
+            <button onClick={handleSave} className="btn-g" style={{ flex:1, opacity:(canSave&&!busy)?1:.5 }}>
+              {busy ? 'Saving…' : isSchedule ? 'Schedule session' : 'Add patient'}
             </button>
           </div>
         </div>
@@ -410,7 +425,7 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
       pain: form.pain, note: form.note || null,
       stage: 'new', priority: 'medium',
     }).select().single()
-    if (error) { alert('Could not save patient. Please try again.'); return }
+    if (error) return `Could not save patient: ${error.message || 'Unknown error'}`
     setPatients(p => [{
       id: data.id, name: form.name, phone: form.phone, area: form.area,
       pain: form.pain, stage: 'new', note: form.note,
