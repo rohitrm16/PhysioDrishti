@@ -38,13 +38,35 @@ const INITIAL_PATIENTS = [
   { id:10, name:'Sangeetha R.',  phone:'89XX0091', area:'Bannerghatta Road',pain:'Knee / Hip',   stage:'assessment', note:'Knee pain, difficulty walking',time:'Yesterday', priority:'medium' },
 ]
 
-const SESSIONS_TODAY = [
-  { id:1, name:'Priya Iyer',   pain:'Knee recovery',       time:'11:00 AM', status:'live',     duration:'45 min', area:'Jayanagar',     type:'Video' },
-  { id:2, name:'Kavitha S.',   pain:'Hip recovery wk 4',   time:'11:45 AM', status:'upcoming', duration:'30 min', area:'JP Nagar',       type:'Video' },
-  { id:3, name:'Rahul Sharma', pain:'Back pain check-in',  time:'2:00 PM',  status:'upcoming', duration:'45 min', area:'Koramangala',   type:'Video' },
-  { id:4, name:'Suresh Kumar', pain:'Leg pain follow-up',  time:'3:30 PM',  status:'upcoming', duration:'30 min', area:'Marathahalli',  type:'Video' },
-  { id:5, name:'Anitha Reddy', pain:'Knee rehab week 3',   time:'4:15 PM',  status:'upcoming', duration:'60 min', area:'HSR Layout',    type:'Video' },
-]
+function computeSessionStatus(timeStr) {
+  if (!timeStr) return 'upcoming'
+  const [h, m] = timeStr.split(':').map(Number)
+  const now = new Date()
+  const sessionMin = h * 60 + m
+  const nowMin = now.getHours() * 60 + now.getMinutes()
+  return (nowMin >= sessionMin && nowMin < sessionMin + 60) ? 'live' : 'upcoming'
+}
+
+function mapSession(r) {
+  const time24 = r.session_time || ''
+  let timeDisplay = time24
+  if (time24) {
+    const [h, m] = time24.split(':').map(Number)
+    const ampm = h >= 12 ? 'PM' : 'AM'
+    timeDisplay = `${h % 12 || 12}:${String(m).padStart(2,'0')} ${ampm}`
+  }
+  return {
+    id:       r.id,
+    name:     r.patient_name,
+    pain:     r.pain || 'General session',
+    area:     r.area || '',
+    time:     timeDisplay,
+    time24:   time24,
+    duration: r.duration || '45 min',
+    type:     r.session_type || 'Video',
+    status:   computeSessionStatus(time24),
+  }
+}
 
 const SEO_TERMS = [
   { term:'physiotherapist in Bengaluru',        position:1, searches:'8,100/mo', trend:'up',   type:'Physio' },
@@ -359,7 +381,7 @@ function PatientModal({ mode, prefill, onClose, onSave }) {
 export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
   const [tab, setTab]             = useState('overview')
   const [patients, setPatients]   = useState(INITIAL_PATIENTS)
-  const [sessions, setSessions]   = useState(SESSIONS_TODAY)
+  const [sessions, setSessions]   = useState([])
   const [sideOpen, setSideOpen]   = useState(false)
   const [liveSession, setLiveSession] = useState(null)
   const [modal, setModal]         = useState(null)  // null | { mode:'add'|'schedule', prefill? }
@@ -367,10 +389,20 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
   const [w, setW]                 = useState(window.innerWidth)
   const [notif, setNotif]         = useState(3)
   const [kwFilter, setKwFilter]   = useState('all')
-  const [dbLoaded, setDbLoaded]   = useState(false)
+  const [dbLoaded, setDbLoaded]       = useState(false)
+  const [sessionsLoaded, setSessionsLoaded] = useState(false)
   const [clinicName, setClinicName] = useState(() => localStorage.getItem('pd_clinic_name') || 'PhysioDrishti')
   const [doctorName, setDoctorName] = useState(() => localStorage.getItem('pd_doctor_name') || 'Dr. Priya Menon')
   const [settingsSaved, setSettingsSaved] = useState(false)
+
+  useEffect(() => {
+    const todayDate = new Date().toISOString().split('T')[0]
+    supabase.from('sessions').select('*').eq('session_date', todayDate).order('session_time', { ascending: true })
+      .then(({ data, error }) => {
+        if (!error && data) setSessions(data.map(mapSession))
+        setSessionsLoaded(true)
+      })
+  }, [])
 
   useEffect(() => {
     supabase.from('leads').select('*').order('created_at', { ascending: false })
@@ -438,10 +470,19 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
     setModal(null)
   }
 
-  const scheduleSession = (form) => {
-    const timeStr = form.time ? form.time : '12:00 PM'
-    const newS = { id:Date.now(), name:form.name, pain:form.pain||'General session', time:timeStr, status:'upcoming', duration:'45 min', area:form.area||'Bengaluru', type:form.sessionType }
-    setSessions(p => [newS, ...p])
+  const scheduleSession = async (form) => {
+    const todayDate = new Date().toISOString().split('T')[0]
+    const { data, error } = await supabase.from('sessions').insert({
+      patient_name: form.name,
+      pain:         form.pain || 'General session',
+      area:         form.area || '',
+      session_date: form.date || todayDate,
+      session_time: form.time || '12:00',
+      duration:     '45 min',
+      session_type: form.sessionType || 'Video',
+    }).select().single()
+    if (error) return `Could not schedule session: ${error.message || 'Unknown error'}`
+    setSessions(p => [...p, mapSession(data)].sort((a,b) => a.time24.localeCompare(b.time24)))
     setModal(null)
   }
 
@@ -710,6 +751,17 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
                 </div>
               ))}
 
+              {!sessionsLoaded && (
+                <div style={{ textAlign:'center', padding:'40px 0', color:C.gray }} className="pj">Loading sessions…</div>
+              )}
+              {sessionsLoaded && sessions.length === 0 && (
+                <div style={{ textAlign:'center', padding:'40px 20px', color:C.gray }}>
+                  <div style={{ fontSize:32, marginBottom:12 }}>📅</div>
+                  <div className="pd" style={{ fontSize:'1rem', fontWeight:700, marginBottom:6 }}>No sessions scheduled today</div>
+                  <div className="pj" style={{ fontSize:13, marginBottom:16 }}>Click "+ Schedule session" to add one</div>
+                  <button className="btn-o" onClick={()=>setModal({mode:'schedule'})}>+ Schedule session</button>
+                </div>
+              )}
               <div className="g2" style={{ display:'grid', gap:14 }}>
                 {sessions.map(s=>(
                   <div key={s.id} className="card-d" style={{ padding:20, border:s.status==='live'?`2px solid ${C.saffron}`:`1px solid ${C.border}` }}>
