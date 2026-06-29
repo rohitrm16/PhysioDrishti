@@ -368,22 +368,26 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
   const [notif, setNotif]         = useState(3)
   const [kwFilter, setKwFilter]   = useState('all')
   const [dbLoaded, setDbLoaded]   = useState(false)
+  const [clinicName, setClinicName] = useState(() => localStorage.getItem('pd_clinic_name') || 'PhysioDrishti')
+  const [doctorName, setDoctorName] = useState(() => localStorage.getItem('pd_doctor_name') || 'Dr. Priya Menon')
+  const [settingsSaved, setSettingsSaved] = useState(false)
 
   useEffect(() => {
     supabase.from('leads').select('*').order('created_at', { ascending: false })
       .then(({ data, error }) => {
         if (!error) {
           setPatients((data ?? []).map(r => ({
-            id:       r.id,
-            name:     r.name,
-            phone:    r.phone,
-            email:    r.email || '',
-            area:     r.area || '',
-            pain:     r.pain || '',
-            stage:    r.stage || 'new',
-            note:     r.note || '',
-            priority: r.priority || 'medium',
-            time:     r.created_at ? new Date(r.created_at).toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' }) : 'Just now',
+            id:         r.id,
+            name:       r.name,
+            phone:      r.phone,
+            email:      r.email || '',
+            area:       r.area || '',
+            pain:       r.pain || '',
+            stage:      r.stage || 'new',
+            note:       r.note || '',
+            priority:   r.priority || 'medium',
+            created_at: r.created_at || null,
+            time:       r.created_at ? new Date(r.created_at).toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' }) : 'Just now',
           })))
         }
         setDbLoaded(true)
@@ -442,6 +446,20 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
   }
 
   const stageCount = (s) => patients.filter(p => p.stage === s).length
+
+  const todayStr   = new Date().toDateString()
+  const newToday   = patients.filter(p => p.created_at && new Date(p.created_at).toDateString() === todayStr).length
+  const activeCount = patients.filter(p => p.stage === 'active').length
+  const doneCount  = patients.filter(p => p.stage === 'done').length
+  const liveCount  = sessions.filter(s => s.status === 'live').length
+
+  const saveSettings = () => {
+    localStorage.setItem('pd_clinic_name', clinicName)
+    localStorage.setItem('pd_doctor_name', doctorName)
+    setSettingsSaved(true)
+    setTimeout(() => setSettingsSaved(false), 2000)
+  }
+
   const navItems = [
     { id:'overview',  icon:'🏠', label:'Overview'        },
     { id:'patients',  icon:'👥', label:'Patients'        },
@@ -536,10 +554,10 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
               {/* KPIs */}
               <div className="g4" style={{ display:'grid', gap:14, marginBottom:20 }}>
                 {[
-                  { label:'New enquiries today', val:'8',   icon:'🔔', col:C.blue,    chg:'+3' },
-                  { label:'Sessions today',       val:'5',   icon:'📱', col:C.saffron, chg:'2 live' },
-                  { label:'Active patients',       val:'12',  icon:'👥', col:C.teal,   chg:'this week' },
-                  { label:'Helped this month',     val:'68',  icon:'✅', col:C.green,  chg:'+14%' },
+                  { label:'New enquiries today', val:String(newToday),    icon:'🔔', col:C.blue,    chg: newToday > 0 ? `+${newToday} today` : 'none yet' },
+                  { label:'Sessions today',       val:String(sessions.length), icon:'📱', col:C.saffron, chg: liveCount > 0 ? `${liveCount} live` : 'scheduled' },
+                  { label:'Active patients',       val:String(activeCount), icon:'👥', col:C.teal,   chg: activeCount > 0 ? 'in progress' : 'none yet' },
+                  { label:'Helped so far',         val:String(doneCount),  icon:'✅', col:C.green,  chg: doneCount > 0 ? 'completed' : 'none yet' },
                 ].map(k=>(
                   <div key={k.label} className="card-d" style={{ padding:18, borderLeft:`4px solid ${k.col}` }}>
                     <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
@@ -675,7 +693,7 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:18, flexWrap:'wrap', gap:10 }}>
                 <div>
                   <div className="pj" style={{ fontSize:10, fontWeight:800, letterSpacing:3, textTransform:'uppercase', color:C.saffron, marginBottom:3 }}>Sessions</div>
-                  <div className="pd" style={{ fontSize:'1.2rem', fontWeight:800 }}>Today's sessions · Dr. Priya Menon</div>
+                  <div className="pd" style={{ fontSize:'1.2rem', fontWeight:800 }}>Today's sessions · {doctorName}</div>
                 </div>
                 <button className="btn-o" onClick={()=>setModal({mode:'schedule'})}>+ Schedule session</button>
               </div>
@@ -787,13 +805,18 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
               <div className="g2" style={{ display:'grid', gap:18 }}>
                 <div className="card-d" style={{ padding:24 }}>
                   <div className="pj" style={{ fontSize:12, fontWeight:700, color:C.teal, marginBottom:16, textTransform:'uppercase', letterSpacing:1 }}>Your clinic</div>
-                  {[['Clinic name','PhysioDrishti'],['Doctor name','Dr. Priya Menon'],['City','Bengaluru, Karnataka'],['Phone','98XXXXXXXX']].map(([l,v])=>(
+                  {[
+                    ['Clinic name', clinicName, setClinicName],
+                    ['Doctor name', doctorName, setDoctorName],
+                  ].map(([l, v, setter]) => (
                     <div key={l} style={{ marginBottom:14 }}>
                       <label className="pj" style={{ fontSize:12, fontWeight:700, color:C.teal, display:'block', marginBottom:5 }}>{l}</label>
-                      <input className="field-d" defaultValue={v} />
+                      <input className="field-d" value={v} onChange={e => setter(e.target.value)} />
                     </div>
                   ))}
-                  <button className="btn-g">Save details</button>
+                  <button className="btn-g" onClick={saveSettings}>
+                    {settingsSaved ? '✓ Saved!' : 'Save details'}
+                  </button>
                 </div>
                 <div className="card-d" style={{ padding:24 }}>
                   <div className="pj" style={{ fontSize:12, fontWeight:700, color:C.teal, marginBottom:16, textTransform:'uppercase', letterSpacing:1 }}>Live map (Mappls)</div>
