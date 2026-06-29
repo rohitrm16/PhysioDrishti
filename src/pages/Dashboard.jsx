@@ -393,6 +393,7 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
   const [sessionsLoaded, setSessionsLoaded] = useState(false)
   const [clinicName, setClinicName] = useState(() => localStorage.getItem('pd_clinic_name') || 'PhysioDrishti')
   const [doctorName, setDoctorName] = useState(() => localStorage.getItem('pd_doctor_name') || 'Dr. Priya Menon')
+  const [meetLink, setMeetLink]     = useState(() => localStorage.getItem('pd_meet_link') || '')
   const [settingsSaved, setSettingsSaved] = useState(false)
 
   useEffect(() => {
@@ -497,8 +498,16 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
   const saveSettings = () => {
     localStorage.setItem('pd_clinic_name', clinicName)
     localStorage.setItem('pd_doctor_name', doctorName)
+    localStorage.setItem('pd_meet_link', meetLink)
     setSettingsSaved(true)
     setTimeout(() => setSettingsSaved(false), 2000)
+  }
+
+  const shareOnWhatsApp = (session) => {
+    const link = meetLink || 'https://meet.google.com/your-room-link'
+    const time = session.time || ''
+    const msg = `Hi ${session.name}, your PhysioDrishti session is scheduled at ${time}.\n\nJoin here: ${link}\n\nSee you soon! — ${doctorName}`
+    window.open(`https://wa.me/${session.phone ? session.phone.replace(/\D/g,'') : ''}?text=${encodeURIComponent(msg)}`, '_blank')
   }
 
   const navItems = [
@@ -671,9 +680,16 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
                       </div>
                       <div className="pj" style={{ fontWeight:700, fontSize:13, marginBottom:2 }}>{s.name}</div>
                       <div className="pj" style={{ fontSize:11, color:C.gray, marginBottom:10 }}>{s.pain} · {s.duration}</div>
-                      {s.status==='live'
-                        ? <button className="btn-o" style={{ width:'100%', fontSize:12, padding:'8px 0' }} onClick={()=>setLiveSession(s)}>📹 Join now</button>
-                        : <button className="btn-soft" style={{ width:'100%', fontSize:11 }} onClick={()=>setLiveSession(s)}>Join when ready</button>}
+                      <div style={{ display:'flex', gap:6 }}>
+                        <a href={meetLink || '#'} target="_blank" rel="noreferrer"
+                          style={{ flex:1, background:s.status==='live'?C.saffron:C.forest, color:'#fff', border:'none', borderRadius:7, padding:'8px 0', fontSize:11, fontWeight:700, cursor:'pointer', textAlign:'center', textDecoration:'none', display:'block', fontFamily:'Plus Jakarta Sans,sans-serif' }}>
+                          📹 {s.status==='live'?'Join now':'Start'}
+                        </a>
+                        <button onClick={()=>shareOnWhatsApp(s)}
+                          style={{ flex:1, background:'#25D366', color:'#fff', border:'none', borderRadius:7, padding:'8px 0', fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Plus Jakarta Sans,sans-serif' }}>
+                          📤 WhatsApp
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -747,7 +763,11 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
                     <div className="pj" style={{ fontWeight:800, fontSize:14, color:'#fff' }}>🔴 Live now — {s.name}</div>
                     <div className="pj" style={{ fontSize:12, color:'rgba(255,255,255,.8)' }}>{s.pain} · {s.area} · {s.duration}</div>
                   </div>
-                  <button className="pj" onClick={()=>setLiveSession(s)} style={{ background:'#fff', color:C.saffron, border:'none', borderRadius:8, padding:'9px 20px', fontSize:13, fontWeight:800, cursor:'pointer' }}>📹 Join session</button>
+                  <div style={{ display:'flex', gap:8 }}>
+                    <a href={meetLink || '#'} target="_blank" rel="noreferrer"
+                      style={{ background:'#fff', color:C.saffron, borderRadius:8, padding:'9px 20px', fontSize:13, fontWeight:800, cursor:'pointer', textDecoration:'none', fontFamily:'Plus Jakarta Sans,sans-serif' }}>📹 Join session</a>
+                    <button onClick={()=>shareOnWhatsApp(s)} style={{ background:'#25D366', color:'#fff', border:'none', borderRadius:8, padding:'9px 16px', fontSize:13, fontWeight:800, cursor:'pointer', fontFamily:'Plus Jakarta Sans,sans-serif' }}>📤 Share</button>
+                  </div>
                 </div>
               ))}
 
@@ -777,10 +797,16 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
                     </div>
                     <div className="pj" style={{ fontSize:13, fontWeight:600, marginBottom:2 }}>{s.pain}</div>
                     <div className="pj" style={{ fontSize:12, color:C.gray, marginBottom:14 }}>{s.type} · {s.duration}</div>
-                    <button onClick={()=>setLiveSession(s)} className="pj"
-                      style={{ background:s.status==='live'?C.saffron:C.forest, color:'#fff', border:'none', borderRadius:7, padding:'8px 16px', fontSize:12, fontWeight:700, cursor:'pointer', width:'100%' }}>
-                      {s.status==='live'?'📹 Join now →':'Join when ready →'}
-                    </button>
+                    <div style={{ display:'flex', gap:8 }}>
+                      <a href={meetLink || '#'} target="_blank" rel="noreferrer"
+                        style={{ flex:2, background:s.status==='live'?C.saffron:C.forest, color:'#fff', border:'none', borderRadius:7, padding:'10px 0', fontSize:13, fontWeight:700, cursor:'pointer', textAlign:'center', textDecoration:'none', display:'block', fontFamily:'Plus Jakarta Sans,sans-serif' }}>
+                        📹 {s.status==='live'?'Join now →':'Start session →'}
+                      </a>
+                      <button onClick={()=>shareOnWhatsApp(s)}
+                        style={{ flex:1, background:'#25D366', color:'#fff', border:'none', borderRadius:7, padding:'10px 0', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Plus Jakarta Sans,sans-serif' }}>
+                        📤 Share
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -866,6 +892,15 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
                       <input className="field-d" value={v} onChange={e => setter(e.target.value)} />
                     </div>
                   ))}
+                  <div style={{ marginBottom:14 }}>
+                    <label className="pj" style={{ fontSize:12, fontWeight:700, color:C.teal, display:'block', marginBottom:5 }}>
+                      Google Meet link <span style={{ color:meetLink?C.green:C.amber, fontWeight:700 }}>{meetLink?'(Active ✓)':'(Not set)'}</span>
+                    </label>
+                    <input className="field-d" placeholder="https://meet.google.com/abc-defg-hij" value={meetLink} onChange={e=>setMeetLink(e.target.value)} />
+                    <div className="pj" style={{ fontSize:11, color:C.gray, marginTop:5 }}>
+                      Go to <strong>meet.google.com</strong> → New meeting → Create for later → copy the link
+                    </div>
+                  </div>
                   <button className="btn-g" onClick={saveSettings}>
                     {settingsSaved ? '✓ Saved!' : 'Save details'}
                   </button>
