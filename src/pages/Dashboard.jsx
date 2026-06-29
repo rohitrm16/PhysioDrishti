@@ -4,7 +4,9 @@
  * Props: onGoToLanding, mapplsKey, setMapplsKey
  */
 import { useState, useEffect, useRef } from 'react'
-import { db } from '../supabase.js'
+import { supabase } from '../supabase.js'
+
+import logoImg from '../assets/physiodrishti-logo.png'
 
 const C = {
   forest:'#12382A', teal:'#0A6B5E', mint:'#3A9A6B',
@@ -248,8 +250,18 @@ function PatientModal({ mode, prefill, onClose, onSave }) {
     time: '',
     sessionType: 'Video',
   })
+  const [busy, setBusy] = useState(false)
+  const [errMsg, setErrMsg] = useState('')
   const set = (k,v) => setF(p=>({...p,[k]:v}))
   const canSave = f.name && f.phone && (isSchedule ? (f.date && f.time) : f.area)
+
+  const handleSave = async () => {
+    if (!canSave || busy) return
+    setBusy(true)
+    setErrMsg('')
+    const err = await onSave(f)
+    if (err) { setErrMsg(err); setBusy(false) }
+  }
 
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.55)', zIndex:800, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }} onClick={onClose}>
@@ -326,10 +338,15 @@ function PatientModal({ mode, prefill, onClose, onSave }) {
             <textarea className="field-d" placeholder="Any extra info about the patient or session…" value={f.note} onChange={e=>set('note',e.target.value)} style={{ minHeight:60, resize:'none', lineHeight:1.5 }} />
           </div>
 
+          {errMsg && (
+            <div className="pj" style={{ color:'#c0392b', fontSize:12, marginBottom:10, padding:'8px 12px', background:'#fff0ee', borderRadius:7, border:'1px solid #f5c6c2' }}>
+              ⚠️ {errMsg}
+            </div>
+          )}
           <div style={{ display:'flex', gap:10 }}>
             <button onClick={onClose} className="btn-soft" style={{ flex:'0 0 90px' }}>Cancel</button>
-            <button onClick={()=>canSave&&onSave(f)} className="btn-g" style={{ flex:1, opacity:canSave?1:.5 }}>
-              {isSchedule ? 'Schedule session' : 'Add patient'}
+            <button onClick={handleSave} className="btn-g" style={{ flex:1, opacity:(canSave&&!busy)?1:.5 }}>
+              {busy ? 'Saving…' : isSchedule ? 'Schedule session' : 'Add patient'}
             </button>
           </div>
         </div>
@@ -338,72 +355,40 @@ function PatientModal({ mode, prefill, onClose, onSave }) {
   )
 }
 
-/* ── Logo Image (from /public/logo.png) ────────────────────────── */
-function LogoImg({ size = 40 }) {
-  return (
-    <img
-      src="/logo.png"
-      alt="PhysioDrishti"
-      style={{ width: size, height: size, objectFit: 'contain', flexShrink: 0 }}
-      onError={e => {
-        // Fallback to text if image missing
-        e.target.style.display = 'none'
-        e.target.parentNode.innerHTML = '<div style="width:' + size + 'px;height:' + size + 'px;background:#12382A;borderRadius:7px;display:flex;alignItems:center;justifyContent:center;color:#fff;fontWeight:700;fontSize:' + Math.round(size*0.4) + 'px">✚</div>'
-      }}
-    />
-  )
-}
-
-
 /* ─── Dashboard ──────────────────────────────────────────────────── */
 export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
   const [tab, setTab]             = useState('overview')
   const [patients, setPatients]   = useState(INITIAL_PATIENTS)
-  const [notif, setNotif]         = useState(0)
-
-  // ── Fetch real bookings from Supabase ──────────────────────────
-  useEffect(() => {
-    const fetchBookings = async () => {
-      try {
-        const { data, error } = await db
-          .from('bookings')
-          .select('*')
-          .order('created_at', { ascending: false })
-        if (error) throw error
-        if (data && data.length > 0) {
-          const newOnes = data.filter(b => b.status === 'new').length
-          setNotif(newOnes)
-          setPatients(data.map(b => ({
-            id:       b.id,
-            name:     b.name,
-            phone:    b.phone,
-            area:     b.area      || '',
-            pain:     b.pain      || '',
-            note:     b.note      || '',
-            stage:    b.status    || 'new',
-            priority: 'medium',
-            time:     new Date(b.created_at).toLocaleTimeString('en-IN', {
-                        hour: '2-digit', minute: '2-digit'
-                      }),
-          })))
-        }
-      } catch (err) {
-        console.error('Supabase fetch error:', err)
-      }
-    }
-    fetchBookings()
-
-    // Poll every 30 seconds for new bookings
-    const interval = setInterval(fetchBookings, 30000)
-    return () => clearInterval(interval)
-  }, [])
   const [sessions, setSessions]   = useState(SESSIONS_TODAY)
   const [sideOpen, setSideOpen]   = useState(false)
   const [liveSession, setLiveSession] = useState(null)
   const [modal, setModal]         = useState(null)  // null | { mode:'add'|'schedule', prefill? }
   const [selected, setSelected]   = useState(null)  // selected patient
   const [w, setW]                 = useState(window.innerWidth)
+  const [notif, setNotif]         = useState(3)
   const [kwFilter, setKwFilter]   = useState('all')
+  const [dbLoaded, setDbLoaded]   = useState(false)
+
+  useEffect(() => {
+    supabase.from('leads').select('*').order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (!error) {
+          setPatients((data ?? []).map(r => ({
+            id:       r.id,
+            name:     r.name,
+            phone:    r.phone,
+            email:    r.email || '',
+            area:     r.area || '',
+            pain:     r.pain || '',
+            stage:    r.stage || 'new',
+            note:     r.note || '',
+            priority: r.priority || 'medium',
+            time:     r.created_at ? new Date(r.created_at).toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' }) : 'Just now',
+          })))
+        }
+        setDbLoaded(true)
+      })
+  }, [])
 
   useEffect(() => {
     const h = () => setW(window.innerWidth)
@@ -421,15 +406,31 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
   const mob = w < 768
   const showLabel = w >= 1024
 
-  const advance = (id) => setPatients(p => p.map(pt => {
-    if (pt.id !== id) return pt
-    const idx = STAGES.indexOf(pt.stage)
-    return idx < STAGES.length - 1 ? { ...pt, stage: STAGES[idx + 1] } : pt
-  }))
+  const changeStage = async (id, newStage) => {
+    setPatients(p => p.map(x => x.id === id ? { ...x, stage: newStage } : x))
+    if (selected?.id === id) setSelected(s => s ? { ...s, stage: newStage } : s)
+    await supabase.from('leads').update({ stage: newStage }).eq('id', id)
+  }
 
-  const addPatient = (form) => {
-    const newP = { id: Date.now(), name:form.name, phone:form.phone, area:form.area, pain:form.pain, stage:'new', note:form.note, time:'Just now', priority:'medium' }
-    setPatients(p => [newP, ...p])
+  const advance = (id) => {
+    const pt = patients.find(p => p.id === id)
+    if (!pt) return
+    const idx = STAGES.indexOf(pt.stage)
+    if (idx < STAGES.length - 1) changeStage(id, STAGES[idx + 1])
+  }
+
+  const addPatient = async (form) => {
+    const { data, error } = await supabase.from('leads').insert({
+      name: form.name, phone: form.phone, area: form.area,
+      pain: form.pain, note: form.note || null,
+      stage: 'new', priority: 'medium',
+    }).select().single()
+    if (error) return `Could not save patient: ${error.message || 'Unknown error'}`
+    setPatients(p => [{
+      id: data.id, name: form.name, phone: form.phone, area: form.area,
+      pain: form.pain, stage: 'new', note: form.note,
+      time: 'Just now', priority: 'medium',
+    }, ...p])
     setModal(null)
   }
 
@@ -457,7 +458,7 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
       {/* ── Sidebar ── */}
       <aside className="sidebar-d" style={{ width:showLabel?216:mob?216:60, background:'#12382A', display:'flex', flexDirection:'column', flexShrink:0, position:mob?'fixed':'sticky', top:0, height:mob?'100vh':'100vh', zIndex:mob?200:10, transform:mob&&!sideOpen?'translateX(-100%)':'translateX(0)', transition:'transform .3s', overflow:'hidden' }}>
         <div style={{ padding:'18px 12px 14px', borderBottom:'1px solid rgba(255,255,255,.1)', display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
-          <LogoImg size={36}/>
+          <img src={logoImg} alt="PhysioDrishti" style={{ width:30, height:30, objectFit:'contain', flexShrink:0, borderRadius:4 }} />
           {(showLabel||(mob&&sideOpen)) && (
             <div>
               <div className="pd" style={{ fontWeight:900, fontSize:14, color:'#fff', whiteSpace:'nowrap' }}>PhysioDrishti</div>
@@ -522,6 +523,12 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
         </header>
 
         <main style={{ padding:'20px 18px', flex:1, overflowY:'auto' }}>
+          {!dbLoaded && (
+            <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', background:'#fff', borderRadius:8, border:`1px solid ${C.border}`, marginBottom:16 }}>
+              <div style={{ width:16, height:16, border:`2px solid ${C.border}`, borderTop:`2px solid ${C.teal}`, borderRadius:'50%', animation:'spin .9s linear infinite', flexShrink:0 }}/>
+              <span className="pj" style={{ fontSize:13, color:C.gray }}>Loading patient data…</span>
+            </div>
+          )}
 
           {/* ── OVERVIEW ── */}
           {tab === 'overview' && (
@@ -754,7 +761,7 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
                         <td>
                           <span className="pj" style={{ fontSize:13, fontWeight:700 }}>{k.searches}</span>
                           <div style={{ width:80, height:3, background:C.border, borderRadius:2, marginTop:4 }}>
-                            <div style={{ height:'100%', width:`${parseInt(k.searches)/81}%`, background:`linear-gradient(90deg,${C.mint},${C.saffron})`, borderRadius:2 }}/>
+                            <div style={{ height:'100%', width:`${Math.min(100, parseInt(k.searches.replace(/[^0-9]/g,''))/81)}%`, background:`linear-gradient(90deg,${C.mint},${C.saffron})`, borderRadius:2 }}/>
                           </div>
                         </td>
                         <td>
@@ -842,7 +849,7 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
               <div className="pj" style={{ fontSize:12, fontWeight:700, color:C.teal, marginBottom:8 }}>Move to</div>
               <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
                 {STAGES.map(s=>(
-                  <button key={s} onClick={()=>{setPatients(p=>p.map(pt=>pt.id===selected.id?{...pt,stage:s}:pt));setSelected({...selected,stage:s})}}
+                  <button key={s} onClick={()=>changeStage(selected.id, s)}
                     style={{ padding:'5px 11px', border:`1.5px solid ${selected.stage===s?STAGE_COLOR[s]:C.border}`, borderRadius:6, background:selected.stage===s?`${STAGE_COLOR[s]}18`:'transparent', color:selected.stage===s?STAGE_COLOR[s]:C.gray, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Plus Jakarta Sans,sans-serif' }}>
                     {STAGE_ICON[s]} {STAGE_LABEL[s]}
                   </button>
@@ -862,5 +869,5 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
       {modal?.mode === 'schedule' && <PatientModal mode="schedule" prefill={modal.prefill} onClose={()=>setModal(null)} onSave={scheduleSession} />}
       {liveSession && <VideoCall session={liveSession} onClose={()=>setLiveSession(null)} />}
     </div>
-  )
+  )    
 }
