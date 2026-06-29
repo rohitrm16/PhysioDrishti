@@ -575,7 +575,7 @@ export default function LandingPage({ onGoToDashboard, mapplsKey }) {
           <div className="footer-cols" style={{ display:'grid', gap:36, marginBottom:36 }}>
             <div>
               <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14 }}>
-                <div style={{ width:30, height:30, background:'#D4510E', borderRadius:7, display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontWeight:700 }}>✚</div>
+                <img src={logoImg} alt="PhysioDrishti" style={{ height:36, width:'auto', flexShrink:0 }} />
                 <div>
                   <div className="pd" style={{ fontWeight:900, fontSize:15, color:'#fff' }}>PhysioDrishti</div>
                   <div className="pj" style={{ fontSize:8, color:'rgba(255,255,255,.4)', letterSpacing:2, marginTop:1 }}>Online Physiotherapy</div>

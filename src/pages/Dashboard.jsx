@@ -458,7 +458,7 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
       {/* ── Sidebar ── */}
       <aside className="sidebar-d" style={{ width:showLabel?216:mob?216:60, background:'#12382A', display:'flex', flexDirection:'column', flexShrink:0, position:mob?'fixed':'sticky', top:0, height:mob?'100vh':'100vh', zIndex:mob?200:10, transform:mob&&!sideOpen?'translateX(-100%)':'translateX(0)', transition:'transform .3s', overflow:'hidden' }}>
         <div style={{ padding:'18px 12px 14px', borderBottom:'1px solid rgba(255,255,255,.1)', display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
-          <div style={{ width:30, height:30, background:'#D4510E', borderRadius:7, display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontWeight:700, flexShrink:0 }}>✚</div>
+          <img src={logoImg} alt="PhysioDrishti" style={{ width:30, height:30, objectFit:'contain', flexShrink:0, borderRadius:4 }} />
           {(showLabel||(mob&&sideOpen)) && (
             <div>
               <div className="pd" style={{ fontWeight:900, fontSize:14, color:'#fff', whiteSpace:'nowrap' }}>PhysioDrishti</div>
