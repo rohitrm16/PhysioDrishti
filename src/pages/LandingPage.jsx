@@ -187,11 +187,11 @@ function BookingModal({ onClose, onSuccess }) {
       if (error) {
         console.error('[BookingModal] Supabase insert error:', error)
         if (error.code === '42P01')
-          setErr('Database table missing. Please run the SQL setup in your Supabase dashboard.')
-        else if (error.code === '42501' || error.message?.includes('policy'))
-          setErr('Permission denied. Enable anon insert policy on the leads table in Supabase.')
+          setErr('Database table missing. Please create the leads table in Supabase.')
+        else if (error.code === '42501' || error.message?.includes('policy') || error.message?.includes('permission'))
+          setErr(`Permission denied (code ${error.code}): ${error.message}. Grant anon INSERT on leads table.`)
         else
-          setErr(`Booking failed: ${error.message || 'Unknown error'} (code: ${error.code ?? '—'})`)
+          setErr(`Booking failed (code ${error.code ?? '—'}): ${error.message || 'Unknown error'}`)
         setBusy(false)
         return
       }
