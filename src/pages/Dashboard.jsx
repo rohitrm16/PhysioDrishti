@@ -420,7 +420,10 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
             note:       r.note || '',
             priority:   r.priority || 'medium',
             created_at: r.created_at || null,
-            time:       r.created_at ? new Date(r.created_at).toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' }) : 'Just now',
+            time:       r.created_at
+              ? new Date(r.created_at).toLocaleDateString('en-IN', { day:'2-digit', month:'short' }) + ', ' +
+                new Date(r.created_at).toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' })
+              : 'Just now',
           })))
         }
         setDbLoaded(true)
