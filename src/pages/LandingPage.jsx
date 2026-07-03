@@ -370,9 +370,6 @@ export default function LandingPage({ onGoToDashboard, mapplsKey }) {
             </div>
           </div>
           <div style={{ display:'flex', alignItems:'center', gap: mob?8:20 }}>
-            {!mob && ['Pain we treat','Online sessions','About us'].map(n=>(
-              <span key={n} className="pj" style={{ fontSize:14, color:scrolled?'#5C6878':'rgba(255,255,255,.8)', cursor:'pointer', fontWeight:500 }}>{n}</span>
-            ))}
             <button className="btn-main" style={{ padding:'8px 18px', fontSize:13 }} onClick={()=>setShowModal(true)}>Book free call</button>
             {!mob && <button onClick={onGoToDashboard} className="pj" style={{ fontSize:13, color:scrolled?'#5C6878':'rgba(255,255,255,.6)', cursor:'pointer', background:'none', border:'none' }}>For clinics →</button>}
           </div>
