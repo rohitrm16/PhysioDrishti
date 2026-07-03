@@ -873,6 +873,75 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
                   </tbody>
                 </table>
               </div>
+
+              {/* Strategic Recommendations */}
+              <div style={{ marginTop:24 }}>
+                <div className="pj" style={{ fontSize:10, fontWeight:800, letterSpacing:3, textTransform:'uppercase', color:C.saffron, marginBottom:4 }}>Strategic recommendations</div>
+                <div className="pd" style={{ fontSize:'1.1rem', fontWeight:800, marginBottom:16 }}>How to rank higher &amp; get more leads</div>
+                <div style={{ display:'grid', gap:14, gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))' }}>
+
+                  {/* Card 1 — Long-tail keywords */}
+                  <div className="card-d" style={{ padding:20, borderLeft:`4px solid ${C.saffron}` }}>
+                    <div style={{ fontSize:26, marginBottom:10 }}>🎯</div>
+                    <div className="pd" style={{ fontSize:'0.95rem', fontWeight:800, marginBottom:6 }}>Target long-tail keywords</div>
+                    <div className="pj" style={{ fontSize:12, color:C.gray, lineHeight:1.7, marginBottom:12 }}>
+                      Go beyond "physiotherapist" — rank for specific pain points where patients are ready to book.
+                    </div>
+                    <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                      {[
+                        'Post-ACL surgery rehab online Bangalore',
+                        'Frozen shoulder specialist near Koramangala',
+                        'Back pain physiotherapy home visit Indiranagar',
+                      ].map(kw => (
+                        <div key={kw} style={{ background:C.light, borderRadius:6, padding:'6px 10px', fontSize:12, fontWeight:600, color:C.forest, fontFamily:'Plus Jakarta Sans,sans-serif' }}>
+                          🔍 {kw}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Card 2 — Local SEO */}
+                  <div className="card-d" style={{ padding:20, borderLeft:`4px solid ${C.green}` }}>
+                    <div style={{ fontSize:26, marginBottom:10 }}>📍</div>
+                    <div className="pd" style={{ fontSize:'0.95rem', fontWeight:800, marginBottom:6 }}>Win the "near me" factor</div>
+                    <div className="pj" style={{ fontSize:12, color:C.gray, lineHeight:1.7, marginBottom:12 }}>
+                      Even for online services, patients search "physiotherapist near me." Anchor your listing to Bangalore's busiest neighbourhoods.
+                    </div>
+                    <div style={{ display:'flex', flexDirection:'column', gap:7 }}>
+                      {[
+                        { icon:'✅', text:'Set up a Google Business Profile' },
+                        { icon:'📌', text:'Add service areas: Koramangala, HSR, Indiranagar, Whitefield' },
+                        { icon:'⭐', text:'Collect reviews mentioning area + condition treated' },
+                      ].map(item => (
+                        <div key={item.text} style={{ display:'flex', gap:8, alignItems:'flex-start', fontSize:12, color:C.ink, fontFamily:'Plus Jakarta Sans,sans-serif' }}>
+                          <span>{item.icon}</span><span style={{ lineHeight:1.5 }}>{item.text}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Card 3 — Digital-first value props */}
+                  <div className="card-d" style={{ padding:20, borderLeft:`4px solid ${C.teal}` }}>
+                    <div style={{ fontSize:26, marginBottom:10 }}>💡</div>
+                    <div className="pd" style={{ fontSize:'0.95rem', fontWeight:800, marginBottom:6 }}>Lead with digital-first value</div>
+                    <div className="pj" style={{ fontSize:12, color:C.gray, lineHeight:1.7, marginBottom:12 }}>
+                      Solve the frustrations Bangalore patients actually have. Put these on your landing page and ads.
+                    </div>
+                    <div style={{ display:'flex', flexDirection:'column', gap:7 }}>
+                      {[
+                        { icon:'🚦', text:'No Bangalore traffic — consult from home' },
+                        { icon:'👨‍⚕️', text:'1-on-1 expert time, not a junior trainee' },
+                        { icon:'📱', text:'Book in 60 seconds, get a callback in 30 min' },
+                      ].map(item => (
+                        <div key={item.text} style={{ display:'flex', gap:8, alignItems:'flex-start', fontSize:12, color:C.ink, fontFamily:'Plus Jakarta Sans,sans-serif' }}>
+                          <span>{item.icon}</span><span style={{ lineHeight:1.5 }}>{item.text}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                </div>
+              </div>
             </div>
           )}
 
