@@ -518,48 +518,6 @@ export default function LandingPage({ onGoToDashboard, mapplsKey }) {
         </div>
       </section>
 
-      {/* Where we are */}
-      <section style={{ padding:'72px 5%', background:'#F3F6FA' }}>
-        <div style={{ maxWidth:1160, margin:'0 auto' }}>
-          <div className="market-cols" style={{ gap:48, alignItems:'flex-start' }}>
-            <div style={{ flex:1 }}>
-              <div className="pj" style={{ fontSize:11, fontWeight:800, letterSpacing:3, textTransform:'uppercase', color:'#D4510E', marginBottom:12 }}>Where we are</div>
-              <h2 className="pd" style={{ fontSize:'1.9rem', fontWeight:900, marginBottom:14 }}>Bengaluru today.<br /><em style={{ color:'#D4510E' }}>All of India soon.</em></h2>
-              <p className="pj" style={{ color:'#5C6878', fontSize:14, lineHeight:1.7, marginBottom:22, maxWidth:380 }}>Can't see your area? We'll still help — just choose "Online session" when you book.</p>
-              <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:24 }}>
-                {AREAS.map(a=>(
-                  <span key={a} style={{ background:'#fff', border:'1px solid #DDE4EF', borderRadius:20, padding:'5px 12px', fontSize:12, fontWeight:600, color:'#0D1520', fontFamily:'Plus Jakarta Sans,sans-serif' }}>📍 {a}</span>
-                ))}
-              </div>
-              <CityMap apiKey={mapplsKey} height={280} />
-            </div>
-
-            <div style={{ flex:'0 0 380px' }}>
-              <div className="card-lp" style={{ padding:30 }}>
-                <div className="pj" style={{ fontSize:11, fontWeight:800, letterSpacing:3, textTransform:'uppercase', color:'#D4510E', marginBottom:10 }}>Ready to feel better?</div>
-                <h3 className="pd" style={{ fontSize:'1.35rem', fontWeight:900, marginBottom:8 }}>Talk to a specialist</h3>
-                <p className="pj" style={{ color:'#5C6878', fontSize:13, marginBottom:24, lineHeight:1.6 }}>Fill this in and we'll call you back within 30 minutes to understand what you need.</p>
-                {booked ? (
-                  <div style={{ textAlign:'center', padding:'16px 0' }}>
-                    <div style={{ fontSize:40, marginBottom:10 }}>🎉</div>
-                    <div className="pd" style={{ fontSize:'1.1rem', fontWeight:900, color:'#12382A', marginBottom:6 }}>You're all set, {booked.name}!</div>
-                    <div className="pj" style={{ fontSize:13, color:'#5C6878', marginBottom:18 }}>We'll WhatsApp you shortly. Keep your phone handy!</div>
-                    <button className="btn-outline" onClick={()=>setBooked(null)}>Book for someone else</button>
-                  </div>
-                ) : (
-                  <button className="btn-main" style={{ width:'100%', padding:14, fontSize:15 }} onClick={()=>setShowModal(true)}>Book a free call →</button>
-                )}
-                <div style={{ display:'flex', gap:14, justifyContent:'center', marginTop:14, flexWrap:'wrap' }}>
-                  {['No cost to book','Quick callback','Right specialist for you'].map(t=>(
-                    <span key={t} className="pj" style={{ fontSize:11, color:'#5C6878' }}>✓ {t}</span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Final CTA */}
       <section style={{ padding:'72px 5%', background:'linear-gradient(135deg,#12382A,#0D3828)', textAlign:'center' }}>
         <div style={{ maxWidth:560, margin:'0 auto' }}>
@@ -585,7 +543,7 @@ export default function LandingPage({ onGoToDashboard, mapplsKey }) {
             </div>
             {[
               { h:'We treat',  l:['Back & Neck Pain','Knee & Hip Pain','Shoulder Problems','Sports Injuries','After Surgery','Online Sessions'] },
-              { h:'Company',   l:['About us','How it works','Our specialists','Areas we cover','For clinics','Contact us'] },
+              { h:'Company',   l:['About us','How it works','Our specialists','Contact us'] },
             ].map(col=>(
               <div key={col.h}>
                 <div className="pj" style={{ fontWeight:800, fontSize:12, color:'#3A9A6B', letterSpacing:1.5, textTransform:'uppercase', marginBottom:12 }}>{col.h}</div>
