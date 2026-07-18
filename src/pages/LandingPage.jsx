@@ -186,12 +186,17 @@ function BookingModal({ onClose, onSuccess }) {
       })
       if (error) {
         console.error('[BookingModal] Supabase insert error:', error)
-        if (error.code === '42P01')
+        const msg = error.message || ''
+        if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY)
+          setErr('Setup needed: Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to Vercel → Settings → Environment Variables, then redeploy.')
+        else if (msg.toLowerCase().includes('failed to fetch') || msg.toLowerCase().includes('networkerror') || !error.code)
+          setErr('Cannot reach the database. Check that VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set correctly in Vercel environment variables.')
+        else if (error.code === '42P01')
           setErr('Database table missing. Please run the SQL setup in your Supabase dashboard.')
-        else if (error.code === '42501' || error.message?.includes('policy'))
+        else if (error.code === '42501' || msg.includes('policy') || msg.includes('permission'))
           setErr('Permission denied. Enable anon insert policy on the leads table in Supabase.')
         else
-          setErr(`Booking failed: ${error.message || 'Unknown error'} (code: ${error.code ?? '—'})`)
+          setErr(`Booking failed (code ${error.code ?? '—'}): ${msg || 'Unknown error'}`)
         setBusy(false)
         return
       }
@@ -199,7 +204,11 @@ function BookingModal({ onClose, onSuccess }) {
       onSuccess(f)
     } catch (e) {
       console.error('[BookingModal] Unexpected error:', e)
-      setErr('Network error — please check your connection and try again.')
+      const msg = e?.message || ''
+      if (msg.toLowerCase().includes('failed to fetch') || e instanceof TypeError)
+        setErr('Cannot reach the database — check that VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in Vercel → Settings → Environment Variables.')
+      else
+        setErr(`Unexpected error: ${msg || 'Please try again.'}`)
       setBusy(false)
     }
   }
