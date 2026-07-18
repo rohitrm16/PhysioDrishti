@@ -5,7 +5,6 @@
  */
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../supabase.js'
-
 import logoImg from '../assets/physiodrishti-logo.png'
 
 const C = {
@@ -26,47 +25,17 @@ const STAGE_COLOR = { new:C.blue, called:C.amber, assessment:C.purple, active:C.
 const STAGE_ICON  = { new:'🔔', called:'📞', assessment:'🩺', active:'💪', done:'✅' }
 
 const INITIAL_PATIENTS = [
-  { id:1,  name:'Rahul Sharma',  phone:'98XX0001', area:'Koramangala',     pain:'Back / Neck',   stage:'new',        note:'3 years of back pain',        time:'9:14 AM',   priority:'high' },
-  { id:2,  name:'Anitha Reddy',  phone:'97XX0012', area:'HSR Layout',      pain:'Knee / Hip',    stage:'called',     note:'Post ACL surgery',            time:'8:45 AM',   priority:'high' },
-  { id:3,  name:'Vikram Nair',   phone:'96XX0023', area:'Whitefield',      pain:'Shoulder',      stage:'assessment', note:'Shoulder clicks at night',    time:'Yesterday', priority:'medium' },
-  { id:4,  name:'Priya Iyer',    phone:'95XX0034', area:'Jayanagar',       pain:'Knee / Hip',    stage:'active',     note:'Knee replacement recovery',   time:'Yesterday', priority:'high' },
-  { id:5,  name:'Suresh Kumar',  phone:'94XX0045', area:'Marathahalli',    pain:'Back / Neck',   stage:'new',        note:'Pain down left leg',          time:'9:02 AM',   priority:'high' },
-  { id:6,  name:'Deepa Menon',   phone:'93XX0056', area:'Indiranagar',     pain:'Back / Neck',   stage:'done',       note:'Cervical pain, much better',  time:'2 days ago',priority:'low'  },
-  { id:7,  name:'Arjun Patel',   phone:'92XX0067', area:'Electronic City', pain:'Post-surgery',  stage:'new',        note:'Sports injury — knee',        time:'8:55 AM',   priority:'medium' },
-  { id:8,  name:'Kavitha S.',    phone:'91XX0078', area:'JP Nagar',        pain:'Knee / Hip',    stage:'active',     note:'Hip replacement, wk 4',       time:'Yesterday', priority:'high' },
-  { id:9,  name:'Mohammed A.',   phone:'90XX0089', area:'Yelahanka',       pain:'Ankle / Foot',  stage:'called',     note:'Heel pain every morning',     time:'9:20 AM',   priority:'medium' },
-  { id:10, name:'Sangeetha R.',  phone:'89XX0091', area:'Bannerghatta Road',pain:'Knee / Hip',   stage:'assessment', note:'Knee pain, difficulty walking',time:'Yesterday', priority:'medium' },
+  { id:1,  name:'Rahul Sharma',  phone:'98XX0001', area:'Koramangala',     pain:'Back / Neck',   stage:'new',        note:'3 years of back pain',        created_at:null, time:'30 Jun, 9:14 am',   priority:'high' },
+  { id:2,  name:'Anitha Reddy',  phone:'97XX0012', area:'HSR Layout',      pain:'Knee / Hip',    stage:'called',     note:'Post ACL surgery',            created_at:null, time:'30 Jun, 8:45 am',   priority:'high' },
+  { id:3,  name:'Vikram Nair',   phone:'96XX0023', area:'Whitefield',      pain:'Shoulder',      stage:'assessment', note:'Shoulder clicks at night',    created_at:null, time:'29 Jun, 4:10 pm', priority:'medium' },
+  { id:4,  name:'Priya Iyer',    phone:'95XX0034', area:'Jayanagar',       pain:'Knee / Hip',    stage:'active',     note:'Knee replacement recovery',   created_at:null, time:'29 Jun, 3:22 pm', priority:'high' },
+  { id:5,  name:'Suresh Kumar',  phone:'94XX0045', area:'Marathahalli',    pain:'Back / Neck',   stage:'new',        note:'Pain down left leg',          created_at:null, time:'30 Jun, 9:02 am',   priority:'high' },
+  { id:6,  name:'Deepa Menon',   phone:'93XX0056', area:'Indiranagar',     pain:'Back / Neck',   stage:'done',       note:'Cervical pain, much better',  created_at:null, time:'28 Jun, 11:05 am',priority:'low'  },
+  { id:7,  name:'Arjun Patel',   phone:'92XX0067', area:'Electronic City', pain:'Post-surgery',  stage:'new',        note:'Sports injury — knee',        created_at:null, time:'30 Jun, 8:55 am',   priority:'medium' },
+  { id:8,  name:'Kavitha S.',    phone:'91XX0078', area:'JP Nagar',        pain:'Knee / Hip',    stage:'active',     note:'Hip replacement, wk 4',       created_at:null, time:'29 Jun, 5:40 pm', priority:'high' },
+  { id:9,  name:'Mohammed A.',   phone:'90XX0089', area:'Yelahanka',       pain:'Ankle / Foot',  stage:'called',     note:'Heel pain every morning',     created_at:null, time:'30 Jun, 9:20 am',   priority:'medium' },
+  { id:10, name:'Sangeetha R.',  phone:'89XX0091', area:'Bannerghatta Road',pain:'Knee / Hip',   stage:'assessment', note:'Knee pain, difficulty walking',created_at:null, time:'29 Jun, 2:15 pm', priority:'medium' },
 ]
-
-function computeSessionStatus(timeStr) {
-  if (!timeStr) return 'upcoming'
-  const [h, m] = timeStr.split(':').map(Number)
-  const now = new Date()
-  const sessionMin = h * 60 + m
-  const nowMin = now.getHours() * 60 + now.getMinutes()
-  return (nowMin >= sessionMin && nowMin < sessionMin + 60) ? 'live' : 'upcoming'
-}
-
-function mapSession(r) {
-  const time24 = r.session_time || ''
-  let timeDisplay = time24
-  if (time24) {
-    const [h, m] = time24.split(':').map(Number)
-    const ampm = h >= 12 ? 'PM' : 'AM'
-    timeDisplay = `${h % 12 || 12}:${String(m).padStart(2,'0')} ${ampm}`
-  }
-  return {
-    id:       r.id,
-    name:     r.patient_name,
-    pain:     r.pain || 'General session',
-    area:     r.area || '',
-    time:     timeDisplay,
-    time24:   time24,
-    duration: r.duration || '45 min',
-    type:     r.session_type || 'Video',
-    status:   computeSessionStatus(time24),
-  }
-}
 
 const SEO_TERMS = [
   { term:'physiotherapist in Bengaluru',        position:1, searches:'8,100/mo', trend:'up',   type:'Physio' },
@@ -80,6 +49,43 @@ const SEO_TERMS = [
   { term:'sports injury physio HSR Layout',     position:1, searches:'1,200/mo', trend:'up',   type:'Physio' },
   { term:'shoulder pain treatment Indiranagar', position:2, searches:'880/mo',   trend:'up',   type:'Physio' },
 ]
+
+/* ── WhatsApp helper ─────────────────────────────────────────────── */
+function openWhatsApp(phone, message) {
+  const clean = phone.replace(/[^0-9]/g, '')
+  const num   = clean.startsWith('91') ? clean : `91${clean}`
+  window.open(`https://wa.me/${num}?text=${encodeURIComponent(message)}`, '_blank')
+}
+
+/* ── Session helpers ─────────────────────────────────────────────── */
+function computeSessionStatus(timeStr) {
+  if (!timeStr) return 'upcoming'
+  const now  = new Date()
+  const [h, m] = timeStr.split(':').map(Number)
+  const sess = new Date(now); sess.setHours(h, m, 0, 0)
+  const diff = (sess - now) / 60000
+  return diff >= -60 && diff <= 0 ? 'live' : 'upcoming'
+}
+
+function mapSession(r) {
+  const raw   = r.session_time || ''
+  const time24 = raw.slice(0, 5)
+  const [hh, mm] = time24.split(':').map(Number)
+  const ampm  = hh >= 12 ? 'PM' : 'AM'
+  const h12   = hh % 12 || 12
+  return {
+    id:       r.id,
+    name:     r.patient_name || r.name || '',
+    pain:     r.pain_area    || r.pain || 'General session',
+    time:     `${h12}:${String(mm).padStart(2,'0')} ${ampm}`,
+    time24,
+    status:   computeSessionStatus(time24),
+    duration: r.duration     || '45 min',
+    area:     r.area         || 'Bengaluru',
+    type:     r.session_type || 'Video',
+    phone:    r.phone        || '',
+  }
+}
 
 /* ─── CSS ────────────────────────────────────────────────────────── */
 const CSS = `
@@ -197,7 +203,6 @@ function VideoCall({ session, onClose }) {
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.88)', zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center', padding:12 }}>
       <div style={{ background:'#1A1F2E', borderRadius:16, width:'100%', maxWidth:820, overflow:'hidden', boxShadow:'0 24px 64px rgba(0,0,0,.6)' }}>
-        {/* Header */}
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 20px', borderBottom:'1px solid rgba(255,255,255,.1)' }}>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
             <div style={{ width:9, height:9, borderRadius:'50%', background:'#22C55E', animation:'blink 1.5s infinite' }}/>
@@ -207,7 +212,6 @@ function VideoCall({ session, onClose }) {
         </div>
 
         <div style={{ display:'grid', gridTemplateColumns:'1fr 240px', gap:10, padding:12 }}>
-          {/* Video */}
           <div style={{ background:'#111', borderRadius:10, position:'relative', aspectRatio:'16/9' }}>
             <div style={{ position:'absolute', inset:0, background:'linear-gradient(135deg,#1A3A2A,#0D2018)', display:'flex', alignItems:'center', justifyContent:'center' }}>
               <div style={{ textAlign:'center' }}>
@@ -215,14 +219,12 @@ function VideoCall({ session, onClose }) {
                 <div className="pj" style={{ fontSize:12, color:'rgba(255,255,255,.65)' }}>{session.name} · {session.area}</div>
               </div>
             </div>
-            {/* PiP */}
             <div style={{ position:'absolute', bottom:10, right:10, width:90, height:65, background:'#0D2E1F', borderRadius:6, border:'2px solid rgba(255,255,255,.15)', display:'flex', alignItems:'center', justifyContent:'center' }}>
               <div style={{ textAlign:'center' }}><div style={{ fontSize:18 }}>🩺</div><div className="pj" style={{ fontSize:8, color:'rgba(255,255,255,.5)' }}>Dr. Priya Menon</div></div>
             </div>
             <div style={{ position:'absolute', top:10, left:10, background:'rgba(0,0,0,.5)', borderRadius:5, padding:'3px 8px', fontSize:12, color:'#fff', fontFamily:'Plus Jakarta Sans,sans-serif' }}>{fmt(t)}</div>
           </div>
 
-          {/* Right */}
           <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
             <div style={{ background:'rgba(255,255,255,.06)', borderRadius:8, padding:12 }}>
               <div className="pj" style={{ fontSize:10, fontWeight:800, letterSpacing:2, color:'rgba(255,255,255,.4)', textTransform:'uppercase', marginBottom:8 }}>Today's plan</div>
@@ -243,7 +245,6 @@ function VideoCall({ session, onClose }) {
           </div>
         </div>
 
-        {/* Controls */}
         <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:12, padding:'12px 20px', borderTop:'1px solid rgba(255,255,255,.1)' }}>
           {[
             [muted?'🔇':'🎤', ()=>setMuted(p=>!p), muted],
@@ -272,15 +273,14 @@ function PatientModal({ mode, prefill, onClose, onSave }) {
     time: '',
     sessionType: 'Video',
   })
-  const [busy, setBusy] = useState(false)
+  const [busy, setBusy]   = useState(false)
   const [errMsg, setErrMsg] = useState('')
   const set = (k,v) => setF(p=>({...p,[k]:v}))
   const canSave = f.name && f.phone && (isSchedule ? (f.date && f.time) : f.area)
 
   const handleSave = async () => {
     if (!canSave || busy) return
-    setBusy(true)
-    setErrMsg('')
+    setBusy(true); setErrMsg('')
     const err = await onSave(f)
     if (err) { setErrMsg(err); setBusy(false) }
   }
@@ -361,14 +361,15 @@ function PatientModal({ mode, prefill, onClose, onSave }) {
           </div>
 
           {errMsg && (
-            <div className="pj" style={{ color:'#c0392b', fontSize:12, marginBottom:10, padding:'8px 12px', background:'#fff0ee', borderRadius:7, border:'1px solid #f5c6c2' }}>
+            <div className="pj" style={{ fontSize:12, color:C.red, background:'#FFF0F0', border:`1px solid #F5C6C6`, borderRadius:7, padding:'10px 14px', marginBottom:12, lineHeight:1.6 }}>
               ⚠️ {errMsg}
             </div>
           )}
+
           <div style={{ display:'flex', gap:10 }}>
             <button onClick={onClose} className="btn-soft" style={{ flex:'0 0 90px' }}>Cancel</button>
             <button onClick={handleSave} className="btn-g" style={{ flex:1, opacity:(canSave&&!busy)?1:.5 }}>
-              {busy ? 'Saving…' : isSchedule ? 'Schedule session' : 'Add patient'}
+              {busy ? '⏳ Saving…' : isSchedule ? 'Schedule session' : 'Add patient'}
             </button>
           </div>
         </div>
@@ -379,46 +380,47 @@ function PatientModal({ mode, prefill, onClose, onSave }) {
 
 /* ─── Dashboard ──────────────────────────────────────────────────── */
 export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
-  const [tab, setTab]             = useState('overview')
-  const [patients, setPatients]   = useState(INITIAL_PATIENTS)
-  const [sessions, setSessions]   = useState([])
-  const [sideOpen, setSideOpen]   = useState(false)
-  const [liveSession, setLiveSession] = useState(null)
-  const [modal, setModal]         = useState(null)  // null | { mode:'add'|'schedule', prefill? }
-  const [selected, setSelected]   = useState(null)  // selected patient
-  const [w, setW]                 = useState(window.innerWidth)
-  const [notif, setNotif]         = useState(3)
-  const [kwFilter, setKwFilter]   = useState('all')
-  const [dbLoaded, setDbLoaded]       = useState(false)
+  const [tab, setTab]           = useState('overview')
+  const [patients, setPatients] = useState(INITIAL_PATIENTS)
+  const [sessions, setSessions] = useState([])
   const [sessionsLoaded, setSessionsLoaded] = useState(false)
-  const [clinicName, setClinicName] = useState(() => localStorage.getItem('pd_clinic_name') || 'PhysioDrishti')
-  const [doctorName, setDoctorName] = useState(() => localStorage.getItem('pd_doctor_name') || 'Dr. Priya Menon')
-  const [meetLink, setMeetLink]     = useState(() => localStorage.getItem('pd_meet_link') || '')
+  const [dbLoaded, setDbLoaded] = useState(false)
+  const [sideOpen, setSideOpen] = useState(false)
+  const [liveSession, setLiveSession] = useState(null)
+  const [modal, setModal]       = useState(null)
+  const [selected, setSelected] = useState(null)
+  const [w, setW]               = useState(window.innerWidth)
+  const [kwFilter, setKwFilter] = useState('all')
+
+  const [clinicName, setClinicName]     = useState(() => localStorage.getItem('pd_clinic_name')   || 'PhysioDrishti')
+  const [doctorName, setDoctorName]     = useState(() => localStorage.getItem('pd_doctor_name')   || 'Dr. Priya Menon')
+  const [meetLink, setMeetLink]         = useState(() => localStorage.getItem('pd_meet_link')     || '')
   const [settingsSaved, setSettingsSaved] = useState(false)
 
+  /* ── Fetch sessions from Supabase ─────────────────────────────── */
   useEffect(() => {
     const todayDate = new Date().toISOString().split('T')[0]
-    supabase.from('sessions').select('*').eq('session_date', todayDate).order('session_time', { ascending: true })
+    supabase.from('sessions').select('*').eq('session_date', todayDate).order('session_time', { ascending:true })
       .then(({ data, error }) => {
         if (!error && data) setSessions(data.map(mapSession))
         setSessionsLoaded(true)
       })
   }, [])
 
+  /* ── Fetch patients (leads) from Supabase ─────────────────────── */
   useEffect(() => {
-    supabase.from('leads').select('*').order('created_at', { ascending: false })
+    supabase.from('leads').select('*').order('created_at', { ascending:false })
       .then(({ data, error }) => {
-        if (!error) {
-          setPatients((data ?? []).map(r => ({
+        if (!error && data && data.length > 0) {
+          setPatients(data.map(r => ({
             id:         r.id,
-            name:       r.name,
-            phone:      r.phone,
-            email:      r.email || '',
-            area:       r.area || '',
-            pain:       r.pain || '',
-            stage:      r.stage || 'new',
-            note:       r.note || '',
-            priority:   r.priority || 'medium',
+            name:       r.name       || '',
+            phone:      r.phone      || '',
+            area:       r.area       || '',
+            pain:       r.pain       || '',
+            note:       r.note       || '',
+            stage:      r.stage      || 'new',
+            priority:   r.priority   || 'medium',
             created_at: r.created_at || null,
             time:       r.created_at
               ? new Date(r.created_at).toLocaleDateString('en-IN', { day:'2-digit', month:'short' }) + ', ' +
@@ -446,72 +448,76 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
   const mob = w < 768
   const showLabel = w >= 1024
 
-  const changeStage = async (id, newStage) => {
-    setPatients(p => p.map(x => x.id === id ? { ...x, stage: newStage } : x))
-    if (selected?.id === id) setSelected(s => s ? { ...s, stage: newStage } : s)
-    await supabase.from('leads').update({ stage: newStage }).eq('id', id)
+  /* ── Real-time stats ──────────────────────────────────────────── */
+  const todayStr    = new Date().toDateString()
+  const newToday    = patients.filter(p => p.created_at && new Date(p.created_at).toDateString() === todayStr).length
+  const activeCount = patients.filter(p => p.stage === 'active').length
+  const doneCount   = patients.filter(p => p.stage === 'done').length
+  const liveCount   = sessions.filter(s => s.status === 'live').length
+
+  const saveSettings = () => {
+    localStorage.setItem('pd_clinic_name',  clinicName)
+    localStorage.setItem('pd_doctor_name',  doctorName)
+    localStorage.setItem('pd_meet_link',    meetLink)
+    setSettingsSaved(true)
+    setTimeout(() => setSettingsSaved(false), 2000)
   }
 
   const advance = (id) => {
-    const pt = patients.find(p => p.id === id)
-    if (!pt) return
-    const idx = STAGES.indexOf(pt.stage)
-    if (idx < STAGES.length - 1) changeStage(id, STAGES[idx + 1])
+    setPatients(p => p.map(pt => {
+      if (pt.id !== id) return pt
+      const idx = STAGES.indexOf(pt.stage)
+      return idx < STAGES.length - 1 ? { ...pt, stage: STAGES[idx + 1] } : pt
+    }))
+    supabase.from('leads').select('stage').eq('id', id).single().then(({ data }) => {
+      if (!data) return
+      const idx = STAGES.indexOf(data.stage)
+      if (idx < STAGES.length - 1) supabase.from('leads').update({ stage: STAGES[idx + 1] }).eq('id', id)
+    })
   }
 
   const addPatient = async (form) => {
     const { data, error } = await supabase.from('leads').insert({
-      name: form.name, phone: form.phone, area: form.area,
-      pain: form.pain, note: form.note || null,
+      name: form.name.trim(), phone: form.phone.trim(),
+      area: form.area, pain: form.pain,
+      note: form.note.trim() || null,
       stage: 'new', priority: 'medium',
     }).select().single()
     if (error) return `Could not save patient: ${error.message || 'Unknown error'}`
+    const now = new Date()
     setPatients(p => [{
-      id: data.id, name: form.name, phone: form.phone, area: form.area,
-      pain: form.pain, stage: 'new', note: form.note,
-      time: 'Just now', priority: 'medium',
+      id: data?.id || Date.now(),
+      name: form.name, phone: form.phone,
+      area: form.area, pain: form.pain,
+      note: form.note, stage: 'new', priority: 'medium',
+      created_at: now.toISOString(),
+      time: now.toLocaleDateString('en-IN', { day:'2-digit', month:'short' }) + ', ' +
+            now.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' }),
     }, ...p])
     setModal(null)
   }
 
   const scheduleSession = async (form) => {
-    const todayDate = new Date().toISOString().split('T')[0]
+    const timeVal = form.time || '12:00'
     const { data, error } = await supabase.from('sessions').insert({
-      patient_name: form.name,
-      pain:         form.pain || 'General session',
-      area:         form.area || '',
-      session_date: form.date || todayDate,
-      session_time: form.time || '12:00',
-      duration:     '45 min',
-      session_type: form.sessionType || 'Video',
+      patient_name: form.name.trim(), phone: form.phone.trim(),
+      pain_area: form.pain || 'General session',
+      session_date: form.date, session_time: timeVal + ':00',
+      duration: '45 min', area: form.area || 'Bengaluru',
+      session_type: form.sessionType,
     }).select().single()
     if (error) return `Could not schedule session: ${error.message || 'Unknown error'}`
-    setSessions(p => [...p, mapSession(data)].sort((a,b) => a.time24.localeCompare(b.time24)))
+    if (data) setSessions(p => [...p, mapSession(data)].sort((a,b) => a.time24.localeCompare(b.time24)))
     setModal(null)
-  }
-
-  const stageCount = (s) => patients.filter(p => p.stage === s).length
-
-  const todayStr   = new Date().toDateString()
-  const newToday   = patients.filter(p => p.created_at && new Date(p.created_at).toDateString() === todayStr).length
-  const activeCount = patients.filter(p => p.stage === 'active').length
-  const doneCount  = patients.filter(p => p.stage === 'done').length
-  const liveCount  = sessions.filter(s => s.status === 'live').length
-
-  const saveSettings = () => {
-    localStorage.setItem('pd_clinic_name', clinicName)
-    localStorage.setItem('pd_doctor_name', doctorName)
-    localStorage.setItem('pd_meet_link', meetLink)
-    setSettingsSaved(true)
-    setTimeout(() => setSettingsSaved(false), 2000)
   }
 
   const shareOnWhatsApp = (session) => {
     const link = meetLink || 'https://meet.google.com/your-room-link'
-    const time = session.time || ''
-    const msg = `Hi ${session.name}, your PhysioDrishti session is scheduled at ${time}.\n\nJoin here: ${link}\n\nSee you soon! — ${doctorName}`
-    window.open(`https://wa.me/${session.phone ? session.phone.replace(/\D/g,'') : ''}?text=${encodeURIComponent(msg)}`, '_blank')
+    const msg  = `Hi ${session.name}, your PhysioDrishti session is scheduled at ${session.time}.\n\nJoin here: ${link}\n\nSee you soon! — ${doctorName}`
+    openWhatsApp(session.phone || '', msg)
   }
+
+  const stageCount = (s) => patients.filter(p => p.stage === s).length
 
   const navItems = [
     { id:'overview',  icon:'🏠', label:'Overview'        },
@@ -532,13 +538,12 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
           <img src={logoImg} alt="PhysioDrishti" style={{ width:30, height:30, objectFit:'contain', flexShrink:0, borderRadius:4 }} />
           {(showLabel||(mob&&sideOpen)) && (
             <div>
-              <div className="pd" style={{ fontWeight:900, fontSize:14, color:'#fff', whiteSpace:'nowrap' }}>PhysioDrishti</div>
+              <div className="pd" style={{ fontWeight:900, fontSize:14, color:'#fff', whiteSpace:'nowrap' }}>{clinicName}</div>
               <div className="pj" style={{ fontSize:8, color:'rgba(255,255,255,.4)', letterSpacing:2 }}>सबका मंगल हो</div>
             </div>
           )}
         </div>
 
-        {/* Quick actions */}
         {(showLabel||(mob&&sideOpen)) && (
           <div style={{ padding:'12px 12px 0' }}>
             <button onClick={()=>{setModal({mode:'schedule'});if(mob)setSideOpen(false)}} style={{ width:'100%', padding:'9px 0', background:'rgba(212,81,14,.85)', border:'none', borderRadius:7, color:'#fff', fontSize:12, fontWeight:700, cursor:'pointer', marginBottom:8, fontFamily:'Plus Jakarta Sans,sans-serif' }}>
@@ -576,7 +581,7 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
           {mob && <button onClick={()=>setSideOpen(p=>!p)} style={{ background:'none', border:'none', fontSize:22, cursor:'pointer' }}>☰</button>}
           <div style={{ flex:1 }}>
             <span className="pd" style={{ fontSize:15, fontWeight:800 }}>{navItems.find(n=>n.id===tab)?.icon} {navItems.find(n=>n.id===tab)?.label}</span>
-            <span className="pj" style={{ fontSize:11, color:C.gray, marginLeft:8 }}>PhysioDrishti</span>
+            <span className="pj" style={{ fontSize:11, color:C.gray, marginLeft:8 }}>{clinicName}</span>
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
             {!mob && (
@@ -585,32 +590,21 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
                 <button className="btn-g" style={{ padding:'7px 16px', fontSize:12 }} onClick={()=>setModal({mode:'add'})}>+ Add patient</button>
               </>
             )}
-            <div style={{ position:'relative', cursor:'pointer' }} onClick={()=>setNotif(0)}>
-              <span style={{ fontSize:19 }}>🔔</span>
-              {notif > 0 && <span style={{ position:'absolute', top:-4, right:-4, background:C.red, color:'#fff', borderRadius:'50%', width:15, height:15, display:'flex', alignItems:'center', justifyContent:'center', fontSize:8, fontWeight:800, fontFamily:'Plus Jakarta Sans,sans-serif' }}>{notif}</span>}
-            </div>
             <div style={{ width:30, height:30, background:C.forest, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontSize:11, fontWeight:700, fontFamily:'Plus Jakarta Sans,sans-serif' }}>PM</div>
           </div>
         </header>
 
         <main style={{ padding:'20px 18px', flex:1, overflowY:'auto' }}>
-          {!dbLoaded && (
-            <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', background:'#fff', borderRadius:8, border:`1px solid ${C.border}`, marginBottom:16 }}>
-              <div style={{ width:16, height:16, border:`2px solid ${C.border}`, borderTop:`2px solid ${C.teal}`, borderRadius:'50%', animation:'spin .9s linear infinite', flexShrink:0 }}/>
-              <span className="pj" style={{ fontSize:13, color:C.gray }}>Loading patient data…</span>
-            </div>
-          )}
 
           {/* ── OVERVIEW ── */}
           {tab === 'overview' && (
             <div className="fade-d">
-              {/* KPIs */}
               <div className="g4" style={{ display:'grid', gap:14, marginBottom:20 }}>
                 {[
-                  { label:'New enquiries today', val:String(newToday),    icon:'🔔', col:C.blue,    chg: newToday > 0 ? `+${newToday} today` : 'none yet' },
-                  { label:'Sessions today',       val:String(sessions.length), icon:'📱', col:C.saffron, chg: liveCount > 0 ? `${liveCount} live` : 'scheduled' },
-                  { label:'Active patients',       val:String(activeCount), icon:'👥', col:C.teal,   chg: activeCount > 0 ? 'in progress' : 'none yet' },
-                  { label:'Helped so far',         val:String(doneCount),  icon:'✅', col:C.green,  chg: doneCount > 0 ? 'completed' : 'none yet' },
+                  { label:'New enquiries today', val:String(newToday || patients.filter(p=>p.stage==='new').length), icon:'🔔', col:C.blue,    chg: dbLoaded ? 'from Supabase' : 'loading…' },
+                  { label:'Sessions today',       val:String(sessions.length),  icon:'📱', col:C.saffron, chg: liveCount > 0 ? `${liveCount} live` : 'scheduled' },
+                  { label:'Active patients',       val:String(activeCount),      icon:'👥', col:C.teal,   chg:'in sessions' },
+                  { label:'Completed',             val:String(doneCount),        icon:'✅', col:C.green,  chg:'all time' },
                 ].map(k=>(
                   <div key={k.label} className="card-d" style={{ padding:18, borderLeft:`4px solid ${k.col}` }}>
                     <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
@@ -624,7 +618,6 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
               </div>
 
               <div className="g2" style={{ display:'grid', gap:18, marginBottom:18 }}>
-                {/* Map */}
                 <div className="card-d" style={{ padding:18 }}>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
                     <div>
@@ -636,7 +629,6 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
                   <MapplsMap apiKey={mapplsKey} height={300} patients={patients} />
                 </div>
 
-                {/* Recent enquiries */}
                 <div className="card-d" style={{ padding:18 }}>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
                     <div>
@@ -665,7 +657,6 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
                 </div>
               </div>
 
-              {/* Today's sessions */}
               <div className="card-d" style={{ padding:18 }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
                   <div>
@@ -674,6 +665,9 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
                   </div>
                   <button className="btn-o" style={{ fontSize:12, padding:'7px 14px' }} onClick={()=>setModal({mode:'schedule'})}>+ Schedule</button>
                 </div>
+                {sessions.length === 0 && sessionsLoaded && (
+                  <div className="pj" style={{ fontSize:13, color:C.gray, textAlign:'center', padding:'24px 0' }}>No sessions scheduled for today yet.</div>
+                )}
                 <div className="g3" style={{ display:'grid', gap:12 }}>
                   {sessions.slice(0,6).map(s=>(
                     <div key={s.id} className="card-d" style={{ padding:14, border:s.status==='live'?`2px solid ${C.saffron}`:`1px solid ${C.border}` }}>
@@ -684,12 +678,12 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
                       <div className="pj" style={{ fontWeight:700, fontSize:13, marginBottom:2 }}>{s.name}</div>
                       <div className="pj" style={{ fontSize:11, color:C.gray, marginBottom:10 }}>{s.pain} · {s.duration}</div>
                       <div style={{ display:'flex', gap:6 }}>
-                        <a href={meetLink || '#'} target="_blank" rel="noreferrer"
-                          style={{ flex:1, background:s.status==='live'?C.saffron:C.forest, color:'#fff', border:'none', borderRadius:7, padding:'8px 0', fontSize:11, fontWeight:700, cursor:'pointer', textAlign:'center', textDecoration:'none', display:'block', fontFamily:'Plus Jakarta Sans,sans-serif' }}>
-                          📹 {s.status==='live'?'Join now':'Start'}
+                        <a href={meetLink || 'https://meet.google.com/new'} target="_blank" rel="noreferrer"
+                          style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', background:C.saffron, color:'#fff', borderRadius:7, fontSize:11, fontWeight:700, padding:'7px 0', textDecoration:'none', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                          📹 {s.status==='live'?'Join now':'Start session'}
                         </a>
                         <button onClick={()=>shareOnWhatsApp(s)}
-                          style={{ flex:1, background:'#25D366', color:'#fff', border:'none', borderRadius:7, padding:'8px 0', fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Plus Jakarta Sans,sans-serif' }}>
+                          style={{ flex:1, background:'#25D366', color:'#fff', border:'none', borderRadius:7, fontSize:11, fontWeight:700, cursor:'pointer', padding:'7px 0', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
                           📤 WhatsApp
                         </button>
                       </div>
@@ -711,7 +705,6 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
                 <button className="btn-g" onClick={()=>setModal({mode:'add'})}>+ Add patient</button>
               </div>
 
-              {/* Kanban */}
               <div className="kanban-wrap" style={{ display:'flex', gap:12, overflowX:'auto', paddingBottom:8 }}>
                 {STAGES.map(stage=>(
                   <div key={stage} style={{ background:'#fff', borderRadius:10, padding:12, minWidth:190, flex:1, border:`1px solid ${C.border}` }}>
@@ -758,7 +751,6 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
                 <button className="btn-o" onClick={()=>setModal({mode:'schedule'})}>+ Schedule session</button>
               </div>
 
-              {/* Live banner */}
               {sessions.filter(s=>s.status==='live').map(s=>(
                 <div key={s.id} style={{ background:'linear-gradient(135deg,#D4510E,#BF4610)', borderRadius:10, padding:'15px 20px', marginBottom:18, display:'flex', alignItems:'center', gap:14, flexWrap:'wrap' }}>
                   <div style={{ width:10, height:10, borderRadius:'50%', background:'#fff', animation:'blink 1s infinite' }}/>
@@ -766,25 +758,22 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
                     <div className="pj" style={{ fontWeight:800, fontSize:14, color:'#fff' }}>🔴 Live now — {s.name}</div>
                     <div className="pj" style={{ fontSize:12, color:'rgba(255,255,255,.8)' }}>{s.pain} · {s.area} · {s.duration}</div>
                   </div>
-                  <div style={{ display:'flex', gap:8 }}>
-                    <a href={meetLink || '#'} target="_blank" rel="noreferrer"
-                      style={{ background:'#fff', color:C.saffron, borderRadius:8, padding:'9px 20px', fontSize:13, fontWeight:800, cursor:'pointer', textDecoration:'none', fontFamily:'Plus Jakarta Sans,sans-serif' }}>📹 Join session</a>
-                    <button onClick={()=>shareOnWhatsApp(s)} style={{ background:'#25D366', color:'#fff', border:'none', borderRadius:8, padding:'9px 16px', fontSize:13, fontWeight:800, cursor:'pointer', fontFamily:'Plus Jakarta Sans,sans-serif' }}>📤 Share</button>
-                  </div>
+                  <a href={meetLink || 'https://meet.google.com/new'} target="_blank" rel="noreferrer"
+                    style={{ background:'#fff', color:C.saffron, borderRadius:8, padding:'9px 20px', fontSize:13, fontWeight:800, textDecoration:'none', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                    📹 Join session
+                  </a>
                 </div>
               ))}
 
-              {!sessionsLoaded && (
-                <div style={{ textAlign:'center', padding:'40px 0', color:C.gray }} className="pj">Loading sessions…</div>
-              )}
-              {sessionsLoaded && sessions.length === 0 && (
-                <div style={{ textAlign:'center', padding:'40px 20px', color:C.gray }}>
-                  <div style={{ fontSize:32, marginBottom:12 }}>📅</div>
-                  <div className="pd" style={{ fontSize:'1rem', fontWeight:700, marginBottom:6 }}>No sessions scheduled today</div>
-                  <div className="pj" style={{ fontSize:13, marginBottom:16 }}>Click "+ Schedule session" to add one</div>
+              {sessions.length === 0 && sessionsLoaded && (
+                <div className="card-d" style={{ padding:32, textAlign:'center' }}>
+                  <div style={{ fontSize:32, marginBottom:10 }}>📅</div>
+                  <div className="pd" style={{ fontSize:'1rem', fontWeight:800, marginBottom:6 }}>No sessions today</div>
+                  <div className="pj" style={{ fontSize:13, color:C.gray, marginBottom:18 }}>Schedule a session to get started.</div>
                   <button className="btn-o" onClick={()=>setModal({mode:'schedule'})}>+ Schedule session</button>
                 </div>
               )}
+
               <div className="g2" style={{ display:'grid', gap:14 }}>
                 {sessions.map(s=>(
                   <div key={s.id} className="card-d" style={{ padding:20, border:s.status==='live'?`2px solid ${C.saffron}`:`1px solid ${C.border}` }}>
@@ -801,13 +790,13 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
                     <div className="pj" style={{ fontSize:13, fontWeight:600, marginBottom:2 }}>{s.pain}</div>
                     <div className="pj" style={{ fontSize:12, color:C.gray, marginBottom:14 }}>{s.type} · {s.duration}</div>
                     <div style={{ display:'flex', gap:8 }}>
-                      <a href={meetLink || '#'} target="_blank" rel="noreferrer"
-                        style={{ flex:2, background:s.status==='live'?C.saffron:C.forest, color:'#fff', border:'none', borderRadius:7, padding:'10px 0', fontSize:13, fontWeight:700, cursor:'pointer', textAlign:'center', textDecoration:'none', display:'block', fontFamily:'Plus Jakarta Sans,sans-serif' }}>
-                        📹 {s.status==='live'?'Join now →':'Start session →'}
+                      <a href={meetLink || 'https://meet.google.com/new'} target="_blank" rel="noreferrer"
+                        style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', background:s.status==='live'?C.saffron:C.forest, color:'#fff', borderRadius:7, padding:'8px 0', fontSize:12, fontWeight:700, textDecoration:'none', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                        📹 {s.status==='live'?'Join now →':'Start session'}
                       </a>
                       <button onClick={()=>shareOnWhatsApp(s)}
-                        style={{ flex:1, background:'#25D366', color:'#fff', border:'none', borderRadius:7, padding:'10px 0', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Plus Jakarta Sans,sans-serif' }}>
-                        📤 Share
+                        style={{ flex:1, background:'#25D366', color:'#fff', border:'none', borderRadius:7, padding:'8px 0', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                        📤 WhatsApp
                       </button>
                     </div>
                   </div>
@@ -880,7 +869,6 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
                 <div className="pd" style={{ fontSize:'1.1rem', fontWeight:800, marginBottom:16 }}>How to rank higher &amp; get more leads</div>
                 <div style={{ display:'grid', gap:14, gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))' }}>
 
-                  {/* Card 1 — Long-tail keywords */}
                   <div className="card-d" style={{ padding:20, borderLeft:`4px solid ${C.saffron}` }}>
                     <div style={{ fontSize:26, marginBottom:10 }}>🎯</div>
                     <div className="pd" style={{ fontSize:'0.95rem', fontWeight:800, marginBottom:6 }}>Target long-tail keywords</div>
@@ -900,7 +888,6 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
                     </div>
                   </div>
 
-                  {/* Card 2 — Local SEO */}
                   <div className="card-d" style={{ padding:20, borderLeft:`4px solid ${C.green}` }}>
                     <div style={{ fontSize:26, marginBottom:10 }}>📍</div>
                     <div className="pd" style={{ fontSize:'0.95rem', fontWeight:800, marginBottom:6 }}>Win the "near me" factor</div>
@@ -920,7 +907,6 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
                     </div>
                   </div>
 
-                  {/* Card 3 — Digital-first value props */}
                   <div className="card-d" style={{ padding:20, borderLeft:`4px solid ${C.teal}` }}>
                     <div style={{ fontSize:26, marginBottom:10 }}>💡</div>
                     <div className="pd" style={{ fontSize:'0.95rem', fontWeight:800, marginBottom:6 }}>Lead with digital-first value</div>
@@ -955,26 +941,23 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
               <div className="g2" style={{ display:'grid', gap:18 }}>
                 <div className="card-d" style={{ padding:24 }}>
                   <div className="pj" style={{ fontSize:12, fontWeight:700, color:C.teal, marginBottom:16, textTransform:'uppercase', letterSpacing:1 }}>Your clinic</div>
-                  {[
-                    ['Clinic name', clinicName, setClinicName],
-                    ['Doctor name', doctorName, setDoctorName],
-                  ].map(([l, v, setter]) => (
-                    <div key={l} style={{ marginBottom:14 }}>
-                      <label className="pj" style={{ fontSize:12, fontWeight:700, color:C.teal, display:'block', marginBottom:5 }}>{l}</label>
-                      <input className="field-d" value={v} onChange={e => setter(e.target.value)} />
-                    </div>
-                  ))}
                   <div style={{ marginBottom:14 }}>
-                    <label className="pj" style={{ fontSize:12, fontWeight:700, color:C.teal, display:'block', marginBottom:5 }}>
-                      Google Meet link <span style={{ color:meetLink?C.green:C.amber, fontWeight:700 }}>{meetLink?'(Active ✓)':'(Not set)'}</span>
-                    </label>
-                    <input className="field-d" placeholder="https://meet.google.com/abc-defg-hij" value={meetLink} onChange={e=>setMeetLink(e.target.value)} />
-                    <div className="pj" style={{ fontSize:11, color:C.gray, marginTop:5 }}>
-                      Go to <strong>meet.google.com</strong> → New meeting → Create for later → copy the link
+                    <label className="pj" style={{ fontSize:12, fontWeight:700, color:C.teal, display:'block', marginBottom:5 }}>Clinic name</label>
+                    <input className="field-d" value={clinicName} onChange={e=>setClinicName(e.target.value)} placeholder="PhysioDrishti" />
+                  </div>
+                  <div style={{ marginBottom:14 }}>
+                    <label className="pj" style={{ fontSize:12, fontWeight:700, color:C.teal, display:'block', marginBottom:5 }}>Doctor name</label>
+                    <input className="field-d" value={doctorName} onChange={e=>setDoctorName(e.target.value)} placeholder="Dr. Priya Menon" />
+                  </div>
+                  <div style={{ marginBottom:20 }}>
+                    <label className="pj" style={{ fontSize:12, fontWeight:700, color:C.teal, display:'block', marginBottom:5 }}>Google Meet link</label>
+                    <input className="field-d" value={meetLink} onChange={e=>setMeetLink(e.target.value)} placeholder="https://meet.google.com/xxx-yyyy-zzz" />
+                    <div className="pj" style={{ fontSize:11, color:C.gray, marginTop:4 }}>
+                      Go to <a href="https://meet.google.com" target="_blank" rel="noreferrer" style={{ color:C.teal }}>meet.google.com</a> → New meeting → Create for later → copy the link
                     </div>
                   </div>
                   <button className="btn-g" onClick={saveSettings}>
-                    {settingsSaved ? '✓ Saved!' : 'Save details'}
+                    {settingsSaved ? '✓ Saved!' : 'Save settings'}
                   </button>
                 </div>
                 <div className="card-d" style={{ padding:24 }}>
@@ -1031,16 +1014,20 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
               <div className="pj" style={{ fontSize:12, fontWeight:700, color:C.teal, marginBottom:8 }}>Move to</div>
               <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
                 {STAGES.map(s=>(
-                  <button key={s} onClick={()=>changeStage(selected.id, s)}
+                  <button key={s} onClick={()=>{setPatients(p=>p.map(pt=>pt.id===selected.id?{...pt,stage:s}:pt));setSelected({...selected,stage:s})}}
                     style={{ padding:'5px 11px', border:`1.5px solid ${selected.stage===s?STAGE_COLOR[s]:C.border}`, borderRadius:6, background:selected.stage===s?`${STAGE_COLOR[s]}18`:'transparent', color:selected.stage===s?STAGE_COLOR[s]:C.gray, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Plus Jakarta Sans,sans-serif' }}>
                     {STAGE_ICON[s]} {STAGE_LABEL[s]}
                   </button>
                 ))}
               </div>
             </div>
-            <div style={{ display:'flex', gap:10 }}>
-              <button className="btn-g" style={{ flex:1, padding:11 }} onClick={()=>{setModal({mode:'schedule',prefill:selected});setSelected(null)}}>📅 Book a session</button>
-              <button className="btn-soft" style={{ flex:'0 0 80px', padding:11 }}>📞 Call</button>
+            <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+              <button className="btn-g" style={{ flex:1, padding:11 }} onClick={()=>{setModal({mode:'schedule',prefill:selected});setSelected(null)}}>📅 Book session</button>
+              <button onClick={()=>openWhatsApp(selected.phone,`Hi ${selected.name}, this is PhysioDrishti. We want to schedule your session. When are you free?`)}
+                style={{ flex:1, background:'#25D366', color:'#fff', border:'none', borderRadius:7, padding:11, fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:13, fontWeight:700, cursor:'pointer' }}>
+                💬 WhatsApp
+              </button>
+              <button onClick={()=>window.open('tel:'+selected.phone)} className="btn-soft" style={{ padding:'11px 14px' }}>📞</button>
             </div>
           </div>
         </div>
@@ -1051,5 +1038,5 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
       {modal?.mode === 'schedule' && <PatientModal mode="schedule" prefill={modal.prefill} onClose={()=>setModal(null)} onSave={scheduleSession} />}
       {liveSession && <VideoCall session={liveSession} onClose={()=>setLiveSession(null)} />}
     </div>
-  )    
+  )
 }
