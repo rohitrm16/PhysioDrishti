@@ -4,7 +4,7 @@
  * Props: onGoToLanding, mapplsKey, setMapplsKey
  */
 import { useState, useEffect, useRef } from 'react'
-import { db } from '../supabase.js'
+import { supabase } from '../supabase.js'
 
 const C = {
   forest:'#12382A', teal:'#0A6B5E', mint:'#3A9A6B',
@@ -66,6 +66,23 @@ function openWhatsApp(phone, message) {
   const clean = phone.replace(/[^0-9]/g, '')
   const num   = clean.startsWith('91') ? clean : `91${clean}`
   window.open(`https://wa.me/${num}?text=${encodeURIComponent(message)}`, '_blank')
+}
+
+function bookingConfirmMsg(session, doctorName, meetLink) {
+  const dateStr = new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'long', year:'numeric' })
+  return (
+`Hi ${session.name}, this is Dr. ${doctorName} from PhysioDrishti 🌿
+
+Your session is confirmed for ${dateStr} at ${session.time}.
+
+Join here:
+${meetLink || 'https://meet.google.com/new'}
+
+Please join 2 minutes early. If you have any questions before the session, reply here.
+
+See you soon!
+- PhysioDrishti`
+  )
 }
 
 /* ─── CSS ────────────────────────────────────────────────────────── */
@@ -420,7 +437,8 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
   const [selected, setSelected]   = useState(null)  // selected patient
   const [w, setW]                 = useState(window.innerWidth)
   const [kwFilter, setKwFilter]   = useState('all')
-  const [meetLink, setMeetLink]     = useState(DEFAULT_MEET_LINK)
+  const [meetLink, setMeetLink]     = useState(() => localStorage.getItem('pd_meet_link') || DEFAULT_MEET_LINK)
+  const [doctorName, setDoctorName] = useState(() => localStorage.getItem('pd_doctor_name') || 'Priya Menon')
 
   useEffect(() => {
     const h = () => setW(window.innerWidth)
@@ -630,9 +648,9 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
                         </button>
                         <button onClick={()=>openWhatsApp(
                           patients.find(p=>p.name===s.name)?.phone||'',
-                          `Hi ${s.name}, your PhysioDrishti session is ready!\n\nJoin here: ${meetLink}\n\nSee you at ${s.time}. - PhysioDrishti`
+                          bookingConfirmMsg(s, doctorName, meetLink)
                         )} style={{ flex:1, background:'#25D366', color:'#fff', border:'none', borderRadius:7, fontSize:11, fontWeight:700, cursor:'pointer', padding:'7px 0', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-                          💬 WhatsApp
+                          📤 WhatsApp
                         </button>
                       </div>
                     </div>
@@ -727,10 +745,18 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
                     </div>
                     <div className="pj" style={{ fontSize:13, fontWeight:600, marginBottom:2 }}>{s.pain}</div>
                     <div className="pj" style={{ fontSize:12, color:C.gray, marginBottom:14 }}>{s.type} · {s.duration}</div>
-                    <button onClick={()=>setLiveSession(s)} className="pj"
-                      style={{ background:s.status==='live'?C.saffron:C.forest, color:'#fff', border:'none', borderRadius:7, padding:'8px 16px', fontSize:12, fontWeight:700, cursor:'pointer', width:'100%' }}>
-                      {s.status==='live'?'📹 Join now →':'Join when ready →'}
-                    </button>
+                    <div style={{ display:'flex', gap:8 }}>
+                      <button onClick={()=>setLiveSession(s)} className="pj"
+                        style={{ flex:1, background:s.status==='live'?C.saffron:C.forest, color:'#fff', border:'none', borderRadius:7, padding:'8px 0', fontSize:12, fontWeight:700, cursor:'pointer' }}>
+                        {s.status==='live'?'📹 Join now →':'📹 Start session'}
+                      </button>
+                      <button onClick={()=>openWhatsApp(
+                        patients.find(p=>p.name===s.name)?.phone||'',
+                        bookingConfirmMsg(s, doctorName, meetLink)
+                      )} style={{ flex:1, background:'#25D366', color:'#fff', border:'none', borderRadius:7, padding:'8px 0', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                        📤 WhatsApp
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -886,7 +912,7 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
             </div>
             <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
               <button className="btn-g" style={{ flex:1, padding:11 }} onClick={()=>{setModal({mode:'schedule',prefill:selected});setSelected(null)}}>📅 Book session</button>
-              <button onClick={()=>openWhatsApp(selected.phone,`Hi ${selected.name}, this is PhysioDrishti. We want to schedule your session. When are you free?`)}
+              <button onClick={()=>openWhatsApp(selected.phone,`Hi ${selected.name}, this is Dr. ${doctorName} from PhysioDrishti 🌿\n\nWe'd love to schedule your session. When are you free?\n\nSee you soon!\n- PhysioDrishti`)}
                 style={{ flex:1, background:'#25D366', color:'#fff', border:'none', borderRadius:7, padding:11, fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:13, fontWeight:700, cursor:'pointer' }}>
                 💬 WhatsApp
               </button>
