@@ -389,45 +389,40 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
   const [patients, setPatients]   = useState(INITIAL_PATIENTS)
   const [notif, setNotif]         = useState(0)
 
-  // ── Fetch real bookings from Supabase ──────────────────────────
+  // ── Fetch patients (leads) from Supabase ──────────────────────
   useEffect(() => {
-    const fetchBookings = async () => {
+    const fetchLeads = async () => {
       try {
-        const { data, error } = await db
-          .from('bookings')
+        const { data, error } = await supabase
+          .from('leads')
           .select('*')
           .order('created_at', { ascending: false })
         if (error) throw error
         if (data && data.length > 0) {
-          const newOnes = data.filter(b => b.status === 'new').length
+          const newOnes = data.filter(b => b.stage === 'new').length
           setNotif(newOnes)
           setPatients(data.map(b => ({
-            id:       b.id,
-            name:     b.name,
-            phone:    b.phone,
-            area:     b.area      || '',
-            pain:     b.pain      || '',
-            note:     b.note      || '',
-            stage:    b.status    || 'new',
-            priority: 'medium',
-            time:     (() => {
-                        const d = new Date(b.created_at)
-                        const today = new Date()
-                        const isToday = d.toDateString() === today.toDateString()
-                        const timeStr = d.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' })
-                        const dateStr = d.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })
-                        return isToday ? `${dateStr}, ${timeStr}` : `${dateStr}, ${timeStr}`
-                      })(),
+            id:         b.id,
+            name:       b.name       || '',
+            phone:      b.phone      || '',
+            area:       b.area       || '',
+            pain:       b.pain       || '',
+            note:       b.note       || '',
+            stage:      b.stage      || 'new',
+            priority:   b.priority   || 'medium',
+            created_at: b.created_at || null,
+            time:       b.created_at
+              ? new Date(b.created_at).toLocaleDateString('en-IN', { day:'2-digit', month:'short' }) + ', ' +
+                new Date(b.created_at).toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' })
+              : 'Just now',
           })))
         }
       } catch (err) {
         console.error('Supabase fetch error:', err)
       }
     }
-    fetchBookings()
-
-    // Poll every 30 seconds for new bookings
-    const interval = setInterval(fetchBookings, 30000)
+    fetchLeads()
+    const interval = setInterval(fetchLeads, 30000)
     return () => clearInterval(interval)
   }, [])
   const [sessions, setSessions]   = useState(SESSIONS_TODAY)
