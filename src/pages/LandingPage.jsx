@@ -4,9 +4,8 @@
  * Props: onGoToDashboard, mapplsKey, setMapplsKey
  */
 import { useState, useEffect, useRef } from 'react'
-import { supabase } from '../supabase.js'
-
-import logoImg from '../assets/physiodrishti-logo.png'
+import { db } from '../supabase.js'
+import AIBookingChat from './AIBooking.jsx'
 
 const C = {
   forest:'#12382A', teal:'#0A6B5E', mint:'#3A9A6B',
@@ -94,6 +93,22 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:#FDFAF3;color:#0D1520
 }
 `
 
+
+
+
+/* ── Logo Mark — Three-figure care mark ─────────────────────────── */
+
+/* ── Logo Image ─────────────────────────────────────────────────── */
+function LogoImg({ size = 40 }) {
+  return (
+    <img
+      src="/logo.png"
+      alt="PhysioDrishti"
+      style={{ width: size, height: size, objectFit: 'contain', flexShrink: 0 }}
+    />
+  )
+}
+
 /* ── Mappls Map ─────────────────────────────────────────────────── */
 function CityMap({ apiKey, height = 300 }) {
   const ref = useRef(null)
@@ -164,51 +179,28 @@ function BookingModal({ onClose, onSuccess }) {
   const [f, setF]     = useState({ name:'', phone:'', email:'', area:'', pain:'', note:'', agree:false })
   const [step, setStep] = useState(1)
   const [busy, setBusy] = useState(false)
-  const [err, setErr]   = useState('')
   const set = (k, v) => setF(p => ({ ...p, [k]: v }))
   const ok1 = f.name.trim() && f.phone.trim()
   const ok2 = f.area && f.pain && f.agree
 
   const submit = async () => {
-    if (!ok2 || busy) return
+    if (!ok2) return
     setBusy(true)
-    setErr('')
     try {
-      const { error } = await supabase.from('leads').insert({
-        name:     f.name.trim(),
-        phone:    f.phone.trim(),
-        email:    f.email.trim() || null,
-        area:     f.area,
-        pain:     f.pain,
-        note:     f.note.trim() || null,
-        stage:    'new',
-        priority: 'medium',
+      const { error } = await db.from('bookings').insert({
+        name:  f.name,
+        phone: f.phone,
+        email: f.email || null,
+        area:  f.area,
+        pain:  f.pain,
+        note:  f.note  || null,
       })
-      if (error) {
-        console.error('[BookingModal] Supabase insert error:', error)
-        const msg = error.message || ''
-        if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY)
-          setErr('Setup needed: Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to Vercel → Settings → Environment Variables, then redeploy.')
-        else if (msg.toLowerCase().includes('failed to fetch') || msg.toLowerCase().includes('networkerror') || !error.code)
-          setErr('Cannot reach the database. Check that VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set correctly in Vercel environment variables.')
-        else if (error.code === '42P01')
-          setErr('Database table missing. Please run the SQL setup in your Supabase dashboard.')
-        else if (error.code === '42501' || msg.includes('policy') || msg.includes('permission'))
-          setErr('Permission denied. Enable anon insert policy on the leads table in Supabase.')
-        else
-          setErr(`Booking failed (code ${error.code ?? '—'}): ${msg || 'Unknown error'}`)
-        setBusy(false)
-        return
-      }
-      setBusy(false)
+      if (error) throw error
       onSuccess(f)
-    } catch (e) {
-      console.error('[BookingModal] Unexpected error:', e)
-      const msg = e?.message || ''
-      if (msg.toLowerCase().includes('failed to fetch') || e instanceof TypeError)
-        setErr('Cannot reach the database — check that VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in Vercel → Settings → Environment Variables.')
-      else
-        setErr(`Unexpected error: ${msg || 'Please try again.'}`)
+    } catch (err) {
+      console.error(err)
+      alert('Something went wrong. Please try again.')
+    } finally {
       setBusy(false)
     }
   }
@@ -287,44 +279,16 @@ function BookingModal({ onClose, onSuccess }) {
             </div>
           )}
 
-          {err && (
-            <div className="pj" style={{ fontSize:12, color:'#B83232', background:'#FFF0F0', border:'1px solid #F5C6C6', borderRadius:7, padding:'10px 14px', marginTop:12, lineHeight:1.6 }}>
-              ⚠️ {err}
-              {err.includes('table missing') && (
-                <div style={{ marginTop:8, padding:'8px 10px', background:'#fff', borderRadius:5, fontSize:11, color:'#5C6878', fontFamily:'monospace', whiteSpace:'pre-wrap' }}>
-{`Run in Supabase SQL Editor:
-
-CREATE TABLE leads (
-  id         bigint primary key generated always as identity,
-  created_at timestamptz default now(),
-  name       text not null,
-  phone      text not null,
-  email      text,
-  area       text,
-  pain       text,
-  note       text,
-  stage      text default 'new',
-  priority   text default 'medium'
-);
-ALTER TABLE leads ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "anon insert" ON leads FOR INSERT TO anon WITH CHECK (true);
-CREATE POLICY "anon select" ON leads FOR SELECT TO anon USING (true);
-CREATE POLICY "anon update" ON leads FOR UPDATE TO anon USING (true);`}
-                </div>
-              )}
-            </div>
-          )}
-
-          <div style={{ display:'flex', gap:10, marginTop:12 }}>
+          <div style={{ display:'flex', gap:10, marginTop:20 }}>
             {step === 2 && (
-              <button onClick={()=>{ setStep(1); setErr('') }} className="pj"
+              <button onClick={()=>setStep(1)} className="pj"
                 style={{ flex:'0 0 90px', padding:13, border:'1.5px solid #DDE4EF', borderRadius:8, background:'#fff', color:'#5C6878', fontSize:14, fontWeight:600, cursor:'pointer' }}>
                 ← Back
               </button>
             )}
             {step === 1
               ? <button className="btn-main" style={{ flex:1, padding:13, opacity:ok1?1:.5 }} onClick={()=>ok1&&setStep(2)}>Next →</button>
-              : <button className="btn-main" style={{ flex:1, padding:13, opacity:(ok2&&!busy)?1:.5 }} disabled={busy||!ok2} onClick={submit}>
+              : <button className="btn-main" style={{ flex:1, padding:13, opacity:ok2?1:.5 }} onClick={submit}>
                   {busy ? '⏳ Booking…' : 'Book my free call →'}
                 </button>
             }
@@ -372,13 +336,16 @@ export default function LandingPage({ onGoToDashboard, mapplsKey }) {
       <nav style={{ position:'sticky', top:0, zIndex:100, background: scrolled?'rgba(253,250,243,.97)':'transparent', backdropFilter:scrolled?'blur(12px)':'none', borderBottom:scrolled?'1px solid #DDE4EF':'none', padding:'0 5%', transition:'all .3s' }}>
         <div style={{ maxWidth:1160, margin:'0 auto', display:'flex', alignItems:'center', justifyContent:'space-between', height:62 }}>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-            <img src={logoImg} alt="PhysioDrishti" style={{ height:'44px', width:'auto' }} />
+            <LogoImg size={40}/>
             <div>
               <div className="pd" style={{ fontWeight:900, fontSize:17, color: scrolled?'#12382A':'#fff' }}>PhysioDrishti</div>
               <div className="pj" style={{ fontSize:8, color: scrolled?'#5C6878':'rgba(255,255,255,.55)', letterSpacing:2, textTransform:'uppercase' }}>Online Physiotherapy</div>
             </div>
           </div>
           <div style={{ display:'flex', alignItems:'center', gap: mob?8:20 }}>
+            {!mob && ['Pain we treat','Online sessions','About us'].map(n=>(
+              <span key={n} className="pj" style={{ fontSize:14, color:scrolled?'#5C6878':'rgba(255,255,255,.8)', cursor:'pointer', fontWeight:500 }}>{n}</span>
+            ))}
             <button className="btn-main" style={{ padding:'8px 18px', fontSize:13 }} onClick={()=>setShowModal(true)}>Book free call</button>
             {!mob && <button onClick={onGoToDashboard} className="pj" style={{ fontSize:13, color:scrolled?'#5C6878':'rgba(255,255,255,.6)', cursor:'pointer', background:'none', border:'none' }}>For clinics →</button>}
           </div>
@@ -524,6 +491,7 @@ export default function LandingPage({ onGoToDashboard, mapplsKey }) {
         </div>
       </section>
 
+
       {/* Final CTA */}
       <section style={{ padding:'72px 5%', background:'linear-gradient(135deg,#12382A,#0D3828)', textAlign:'center' }}>
         <div style={{ maxWidth:560, margin:'0 auto' }}>
@@ -539,7 +507,7 @@ export default function LandingPage({ onGoToDashboard, mapplsKey }) {
           <div className="footer-cols" style={{ display:'grid', gap:36, marginBottom:36 }}>
             <div>
               <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14 }}>
-                <img src={logoImg} alt="PhysioDrishti" style={{ height:36, width:'auto', flexShrink:0 }} />
+                <LogoImg size={36}/>
                 <div>
                   <div className="pd" style={{ fontWeight:900, fontSize:15, color:'#fff' }}>PhysioDrishti</div>
                   <div className="pj" style={{ fontSize:8, color:'rgba(255,255,255,.4)', letterSpacing:2, marginTop:1 }}>Online Physiotherapy</div>
@@ -564,7 +532,7 @@ export default function LandingPage({ onGoToDashboard, mapplsKey }) {
         </div>
       </footer>
 
-      {showModal && <BookingModal onClose={()=>setShowModal(false)} onSuccess={f=>{setShowModal(false);setBooked(f)}} />}
+      {showModal && <AIBookingChat onClose={()=>setShowModal(false)} onSuccess={f=>{setShowModal(false);setBooked(f)}} />}
     </div>
   )
 }
