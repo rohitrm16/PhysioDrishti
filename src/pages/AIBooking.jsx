@@ -1,13 +1,11 @@
 /**
- * PhysioDrishti — AI Conversational Booking
- * Powered by Claude claude-sonnet-4-6 via Anthropic API
- *
- * Drop-in replacement for the static BookingModal.
+ * PhysioDrishti — Drishti Conversational Booking
+ * Rule-based warm AI persona with guided conversation stages.
  * Usage: <AIBookingChat onClose={fn} onSuccess={fn}/>
  */
 
 import { useState, useEffect, useRef } from 'react'
-import { db } from '../supabase.js'
+import { supabase } from '../supabase.js'
 
 /* ── Brand ─────────────────────────────────────────────────────── */
 const C = {
@@ -15,36 +13,6 @@ const C = {
   saffron:'#D4510E', ink:'#0D1520', gray:'#5C6878',
   light:'#F3F6FA', border:'#DDE4EF', cream:'#FDFAF3',
 }
-
-/* ── Claude system prompt ───────────────────────────────────────── */
-const SYSTEM = `You are Drishti, a warm and caring booking assistant for PhysioDrishti — India's online physiotherapy platform based in Bengaluru.
-
-Your job is to collect booking information through natural, empathetic conversation. You speak like a caring health professional — warm, brief, never robotic.
-
-RULES:
-- Ask ONE question at a time. Keep responses to 1–2 short sentences.
-- Be genuinely empathetic about their pain. Acknowledge it before moving on.
-- Use simple, conversational English.
-- Do NOT ask for email.
-- Gently redirect if they go off-topic.
-
-COLLECT IN THIS ORDER:
-1. Patient's first name
-2. What is hurting / their main complaint — listen carefully and empathise
-3. How long they have had this problem
-4. Their area in Bengaluru (or ask if they prefer an online session)
-5. Their WhatsApp number
-
-PAIN CATEGORIES (map their response to one of these):
-Back / Neck | Knee / Hip | Shoulder | Ankle / Foot | Elbow / Wrist | Post-surgery | Sports injury | Other
-
-WHEN YOU HAVE ALL 5 PIECES:
-Say something warm like "You're all set [name]! Booking your free consultation now..." and on the VERY LAST LINE of your response output exactly:
-BOOKING_DATA:{"name":"...","phone":"...","area":"...","pain":"...","note":"..."}
-
-The note field should summarise what they told you about their condition and duration in one sentence.
-
-Start by greeting the patient warmly and asking for their name.`
 
 /* ── Quick reply sets ───────────────────────────────────────────── */
 const QUICK_PAIN = [
@@ -58,6 +26,17 @@ const QUICK_AREA = [
   'Koramangala','HSR Layout','Whitefield','Indiranagar',
   'Jayanagar','Marathahalli','Online session'
 ]
+
+/* ── Drishti conversation scripts ───────────────────────────────── */
+const SCRIPTS = [
+  ()  => "Hi there! 👋 I'm Drishti, PhysioDrishti's assistant.\n\nI'll help you find the right care in just a few questions. What's your name?",
+  (d) => `Hi ${d.name}! 😊 Great to meet you.\n\nWhere does it hurt? Tell me in your own words, or pick one of the options below.`,
+  (d) => `I'm sorry to hear about your ${d.pain.toLowerCase()} — that can really disrupt daily life.\n\nHow long have you been dealing with this?`,
+  ()  => "Got it. Which part of Bengaluru are you in? I'll find a specialist near you — or we can arrange an online session.",
+  (d) => `${d.area} — perfect! Last thing — what's your WhatsApp number so our team can reach you?`,
+]
+
+const STAGE_CHIPS = [[], [], QUICK_PAIN, QUICK_DURATION, QUICK_AREA, []]
 
 /* ── Typing indicator ───────────────────────────────────────────── */
 function TypingDots() {
@@ -101,6 +80,7 @@ function Bubble({ msg }) {
         boxShadow: isAI
           ? '0 2px 12px rgba(18,56,42,.2)'
           : '0 2px 12px rgba(212,81,14,.25)',
+        whiteSpace:'pre-wrap',
       }}>
         {msg.content}
       </div>
@@ -155,7 +135,6 @@ function SuccessScreen({ booking, onClose }) {
         30 minutes to confirm your session. Keep your phone handy!
       </div>
 
-      {/* Booking summary card */}
       <div style={{
         background:C.light, borderRadius:12, padding:'18px 22px',
         width:'100%', maxWidth:320, marginBottom:28,
@@ -167,14 +146,12 @@ function SuccessScreen({ booking, onClose }) {
           color:C.saffron, marginBottom:14
         }}>Your booking details</div>
         {[
-          ['👤','Name',      booking.name],
-          ['📍','Area',      booking.area],
-          ['🩺','Concern',   booking.pain],
-          ['📱','Phone',     booking.phone],
+          ['👤','Name',    booking.name],
+          ['📍','Area',    booking.area],
+          ['🩺','Concern', booking.pain],
+          ['📱','Phone',   booking.phone],
         ].map(([icon,label,value]) => (
-          <div key={label} style={{
-            display:'flex', gap:10, marginBottom:10, alignItems:'flex-start'
-          }}>
+          <div key={label} style={{ display:'flex', gap:10, marginBottom:10, alignItems:'flex-start' }}>
             <span style={{ fontSize:15, flexShrink:0 }}>{icon}</span>
             <div>
               <div style={{
@@ -213,130 +190,98 @@ function SuccessScreen({ booking, onClose }) {
   )
 }
 
-/* ── Main AI Booking Chat ───────────────────────────────────────── */
+/* ── Main Drishti Booking Chat ──────────────────────────────────── */
 export default function AIBookingChat({ onClose, onSuccess }) {
-  const [messages,  setMessages]  = useState([])
-  const [history,   setHistory]   = useState([])   // Claude context
-  const [input,     setInput]     = useState('')
-  const [loading,   setLoading]   = useState(false)
-  const [chips,     setChips]     = useState([])
-  const [booking,   setBooking]   = useState(null)  // extracted data
-  const [saved,     setSaved]     = useState(false)
-  const [stage,     setStage]     = useState(0)     // 0=name 1=pain 2=duration 3=area 4=phone 5=done
-  const bottomRef   = useRef(null)
-  const inputRef    = useRef(null)
+  const [messages, setMessages] = useState([])
+  const [input,    setInput]    = useState('')
+  const [loading,  setLoading]  = useState(false)
+  const [chips,    setChips]    = useState([])
+  const [booking,  setBooking]  = useState(null)
+  const [stage,    setStage]    = useState(0)
+  const dataRef   = useRef({ name:'', pain:'', duration:'', area:'', phone:'' })
+  const bottomRef = useRef(null)
+  const inputRef  = useRef(null)
 
-  /* Scroll to bottom on new message */
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior:'smooth' })
   }, [messages, loading])
 
-  /* Kick off conversation on mount */
   useEffect(() => {
-    callClaude([])
-  }, [])
-
-  /* Show relevant quick replies based on stage */
-  useEffect(() => {
-    if (stage === 1) setChips(QUICK_PAIN)
-    else if (stage === 2) setChips(QUICK_DURATION)
-    else if (stage === 3) setChips(QUICK_AREA)
-    else setChips([])
+    if (stage === 1) inputRef.current?.focus()
   }, [stage])
 
-  /* ── Call Claude ─────────────────────────────────────────────── */
-  const callClaude = async (convHistory) => {
+  useEffect(() => {
+    setChips(STAGE_CHIPS[stage] ?? [])
+  }, [stage])
+
+  useEffect(() => {
+    drishtiSay(SCRIPTS[0](), 700, 1)
+  }, [])
+
+  const addMsg = (content, role = 'assistant') =>
+    setMessages(p => [...p, { role, content }])
+
+  const drishtiSay = (text, delay, nextStage) => {
     setLoading(true)
-    try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify({
-          model:'claude-sonnet-4-6',
-          max_tokens:300,
-          system: SYSTEM,
-          messages: convHistory.length > 0 ? convHistory : [
-            { role:'user', content:'[START]' }
-          ],
-        })
-      })
-      const data = await res.json()
-      const text = data.content?.[0]?.text || ''
-
-      // Check if booking data is ready
-      const bookingMatch = text.match(/BOOKING_DATA:(\{.*\})/)
-      if (bookingMatch) {
-        try {
-          const extracted = JSON.parse(bookingMatch[1])
-          const cleanText = text.replace(/BOOKING_DATA:\{.*\}/, '').trim()
-          addAIMessage(cleanText)
-          await saveBooking(extracted)
-          return
-        } catch (e) { console.error('Parse error', e) }
-      }
-
-      addAIMessage(text)
-      advanceStage(text, convHistory)
-
-    } catch (err) {
-      console.error(err)
-      addAIMessage("Sorry, I had a small hiccup. Could you repeat that?")
-    } finally {
+    setTimeout(() => {
       setLoading(false)
-    }
+      addMsg(text)
+      if (nextStage !== undefined) setStage(nextStage)
+    }, delay)
   }
 
-  /* Detect conversation stage from AI response */
-  const advanceStage = (text, history) => {
-    const t = text.toLowerCase()
-    if (history.length <= 1) setStage(1)          // after greeting → pain stage
-    else if (t.includes('long') || t.includes('when') || t.includes('how long')) setStage(2)
-    else if (t.includes('area') || t.includes('part of bengaluru') || t.includes('where in')) setStage(3)
-    else if (t.includes('number') || t.includes('whatsapp') || t.includes('reach you')) setStage(4)
-    else if (history.length > 7) setStage(4)
-  }
-
-  const addAIMessage = (text) => {
-    setMessages(prev => [...prev, { role:'assistant', content:text }])
-  }
-
-  /* ── Send patient message ────────────────────────────────────── */
-  const send = async (text) => {
-    if (!text.trim() || loading) return
-    const userMsg  = { role:'user', content:text.trim() }
-    const newMsgs  = [...messages, { role:'user', content:text.trim() }]
-    const newHist  = [...history, userMsg]
-
-    setMessages(newMsgs)
-    setHistory(newHist)
+  const send = (raw) => {
+    const text = (raw || '').trim()
+    if (!text || loading || stage === 0 || stage >= 6) return
+    addMsg(text, 'user')
     setInput('')
     setChips([])
 
-    await callClaude(newHist)
-    setHistory(prev => [...prev,
-      { role:'assistant', content:messages[messages.length-1]?.content || '' }
-    ])
-  }
-
-  /* ── Save booking to Supabase ────────────────────────────────── */
-  const saveBooking = async (data) => {
-    setBooking(data)
-    try {
-      await db.from('bookings').insert({
-        name:  data.name,
-        phone: data.phone,
-        area:  data.area  || 'Not specified',
-        pain:  data.pain  || 'Other',
-        note:  data.note  || '',
-      })
-    } catch (err) {
-      console.error('Supabase save error:', err)
+    const d = dataRef.current
+    switch (stage) {
+      case 1:
+        d.name = text
+        drishtiSay(SCRIPTS[1](d), 1100, 2)
+        break
+      case 2:
+        d.pain = text
+        drishtiSay(SCRIPTS[2](d), 1100, 3)
+        break
+      case 3:
+        d.duration = text
+        drishtiSay(SCRIPTS[3](d), 1000, 4)
+        break
+      case 4:
+        d.area = text
+        drishtiSay(SCRIPTS[4](d), 900, 5)
+        break
+      case 5:
+        d.phone = text
+        setStage(6)
+        setLoading(true)
+        setTimeout(async () => {
+          setLoading(false)
+          addMsg(`You're all set, ${d.name}! 🎉 Booking your free consultation now...`)
+          try {
+            await supabase.from('leads').insert({
+              name:     d.name,
+              phone:    d.phone,
+              area:     d.area,
+              pain:     d.pain,
+              note:     `${d.pain} for ${d.duration}. Located in ${d.area}. Via Drishti chat.`,
+              stage:    'new',
+              priority: 'medium',
+            })
+          } catch (err) {
+            console.error('[AIBookingChat] Supabase insert error:', err)
+          }
+          setBooking({ name:d.name, phone:d.phone, area:d.area, pain:d.pain })
+          if (onSuccess) onSuccess(d)
+        }, 900)
+        break
     }
-    setSaved(true)
-    if (onSuccess) onSuccess(data)
   }
 
-  /* ── Styles ─────────────────────────────────────────────────── */
   const CSS = `
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
@@ -367,7 +312,7 @@ export default function AIBookingChat({ onClose, onSuccess }) {
           overflow:'hidden', animation:'fadeUp .4s ease'
         }}>
 
-        {/* ── Header ── */}
+        {/* Header */}
         <div style={{
           background:`linear-gradient(135deg,${C.forest},#0E3222)`,
           padding:'16px 20px',
@@ -385,14 +330,11 @@ export default function AIBookingChat({ onClose, onSuccess }) {
               fontWeight:800, fontSize:14, color:'#fff'
             }}>Drishti</div>
             <div style={{ display:'flex', alignItems:'center', gap:5, marginTop:2 }}>
-              <div style={{
-                width:6, height:6, borderRadius:'50%', background:'#4ADE80',
-                animation:'typingBounce 2s ease infinite'
-              }}/>
+              <div style={{ width:6, height:6, borderRadius:'50%', background:'#4ADE80' }}/>
               <span style={{
                 fontFamily:"'Plus Jakarta Sans',sans-serif",
                 fontSize:11, color:'rgba(255,255,255,.65)'
-              }}>PhysioDrishti AI · Always here to help</span>
+              }}>PhysioDrishti assistant · Online now</span>
             </div>
           </div>
           <button onClick={onClose} style={{
@@ -403,8 +345,8 @@ export default function AIBookingChat({ onClose, onSuccess }) {
           }}>✕</button>
         </div>
 
-        {/* ── Chat area OR success screen ── */}
-        {saved && booking ? (
+        {/* Chat area or success */}
+        {booking ? (
           <SuccessScreen booking={booking} onClose={onClose}/>
         ) : (
           <>
@@ -417,7 +359,7 @@ export default function AIBookingChat({ onClose, onSuccess }) {
               <div ref={bottomRef}/>
             </div>
 
-            {/* ── Quick reply chips ── */}
+            {/* Quick-reply chips */}
             {chips.length > 0 && !loading && (
               <div style={{
                 padding:'10px 16px 6px', background:C.cream,
@@ -425,56 +367,59 @@ export default function AIBookingChat({ onClose, onSuccess }) {
                 borderTop:`1px solid ${C.border}`, flexShrink:0
               }}>
                 {chips.map(c => (
-                  <Chip key={c} label={c} onClick={val => { send(val); setChips([]) }}/>
+                  <Chip key={c} label={c} onClick={val => send(val)}/>
                 ))}
               </div>
             )}
 
-            {/* ── Input bar ── */}
-            <div style={{
-              padding:'12px 16px',
-              background:'#fff',
-              borderTop:`1px solid ${C.border}`,
-              display:'flex', gap:10, alignItems:'flex-end',
-              flexShrink:0
-            }}>
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault()
-                    send(input)
-                  }
-                }}
-                placeholder="Type your reply…"
-                rows={1}
-                disabled={loading}
-                style={{
-                  flex:1, resize:'none', border:`1.5px solid ${C.border}`,
-                  borderRadius:22, padding:'10px 16px',
-                  fontFamily:"'Plus Jakarta Sans',sans-serif",
-                  fontSize:14, lineHeight:1.5, background:C.light,
-                  color:C.ink, transition:'border-color .2s',
-                  maxHeight:80, overflow:'auto'
-                }}
-                onFocus={e => e.target.style.borderColor = C.mint}
-                onBlur={e => e.target.style.borderColor = C.border}
-              />
-              <button
-                onClick={() => send(input)}
-                disabled={!input.trim() || loading}
-                style={{
-                  width:42, height:42, borderRadius:'50%', border:'none',
-                  background: input.trim() && !loading ? C.saffron : C.border,
-                  color:'#fff', cursor: input.trim() && !loading ? 'pointer' : 'default',
-                  fontSize:18, display:'flex', alignItems:'center', justifyContent:'center',
-                  transition:'all .2s', flexShrink:0
-                }}>
-                ➤
-              </button>
-            </div>
+            {/* Input bar */}
+            {stage < 6 && (
+              <div style={{
+                padding:'12px 16px',
+                background:'#fff',
+                borderTop:`1px solid ${C.border}`,
+                display:'flex', gap:10, alignItems:'flex-end',
+                flexShrink:0
+              }}>
+                <textarea
+                  ref={inputRef}
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      send(input)
+                    }
+                  }}
+                  placeholder={{ 1:'Your name…', 5:'WhatsApp number…' }[stage] || 'Type your reply…'}
+                  rows={1}
+                  disabled={loading || stage === 0}
+                  style={{
+                    flex:1, resize:'none', border:`1.5px solid ${C.border}`,
+                    borderRadius:22, padding:'10px 16px',
+                    fontFamily:"'Plus Jakarta Sans',sans-serif",
+                    fontSize:14, lineHeight:1.5, background:C.light,
+                    color:C.ink, transition:'border-color .2s',
+                    maxHeight:80, overflow:'auto'
+                  }}
+                  onFocus={e => e.target.style.borderColor = C.mint}
+                  onBlur={e => e.target.style.borderColor = C.border}
+                />
+                <button
+                  onClick={() => send(input)}
+                  disabled={!input.trim() || loading || stage === 0}
+                  style={{
+                    width:42, height:42, borderRadius:'50%', border:'none',
+                    background: input.trim() && !loading && stage > 0 ? C.saffron : C.border,
+                    color:'#fff',
+                    cursor: input.trim() && !loading && stage > 0 ? 'pointer' : 'default',
+                    fontSize:18, display:'flex', alignItems:'center', justifyContent:'center',
+                    transition:'all .2s', flexShrink:0
+                  }}>
+                  ➤
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>

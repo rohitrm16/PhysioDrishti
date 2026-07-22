@@ -4,7 +4,7 @@
  * Props: onGoToDashboard, mapplsKey, setMapplsKey
  */
 import { useState, useEffect, useRef } from 'react'
-import { db } from '../supabase.js'
+import { supabase } from '../supabase.js'
 import AIBookingChat from './AIBooking.jsx'
 
 const C = {
@@ -187,13 +187,15 @@ function BookingModal({ onClose, onSuccess }) {
     if (!ok2) return
     setBusy(true)
     try {
-      const { error } = await db.from('bookings').insert({
-        name:  f.name,
-        phone: f.phone,
-        email: f.email || null,
-        area:  f.area,
-        pain:  f.pain,
-        note:  f.note  || null,
+      const { error } = await supabase.from('leads').insert({
+        name:     f.name.trim(),
+        phone:    f.phone.trim(),
+        email:    f.email?.trim() || null,
+        area:     f.area,
+        pain:     f.pain,
+        note:     f.note?.trim() || null,
+        stage:    'new',
+        priority: 'medium',
       })
       if (error) throw error
       onSuccess(f)
@@ -531,6 +533,24 @@ export default function LandingPage({ onGoToDashboard, mapplsKey }) {
           </div>
         </div>
       </footer>
+
+      {/* Floating Drishti chat button */}
+      <button
+        onClick={() => setShowModal(true)}
+        style={{
+          position:'fixed', bottom:24, right:24, zIndex:500,
+          width:58, height:58, borderRadius:'50%',
+          background:'linear-gradient(135deg,#12382A,#3A9A6B)',
+          border:'none', cursor:'pointer', color:'#fff', fontSize:26,
+          display:'flex', alignItems:'center', justifyContent:'center',
+          boxShadow:'0 4px 20px rgba(18,56,42,.4)',
+          transition:'transform .2s, box-shadow .2s',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.transform='scale(1.1)'; e.currentTarget.style.boxShadow='0 6px 28px rgba(18,56,42,.55)' }}
+        onMouseLeave={e => { e.currentTarget.style.transform='scale(1)'; e.currentTarget.style.boxShadow='0 4px 20px rgba(18,56,42,.4)' }}
+        aria-label="Chat with Drishti"
+        title="Chat with Drishti"
+      >🌿</button>
 
       {showModal && <AIBookingChat onClose={()=>setShowModal(false)} onSuccess={f=>{setShowModal(false);setBooked(f)}} />}
     </div>
