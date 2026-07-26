@@ -187,16 +187,109 @@ function MapplsMap({ apiKey, height = 340, patients = [] }) {
   )
 }
 
+/* ─── Pain score sparkline (pure SVG) ───────────────────────────── */
+function PainSparkline({ logs }) {
+  if (!logs || logs.length < 2) return null
+  const W = 220, H = 52
+  const scores = logs.map(l => l.score)
+  const pts = scores.map((s, i) => {
+    const x = (i / (scores.length - 1)) * W
+    const y = H - (s / 10) * H
+    return `${x},${y}`
+  }).join(' ')
+  const latest = scores[scores.length - 1]
+  const first  = scores[0]
+  const improving = latest < first
+  return (
+    <div style={{ background:'#F3F6FA', borderRadius:8, padding:'10px 14px' }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
+        <span className="pj" style={{ fontSize:10, fontWeight:800, letterSpacing:1, textTransform:'uppercase', color:C.gray }}>Pain trend</span>
+        <span className="pj" style={{ fontSize:11, fontWeight:700, color: improving ? C.green : C.red }}>
+          {improving ? `▼ ${first - latest} pts better` : first === latest ? '━ Same' : `▲ ${latest - first} pts worse`}
+        </span>
+      </div>
+      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ display:'block' }}>
+        <polyline points={pts} fill="none" stroke={improving ? '#3A9A6B' : '#D4510E'} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round"/>
+        {scores.map((s, i) => (
+          <circle key={i}
+            cx={(i / (scores.length - 1)) * W}
+            cy={H - (s / 10) * H}
+            r={4} fill={improving ? '#3A9A6B' : '#D4510E'} stroke="#fff" strokeWidth={1.5}/>
+        ))}
+      </svg>
+      <div style={{ display:'flex', justifyContent:'space-between', marginTop:2 }}>
+        <span className="pj" style={{ fontSize:9, color:C.gray }}>Session 1</span>
+        <span className="pj" style={{ fontSize:9, color:C.gray }}>Latest (pain {latest}/10)</span>
+      </div>
+    </div>
+  )
+}
+
+/* ─── Progress log modal ─────────────────────────────────────────── */
+function ProgressModal({ patient, onClose, onSave }) {
+  const [score, setScore] = useState(5)
+  const [notes, setNotes] = useState('')
+
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.5)', zIndex:900, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }} onClick={onClose}>
+      <div style={{ background:'#fff', borderRadius:14, width:'100%', maxWidth:400, padding:28 }} onClick={e=>e.stopPropagation()}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
+          <div>
+            <div className="pj" style={{ fontSize:12, fontWeight:800, color:C.saffron, textTransform:'uppercase', letterSpacing:1 }}>Log session</div>
+            <div className="pd" style={{ fontSize:'1.1rem', fontWeight:900, color:C.forest }}>{patient.name}</div>
+          </div>
+          <button onClick={onClose} style={{ background:'none', border:'none', fontSize:18, cursor:'pointer', color:C.gray }}>✕</button>
+        </div>
+
+        <div style={{ marginBottom:20 }}>
+          <label className="pj" style={{ fontSize:12, fontWeight:700, color:C.teal, display:'block', marginBottom:10 }}>
+            Pain score today: <strong style={{ color:C.ink, fontSize:16 }}>{score}/10</strong>
+            <span className="pj" style={{ fontSize:11, color:C.gray, marginLeft:8 }}>
+              {score<=2?'Almost none':score<=4?'Mild':score<=6?'Moderate':score<=8?'Significant':'Severe'}
+            </span>
+          </label>
+          <input type="range" min={0} max={10} step={1} value={score} onChange={e=>setScore(Number(e.target.value))}
+            style={{ width:'100%', accentColor:score<=4?C.mint:score<=7?C.amber:C.red, cursor:'pointer' }}/>
+          <div style={{ display:'flex', justifyContent:'space-between', marginTop:3 }}>
+            <span className="pj" style={{ fontSize:9, color:C.gray }}>No pain (0)</span>
+            <span className="pj" style={{ fontSize:9, color:C.gray }}>Worst (10)</span>
+          </div>
+        </div>
+
+        <div style={{ marginBottom:22 }}>
+          <label className="pj" style={{ fontSize:12, fontWeight:700, color:C.teal, display:'block', marginBottom:6 }}>Session notes</label>
+          <textarea className="field-d" rows={3} placeholder="Observations, exercises done, patient feedback…"
+            value={notes} onChange={e=>setNotes(e.target.value)}
+            style={{ resize:'none', lineHeight:1.55 }}/>
+        </div>
+
+        <div style={{ display:'flex', gap:10 }}>
+          <button className="btn-g" style={{ flex:1 }} onClick={()=>onSave({ score, notes, date: new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) })}>
+            Save log
+          </button>
+          <button onClick={onClose} className="btn-soft" style={{ flex:1 }}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ─── Video Call ─────────────────────────────────────────────────── */
-function VideoCall({ session, onClose }) {
+function VideoCall({ session, onClose, wherebyLink, onLogProgress }) {
   const [muted, setMuted]   = useState(false)
   const [cam, setCam]       = useState(true)
   const [t, setT]           = useState(0)
   const [notes, setNotes]   = useState('')
   const [exDone, setExDone] = useState([])
+  const [logDone, setLogDone] = useState(false)
   const exercises = ['Gentle knee bends','Leg raises','Seated marching','Calf stretches']
   useEffect(() => { const i = setInterval(() => setT(p=>p+1), 1000); return () => clearInterval(i) }, [])
   const fmt = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`
+
+  const handleEnd = () => {
+    if (onLogProgress && !logDone) onLogProgress(notes)
+    onClose()
+  }
 
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.88)', zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center', padding:12 }}>
@@ -207,26 +300,47 @@ function VideoCall({ session, onClose }) {
             <div style={{ width:9, height:9, borderRadius:'50%', background:'#22C55E', animation:'blink 1.5s infinite' }}/>
             <span className="pj" style={{ fontSize:13, color:'#fff', fontWeight:700 }}>Session with {session.name} · {fmt(t)}</span>
           </div>
-          <button onClick={onClose} style={{ background:'rgba(255,255,255,.12)', border:'none', borderRadius:6, padding:'5px 12px', color:'rgba(255,255,255,.75)', cursor:'pointer', fontSize:12 }}>✕ End</button>
+          <div style={{ display:'flex', gap:8 }}>
+            {wherebyLink && (
+              <a href={wherebyLink} target="_blank" rel="noreferrer"
+                style={{ background:'rgba(255,255,255,.12)', border:'none', borderRadius:6, padding:'5px 12px', color:'rgba(255,255,255,.75)', cursor:'pointer', fontSize:12, textDecoration:'none', fontFamily:'Plus Jakarta Sans,sans-serif' }}>
+                ↗ Open Whereby
+              </a>
+            )}
+            <button onClick={handleEnd} style={{ background:'rgba(255,255,255,.12)', border:'none', borderRadius:6, padding:'5px 12px', color:'rgba(255,255,255,.75)', cursor:'pointer', fontSize:12 }}>✕ End</button>
+          </div>
         </div>
 
         <div style={{ display:'grid', gridTemplateColumns:'1fr 240px', gap:10, padding:12 }}>
-          {/* Video */}
-          <div style={{ background:'#111', borderRadius:10, position:'relative', aspectRatio:'16/9' }}>
-            <div style={{ position:'absolute', inset:0, background:'linear-gradient(135deg,#1A3A2A,#0D2018)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-              <div style={{ textAlign:'center' }}>
-                <div style={{ fontSize:48, marginBottom:8 }}>{cam ? '👩‍⚕️' : '👤'}</div>
-                <div className="pj" style={{ fontSize:12, color:'rgba(255,255,255,.65)' }}>{session.name} · {session.area}</div>
-              </div>
-            </div>
-            {/* PiP */}
-            <div style={{ position:'absolute', bottom:10, right:10, width:90, height:65, background:'#0D2E1F', borderRadius:6, border:'2px solid rgba(255,255,255,.15)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-              <div style={{ textAlign:'center' }}><div style={{ fontSize:18 }}>🩺</div><div className="pj" style={{ fontSize:8, color:'rgba(255,255,255,.5)' }}>Dr. Priya Menon</div></div>
-            </div>
-            <div style={{ position:'absolute', top:10, left:10, background:'rgba(0,0,0,.5)', borderRadius:5, padding:'3px 8px', fontSize:12, color:'#fff', fontFamily:'Plus Jakarta Sans,sans-serif' }}>{fmt(t)}</div>
+          {/* Video area — real Whereby embed or mock */}
+          <div style={{ background:'#111', borderRadius:10, position:'relative', aspectRatio:'16/9', overflow:'hidden' }}>
+            {wherebyLink ? (
+              <iframe
+                src={`${wherebyLink}?skipMediaPermissionPrompt&background=off`}
+                allow="camera; microphone; fullscreen; speaker; display-capture"
+                style={{ width:'100%', height:'100%', border:'none' }}
+                title={`Session with ${session.name}`}
+              />
+            ) : (
+              <>
+                <div style={{ position:'absolute', inset:0, background:'linear-gradient(135deg,#1A3A2A,#0D2018)', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:12 }}>
+                  <div style={{ textAlign:'center' }}>
+                    <div style={{ fontSize:48, marginBottom:8 }}>{cam ? '👩‍⚕️' : '👤'}</div>
+                    <div className="pj" style={{ fontSize:12, color:'rgba(255,255,255,.65)' }}>{session.name} · {session.area}</div>
+                  </div>
+                  <div style={{ background:'rgba(255,255,255,.1)', borderRadius:8, padding:'8px 16px', marginTop:4 }}>
+                    <div className="pj" style={{ fontSize:11, color:'rgba(255,255,255,.5)', textAlign:'center' }}>Add your Whereby room URL in Settings to enable real video</div>
+                  </div>
+                </div>
+                <div style={{ position:'absolute', bottom:10, right:10, width:90, height:65, background:'#0D2E1F', borderRadius:6, border:'2px solid rgba(255,255,255,.15)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  <div style={{ textAlign:'center' }}><div style={{ fontSize:18 }}>🩺</div><div className="pj" style={{ fontSize:8, color:'rgba(255,255,255,.5)' }}>Dr. Priya Menon</div></div>
+                </div>
+                <div style={{ position:'absolute', top:10, left:10, background:'rgba(0,0,0,.5)', borderRadius:5, padding:'3px 8px', fontSize:12, color:'#fff', fontFamily:'Plus Jakarta Sans,sans-serif' }}>{fmt(t)}</div>
+              </>
+            )}
           </div>
 
-          {/* Right */}
+          {/* Right panel */}
           <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
             <div style={{ background:'rgba(255,255,255,.06)', borderRadius:8, padding:12 }}>
               <div className="pj" style={{ fontSize:10, fontWeight:800, letterSpacing:2, color:'rgba(255,255,255,.4)', textTransform:'uppercase', marginBottom:8 }}>Today's plan</div>
@@ -256,7 +370,10 @@ function VideoCall({ session, onClose }) {
           ].map(([icon, fn, active], i)=>(
             <button key={i} onClick={fn} style={{ width:42, height:42, borderRadius:'50%', border:'none', cursor:'pointer', fontSize:18, background:active?'rgba(185,50,50,.8)':'rgba(255,255,255,.12)', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', transition:'all .2s' }}>{icon}</button>
           ))}
-          <button onClick={onClose} style={{ background:'#C02020', border:'none', borderRadius:20, padding:'9px 22px', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Plus Jakarta Sans,sans-serif' }}>End session</button>
+          {onLogProgress && (
+            <button onClick={()=>{setLogDone(true);onLogProgress(notes)}} style={{ background:'rgba(58,154,107,.8)', border:'none', borderRadius:20, padding:'9px 16px', color:'#fff', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Plus Jakarta Sans,sans-serif' }}>📋 Log progress</button>
+          )}
+          <button onClick={handleEnd} style={{ background:'#C02020', border:'none', borderRadius:20, padding:'9px 22px', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Plus Jakarta Sans,sans-serif' }}>End session</button>
         </div>
       </div>
     </div>
@@ -432,8 +549,15 @@ export default function Dashboard({ onGoToLanding, onLogout, mapplsKey, setMappl
   const [selected, setSelected]   = useState(null)  // selected patient
   const [w, setW]                 = useState(window.innerWidth)
   const [kwFilter, setKwFilter]   = useState('all')
-  const [meetLink, setMeetLink]     = useState(() => localStorage.getItem('pd_meet_link') || DEFAULT_MEET_LINK)
-  const [doctorName, setDoctorName] = useState(() => localStorage.getItem('pd_doctor_name') || 'Priya Menon')
+  const [meetLink,    setMeetLink]    = useState(() => localStorage.getItem('pd_meet_link')    || DEFAULT_MEET_LINK)
+  const [wherebyLink, setWherebyLink] = useState(() => localStorage.getItem('pd_whereby_link') || '')
+  const [doctorName,  setDoctorName]  = useState(() => localStorage.getItem('pd_doctor_name')  || 'Priya Menon')
+  const [followUps,   setFollowUps]   = useState(() => { try { return JSON.parse(localStorage.getItem('pd_follow_ups') || '[]') } catch { return [] } })
+  const [progress,    setProgress]    = useState(() => { try { return JSON.parse(localStorage.getItem('pd_progress')   || '{}') } catch { return {} } })
+  const [progressModal, setProgressModal] = useState(null)  // patient object when open
+
+  useEffect(() => { localStorage.setItem('pd_follow_ups', JSON.stringify(followUps)) }, [followUps])
+  useEffect(() => { localStorage.setItem('pd_progress',   JSON.stringify(progress))  }, [progress])
 
   useEffect(() => {
     const h = () => setW(window.innerWidth)
@@ -629,6 +753,33 @@ export default function Dashboard({ onGoToLanding, onLogout, mapplsKey, setMappl
                   ))}
                 </div>
               </div>
+
+              {/* Follow-up reminders */}
+              {followUps.filter(f=>!f.sent).length > 0 && (
+                <div className="card-d" style={{ padding:18, borderLeft:`4px solid ${C.amber}` }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+                    <div>
+                      <div className="pj" style={{ fontSize:10, fontWeight:800, letterSpacing:3, textTransform:'uppercase', color:C.amber, marginBottom:3 }}>Follow-ups</div>
+                      <div className="pd" style={{ fontSize:'1rem', fontWeight:800 }}>Pending reminders</div>
+                    </div>
+                    <span className="pj" style={{ background:'#FFF3EB', color:C.amber, padding:'3px 10px', borderRadius:20, fontSize:11, fontWeight:700 }}>{followUps.filter(f=>!f.sent).length} due</span>
+                  </div>
+                  {followUps.filter(f=>!f.sent).map(fu=>(
+                    <div key={fu.id} style={{ display:'flex', gap:10, alignItems:'center', padding:'9px 0', borderBottom:`1px solid ${C.border}` }}>
+                      <div style={{ flex:1 }}>
+                        <div className="pj" style={{ fontWeight:700, fontSize:13 }}>{fu.name}</div>
+                        <div className="pj" style={{ fontSize:11, color:C.gray }}>{fu.pain} · due {fu.dueDate}</div>
+                      </div>
+                      <button onClick={()=>{
+                        const msg = `Hi ${fu.name}! 👋 It's been 3 days since your last session.\n\nHow are you feeling? Is your ${fu.pain.toLowerCase()} getting better?\n\nReady to book your next session? Just reply here and we'll set it up.\n\n– Dr. ${doctorName}, PhysioDrishti 🌿`
+                        openWhatsApp(fu.phone, msg)
+                        setFollowUps(p=>p.map(f=>f.id===fu.id?{...f,sent:true}:f))
+                      }} style={{ background:'#25D366', color:'#fff', border:'none', borderRadius:7, padding:'6px 12px', fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Plus Jakarta Sans,sans-serif', flexShrink:0 }}>💬 Send</button>
+                      <button onClick={()=>setFollowUps(p=>p.filter(f=>f.id!==fu.id))} className="btn-soft" style={{ padding:'6px 10px', fontSize:11 }}>✕</button>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* Today's sessions */}
               <div className="card-d" style={{ padding:18 }}>
@@ -936,8 +1087,21 @@ export default function Dashboard({ onGoToLanding, onLogout, mapplsKey, setMappl
                     Mappls is India's own mapping platform by MapmyIndia. Add your free API key below to show a live map of where your patients are.
                   </div>
                   <div style={{ marginBottom:14 }}>
-                    <label className="pj" style={{ fontSize:12, fontWeight:700, color:C.teal, display:'block', marginBottom:5 }}>Google Meet Link</label>
-                    <input className="field-d" placeholder="https://meet.google.com/xxx-yyyy-zzz" value={meetLink} onChange={e=>setMeetLink(e.target.value)}/>
+                    <label className="pj" style={{ fontSize:12, fontWeight:700, color:C.teal, display:'block', marginBottom:5 }}>
+                      Whereby room URL{' '}
+                      {wherebyLink && <span style={{ color:C.green, fontWeight:700 }}>✓ Active</span>}
+                    </label>
+                    <input className="field-d" placeholder="https://yourname.whereby.com/my-room" value={wherebyLink}
+                      onChange={e=>{ setWherebyLink(e.target.value); localStorage.setItem('pd_whereby_link',e.target.value) }}/>
+                    <div className="pj" style={{ fontSize:11, color:C.gray, marginTop:4, lineHeight:1.55 }}>
+                      Free at <a href="https://whereby.com" target="_blank" rel="noreferrer" style={{ color:C.teal }}>whereby.com</a> — create a room → copy the link. Patients join in the browser, no app needed.
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom:14 }}>
+                    <label className="pj" style={{ fontSize:12, fontWeight:700, color:C.teal, display:'block', marginBottom:5 }}>Google Meet Link (fallback)</label>
+                    <input className="field-d" placeholder="https://meet.google.com/xxx-yyyy-zzz" value={meetLink}
+                      onChange={e=>{ setMeetLink(e.target.value); localStorage.setItem('pd_meet_link',e.target.value) }}/>
                     <div className="pj" style={{ fontSize:11, color:C.gray, marginTop:4 }}>
                       Go to <a href="https://meet.google.com" target="_blank" rel="noreferrer" style={{ color:C.teal }}>meet.google.com</a> → New meeting → Create for later → copy the link
                     </div>
@@ -983,11 +1147,31 @@ export default function Dashboard({ onGoToLanding, onLogout, mapplsKey, setMappl
               ))}
             </div>
             {selected.note && (
-              <div style={{ background:'#FFF8EF', borderRadius:8, padding:14, marginBottom:20 }}>
+              <div style={{ background:'#FFF8EF', borderRadius:8, padding:14, marginBottom:16 }}>
                 <div className="pj" style={{ fontSize:12, fontWeight:700, color:C.amber, marginBottom:6 }}>Their note</div>
                 <div className="pj" style={{ fontSize:13, color:C.ink, lineHeight:1.6 }}>{selected.note}</div>
               </div>
             )}
+
+            {/* Progress chart */}
+            {progress[selected.id]?.length > 0 && (
+              <div style={{ marginBottom:16 }}>
+                <div className="pj" style={{ fontSize:12, fontWeight:700, color:C.teal, marginBottom:8 }}>Progress tracker</div>
+                <PainSparkline logs={progress[selected.id]} />
+                <div style={{ marginTop:8, display:'flex', flexDirection:'column', gap:4, maxHeight:120, overflowY:'auto' }}>
+                  {[...progress[selected.id]].reverse().slice(0,4).map((e,i)=>(
+                    <div key={i} style={{ display:'flex', gap:8, padding:'6px 10px', background:C.light, borderRadius:6, alignItems:'center' }}>
+                      <span style={{ width:22, height:22, borderRadius:'50%', background:e.score<=4?C.mint:e.score<=7?C.amber:C.red, color:'#fff', fontSize:10, fontWeight:800, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Plus Jakarta Sans,sans-serif', flexShrink:0 }}>{e.score}</span>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div className="pj" style={{ fontSize:11, fontWeight:600, color:C.ink, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{e.notes || 'No notes'}</div>
+                        <div className="pj" style={{ fontSize:10, color:C.gray }}>{e.date}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div style={{ marginBottom:16 }}>
               <div className="pj" style={{ fontSize:12, fontWeight:700, color:C.teal, marginBottom:8 }}>Move to</div>
               <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
@@ -999,13 +1183,23 @@ export default function Dashboard({ onGoToLanding, onLogout, mapplsKey, setMappl
                 ))}
               </div>
             </div>
-            <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+
+            <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:8 }}>
               <button className="btn-g" style={{ flex:1, padding:11 }} onClick={()=>{setModal({mode:'schedule',prefill:selected});setSelected(null)}}>📅 Book session</button>
               <button onClick={()=>openWhatsApp(selected.phone,`Hi ${selected.name}, this is Dr. ${doctorName} from PhysioDrishti 🌿\n\nWe'd love to schedule your session. When are you free?\n\nSee you soon!\n- PhysioDrishti`)}
                 style={{ flex:1, background:'#25D366', color:'#fff', border:'none', borderRadius:7, padding:11, fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:13, fontWeight:700, cursor:'pointer' }}>
                 💬 WhatsApp
               </button>
               <button onClick={()=>window.open('tel:'+selected.phone)} className="btn-soft" style={{ padding:'11px 14px' }}>📞</button>
+            </div>
+            <div style={{ display:'flex', gap:8 }}>
+              <button onClick={()=>setProgressModal(selected)} className="btn-soft" style={{ flex:1, padding:10 }}>📋 Log session</button>
+              <button onClick={()=>{
+                const due = new Date(); due.setDate(due.getDate()+3)
+                const dueStr = due.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})
+                setFollowUps(p=>[...p,{ id:Date.now(), patientId:selected.id, name:selected.name, phone:selected.phone, pain:selected.pain, dueDate:dueStr, sent:false }])
+                alert(`Follow-up reminder set for ${dueStr}!`)
+              }} className="btn-soft" style={{ flex:1, padding:10 }}>⏰ 3-day follow-up</button>
             </div>
           </div>
         </div>
@@ -1014,7 +1208,30 @@ export default function Dashboard({ onGoToLanding, onLogout, mapplsKey, setMappl
       {/* Modals */}
       {modal?.mode === 'add'      && <PatientModal mode="add"      prefill={modal.prefill} onClose={()=>setModal(null)} onSave={addPatient} />}
       {modal?.mode === 'schedule' && <PatientModal mode="schedule" prefill={modal.prefill} onClose={()=>setModal(null)} onSave={scheduleSession} />}
-      {liveSession && <VideoCall session={liveSession} onClose={()=>setLiveSession(null)} />}
+      {liveSession && (
+        <VideoCall
+          session={liveSession}
+          onClose={()=>setLiveSession(null)}
+          wherebyLink={wherebyLink}
+          onLogProgress={(sessionNotes) => {
+            const pt = patients.find(p => p.name === liveSession.name)
+            if (pt) setProgressModal(pt)
+          }}
+        />
+      )}
+      {progressModal && (
+        <ProgressModal
+          patient={progressModal}
+          onClose={()=>setProgressModal(null)}
+          onSave={(entry) => {
+            setProgress(prev => ({
+              ...prev,
+              [progressModal.id]: [...(prev[progressModal.id] || []), entry],
+            }))
+            setProgressModal(null)
+          }}
+        />
+      )}
     </div>
   )
 }

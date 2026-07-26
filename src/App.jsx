@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import LandingPage from './pages/LandingPage.jsx'
 import Dashboard from './pages/Dashboard.jsx'
+import DoctorProfile from './pages/DoctorProfile.jsx'
 
 /* ── Dashboard Login Gate ─────────────────────────────────────── */
 const DEFAULT_PIN = '1234'
@@ -138,9 +139,12 @@ export default function App() {
 
   return (
     <>
-      {view === 'landing' ? (
+      {view === 'doctor' ? (
+        <DoctorProfile onBack={() => setView('landing')} />
+      ) : view === 'landing' ? (
         <LandingPage
           onGoToDashboard={() => setView('dashboard')}
+          onShowDoctor={() => setView('doctor')}
           mapplsKey={mapplsKey}
           setMapplsKey={setMapplsKey}
         />

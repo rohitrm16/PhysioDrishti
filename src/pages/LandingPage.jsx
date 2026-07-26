@@ -421,7 +421,7 @@ function BookingModal({ onClose, onSuccess }) {
 }
 
 /* ── Landing Page ─────────────────────────────────────────────── */
-export default function LandingPage({ onGoToDashboard, mapplsKey }) {
+export default function LandingPage({ onGoToDashboard, onShowDoctor, mapplsKey }) {
   const [showModal, setShowModal] = useState(false)
   const [booked, setBooked]       = useState(null)
   const [tickIdx, setTickIdx]     = useState(0)
@@ -498,6 +498,7 @@ export default function LandingPage({ onGoToDashboard, mapplsKey }) {
               <span key={n} className="pj" style={{ fontSize:14, color:scrolled?'#5C6878':'rgba(255,255,255,.8)', cursor:'pointer', fontWeight:500 }}>{n}</span>
             ))}
             <button className="btn-main" style={{ padding:'8px 18px', fontSize:13 }} onClick={()=>setShowModal(true)}>Book free call</button>
+            {!mob && <button onClick={onShowDoctor} className="pj" style={{ fontSize:13, color:scrolled?'#5C6878':'rgba(255,255,255,.6)', cursor:'pointer', background:'none', border:'none' }}>Meet the doctor →</button>}
             {!mob && <button onClick={onGoToDashboard} className="pj" style={{ fontSize:13, color:scrolled?'#5C6878':'rgba(255,255,255,.6)', cursor:'pointer', background:'none', border:'none' }}>For clinics →</button>}
           </div>
         </div>
