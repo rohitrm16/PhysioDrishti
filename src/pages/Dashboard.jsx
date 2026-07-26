@@ -384,7 +384,7 @@ function LogoImg({ size = 40 }) {
 
 
 /* ─── Dashboard ──────────────────────────────────────────────────── */
-export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
+export default function Dashboard({ onGoToLanding, onLogout, mapplsKey, setMapplsKey }) {
   const [tab, setTab]             = useState('overview')
   const [patients, setPatients]   = useState(INITIAL_PATIENTS)
   const [notif, setNotif]         = useState(0)
@@ -525,6 +525,12 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
             <span style={{ fontSize:17 }}>🌐</span>
             {(showLabel||(mob&&sideOpen)) && <span>Patient site</span>}
           </button>
+          {onLogout && (
+            <button className="side-btn" onClick={onLogout} style={{ color:'rgba(255,100,100,.75)' }}>
+              <span style={{ fontSize:17 }}>🔒</span>
+              {(showLabel||(mob&&sideOpen)) && <span>Lock dashboard</span>}
+            </button>
+          )}
         </div>
       </aside>
 
@@ -550,6 +556,11 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
               {notif > 0 && <span style={{ position:'absolute', top:-4, right:-4, background:C.red, color:'#fff', borderRadius:'50%', width:15, height:15, display:'flex', alignItems:'center', justifyContent:'center', fontSize:8, fontWeight:800, fontFamily:'Plus Jakarta Sans,sans-serif' }}>{notif}</span>}
             </div>
             <div style={{ width:30, height:30, background:C.forest, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontSize:11, fontWeight:700, fontFamily:'Plus Jakarta Sans,sans-serif' }}>PM</div>
+            {!mob && onLogout && (
+              <button onClick={onLogout} className="btn-soft" style={{ fontSize:11, padding:'5px 12px' }} title="Sign out">
+                🔒 Lock
+              </button>
+            )}
           </div>
         </header>
 
@@ -814,6 +825,89 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
                     ))}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Strategic Recommendations */}
+              <div style={{ marginTop:24 }}>
+                <div className="pj" style={{ fontSize:10, fontWeight:800, letterSpacing:3, textTransform:'uppercase', color:C.saffron, marginBottom:4 }}>Strategic recommendations</div>
+                <div className="pd" style={{ fontSize:'1rem', fontWeight:800, marginBottom:16 }}>Grow your leads faster</div>
+                <div className="g3" style={{ display:'grid', gap:14 }}>
+
+                  {/* Card 1 — Long-tail keywords */}
+                  <div className="card-d" style={{ padding:20, borderLeft:`4px solid ${C.saffron}` }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:12 }}>
+                      <span style={{ fontSize:22 }}>🎯</span>
+                      <div className="pj" style={{ fontSize:13, fontWeight:800 }}>Target long-tail keywords</div>
+                    </div>
+                    <div className="pj" style={{ fontSize:12, color:C.gray, lineHeight:1.65, marginBottom:12 }}>
+                      High-intent, low-competition phrases that bring patients who are ready to book — not just browsing.
+                    </div>
+                    <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                      {[
+                        '"physiotherapy for lower back pain at home Bengaluru"',
+                        '"online physio for frozen shoulder India"',
+                        '"best physiotherapist after knee surgery Koramangala"',
+                        '"home visit physio for elderly HSR Layout"',
+                      ].map(kw => (
+                        <div key={kw} style={{ background:C.saffronLight, borderRadius:6, padding:'6px 10px', fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:11, fontWeight:600, color:C.saffron }}>
+                          {kw}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="pj" style={{ fontSize:11, color:C.green, fontWeight:700, marginTop:12 }}>
+                      ✓ Long-tail terms convert 3–5× better than broad terms
+                    </div>
+                  </div>
+
+                  {/* Card 2 — Near me / Local SEO */}
+                  <div className="card-d" style={{ padding:20, borderLeft:`4px solid ${C.green}` }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:12 }}>
+                      <span style={{ fontSize:22 }}>📍</span>
+                      <div className="pj" style={{ fontSize:13, fontWeight:800 }}>Win the "near me" factor</div>
+                    </div>
+                    <div className="pj" style={{ fontSize:12, color:C.gray, lineHeight:1.65, marginBottom:12 }}>
+                      60% of physio searches include a location. Dominate local results with these steps.
+                    </div>
+                    <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                      {[
+                        ['📸', 'Add 15+ photos to Google Business Profile — clinics with photos get 42% more direction requests'],
+                        ['⭐', 'Target 50+ Google reviews — ask every satisfied patient via WhatsApp'],
+                        ['🗺', 'List on Practo, Justdial, Sulekha, and 1mg — each listing boosts local authority'],
+                        ['📝', 'Write one blog per week on area-specific pain: "Knee pain treatment in Koramangala"'],
+                      ].map(([icon, text]) => (
+                        <div key={text} style={{ display:'flex', gap:8, alignItems:'flex-start' }}>
+                          <span style={{ fontSize:14, flexShrink:0, marginTop:1 }}>{icon}</span>
+                          <span className="pj" style={{ fontSize:12, color:C.ink, lineHeight:1.55 }}>{text}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Card 3 — Digital-first value */}
+                  <div className="card-d" style={{ padding:20, borderLeft:`4px solid ${C.teal}` }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:12 }}>
+                      <span style={{ fontSize:22 }}>💡</span>
+                      <div className="pj" style={{ fontSize:13, fontWeight:800 }}>Lead with digital-first value</div>
+                    </div>
+                    <div className="pj" style={{ fontSize:12, color:C.gray, lineHeight:1.65, marginBottom:12 }}>
+                      Your biggest competitive advantage: no commute, no waiting room. Make that the headline.
+                    </div>
+                    <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                      {[
+                        ['🚗', '"No Bengaluru traffic" — use this in all ads and landing pages. It resonates immediately.'],
+                        ['📲', 'WhatsApp-first follow-up — 95% of urban Indians read messages within 5 minutes'],
+                        ['🎁', 'Offer the first online session free — capture phone + pain details, convert later'],
+                        ['🎬', 'Post 60-second Reels showing exercises for back, knee, shoulder pain — free reach on Instagram'],
+                      ].map(([icon, text]) => (
+                        <div key={text} style={{ display:'flex', gap:8, alignItems:'flex-start' }}>
+                          <span style={{ fontSize:14, flexShrink:0, marginTop:1 }}>{icon}</span>
+                          <span className="pj" style={{ fontSize:12, color:C.ink, lineHeight:1.55 }}>{text}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                </div>
               </div>
             </div>
           )}

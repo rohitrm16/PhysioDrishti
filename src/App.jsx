@@ -1,205 +1,158 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import LandingPage from './pages/LandingPage.jsx'
-import Dashboard   from './pages/Dashboard.jsx'
+import Dashboard from './pages/Dashboard.jsx'
 
-/* ── Change this to your own password ─────────────────────────── */
-const CLINIC_PASSWORD = 'physio2026'
+/* ── Dashboard Login Gate ─────────────────────────────────────── */
+const DEFAULT_PIN = '1234'
+const PIN_KEY     = 'pd_dashboard_pin'
+const AUTH_KEY    = 'pd_authed'
 
-const S = {
-  forest:  '#12382A',
-  saffron: '#D4510E',
-  teal:    '#0A6B5E',
-  gray:    '#5C6878',
-  border:  '#DDE4EF',
-  light:   '#F3F6FA',
-}
+const CSS_LOGIN = `
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Plus Jakarta Sans',sans-serif}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  .login-card{animation:fadeIn .45s ease both}
+`
 
-/* ── Login Screen ────────────────────────────────────────────── */
-function LoginScreen({ onLogin }) {
-  const [pw,    setPw]    = useState('')
-  const [error, setError] = useState(false)
-  const [show,  setShow]  = useState(false)
+function LoginGate({ onAuth }) {
+  const [pin,  setPin]  = useState('')
+  const [err,  setErr]  = useState('')
+  const [show, setShow] = useState(false)
+
+  useEffect(() => {
+    const el = document.createElement('style')
+    el.textContent = CSS_LOGIN
+    document.head.appendChild(el)
+    return () => { try { document.head.removeChild(el) } catch {} }
+  }, [])
 
   const attempt = () => {
-    if (pw === CLINIC_PASSWORD) {
-      onLogin()
+    const stored = localStorage.getItem(PIN_KEY) || DEFAULT_PIN
+    if (pin === stored) {
+      sessionStorage.setItem(AUTH_KEY, '1')
+      onAuth()
     } else {
-      setError(true)
-      setTimeout(() => setError(false), 2000)
+      setErr('Incorrect PIN — try again.')
+      setPin('')
     }
   }
 
   return (
     <div style={{
-      minHeight: '100vh',
-      background: `linear-gradient(135deg, ${S.forest} 0%, #0D3828 100%)`,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: 20, fontFamily: "'Plus Jakarta Sans', sans-serif",
-      position: 'relative', overflow: 'hidden',
+      minHeight:'100vh',
+      background:'linear-gradient(140deg,#12382A 0%,#1E4D35 60%,#0D3828 100%)',
+      display:'flex', alignItems:'center', justifyContent:'center',
+      padding:20,
     }}>
-      <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
-      <style>{`
-        @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes shake  { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-8px)} 40%,80%{transform:translateX(8px)} }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-      `}</style>
-
-      {/* Background circles */}
-      {[400, 280, 160].map((s, i) => (
-        <div key={i} style={{
-          position: 'absolute', width: s, height: s, borderRadius: '50%',
-          border: `1px solid rgba(58,154,107,${0.05 + i * 0.04})`,
-          top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-          pointerEvents: 'none',
-        }}/>
-      ))}
-
-      {/* Card */}
-      <div style={{
-        background: '#fff', borderRadius: 20, padding: '44px 40px',
-        width: '100%', maxWidth: 400,
-        boxShadow: '0 32px 80px rgba(0,0,0,0.35)',
-        animation: 'fadeUp .5s ease',
-        position: 'relative',
+      <div className="login-card" style={{
+        background:'#fff', borderRadius:18, padding:'40px 36px',
+        width:'100%', maxWidth:380,
+        boxShadow:'0 24px 72px rgba(0,0,0,.35)',
+        textAlign:'center',
       }}>
-        {/* Logo + brand */}
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{
-            width: 64, height: 64, borderRadius: 16,
-            background: `linear-gradient(135deg, ${S.forest}, #0E3222)`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 16px', fontSize: 28,
-            boxShadow: `0 8px 24px rgba(18,56,42,0.3)`,
-          }}>🌿</div>
-          <div style={{
-            fontFamily: "'Playfair Display', serif",
-            fontWeight: 900, fontSize: '1.6rem', color: S.forest,
-            marginBottom: 4,
-          }}>PhysioDrishti</div>
-          <div style={{
-            fontSize: 12, color: S.gray, fontWeight: 600,
-            letterSpacing: 2, textTransform: 'uppercase',
-          }}>Clinic Dashboard</div>
+        <div style={{ fontSize:44, marginBottom:12 }}>🌿</div>
+        <div style={{ fontFamily:"'Playfair Display',serif", fontSize:'1.55rem', fontWeight:900, color:'#12382A', marginBottom:4 }}>
+          PhysioDrishti
+        </div>
+        <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, color:'#5C6878', marginBottom:32, letterSpacing:1.5, textTransform:'uppercase' }}>
+          Clinic Dashboard
         </div>
 
-        {/* Label */}
-        <div style={{
-          fontSize: 13, color: S.gray, marginBottom: 20,
-          textAlign: 'center', lineHeight: 1.6,
-        }}>
-          🔒 Staff access only. Enter your clinic password to continue.
+        <div style={{ textAlign:'left', marginBottom:16 }}>
+          <label style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, fontWeight:700, color:'#0A6B5E', display:'block', marginBottom:6 }}>
+            Dashboard PIN
+          </label>
+          <div style={{ position:'relative' }}>
+            <input
+              type={show ? 'text' : 'password'}
+              value={pin}
+              onChange={e => { setPin(e.target.value); setErr('') }}
+              onKeyDown={e => e.key === 'Enter' && pin && attempt()}
+              placeholder="Enter your PIN"
+              autoFocus
+              style={{
+                width:'100%', padding:'12px 44px 12px 16px',
+                border:`1.5px solid ${err ? '#F5C6C6' : '#DDE4EF'}`,
+                borderRadius:9, fontSize:15, outline:'none',
+                fontFamily:"'Plus Jakarta Sans',sans-serif",
+                letterSpacing: pin ? 6 : 0,
+                transition:'border-color .2s',
+                color:'#0D1520',
+              }}
+              onFocus={e => { if (!err) e.target.style.borderColor = '#3A9A6B' }}
+              onBlur={e => { if (!err) e.target.style.borderColor = '#DDE4EF' }}
+            />
+            <button
+              onClick={() => setShow(p => !p)}
+              style={{ position:'absolute', right:13, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', fontSize:16, color:'#9BA8B5', padding:0 }}
+              tabIndex={-1}
+            >
+              {show ? '🙈' : '👁'}
+            </button>
+          </div>
         </div>
 
-        {/* Password input */}
-        <div style={{ position: 'relative', marginBottom: 16 }}>
-          <input
-            type={show ? 'text' : 'password'}
-            placeholder="Enter password"
-            value={pw}
-            onChange={e => { setPw(e.target.value); setError(false) }}
-            onKeyDown={e => e.key === 'Enter' && attempt()}
-            autoFocus
-            style={{
-              width: '100%', padding: '13px 48px 13px 16px',
-              border: `1.5px solid ${error ? '#B83232' : S.border}`,
-              borderRadius: 10, fontSize: 15, outline: 'none',
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              color: S.forest, background: S.light,
-              transition: 'border-color .2s',
-              animation: error ? 'shake .4s ease' : 'none',
-            }}
-          />
-          {/* Show/hide toggle */}
-          <button
-            onClick={() => setShow(p => !p)}
-            style={{
-              position: 'absolute', right: 14, top: '50%',
-              transform: 'translateY(-50%)',
-              background: 'none', border: 'none',
-              cursor: 'pointer', fontSize: 16, color: S.gray,
-            }}>
-            {show ? '🙈' : '👁'}
-          </button>
-        </div>
-
-        {/* Error message */}
-        {error && (
-          <div style={{
-            fontSize: 12, color: '#B83232', marginBottom: 12,
-            textAlign: 'center', fontWeight: 600,
-          }}>
-            Incorrect password. Please try again.
+        {err && (
+          <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, color:'#B83232', background:'#FFF0F0', border:'1px solid #F5C6C6', borderRadius:7, padding:'9px 14px', marginBottom:14, textAlign:'left' }}>
+            ⚠️ {err}
           </div>
         )}
 
-        {/* Login button */}
         <button
           onClick={attempt}
-          disabled={!pw}
+          disabled={!pin}
           style={{
-            width: '100%', padding: 14,
-            background: pw ? S.saffron : S.border,
-            color: pw ? '#fff' : S.gray,
-            border: 'none', borderRadius: 10,
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
-            fontSize: 15, fontWeight: 700,
-            cursor: pw ? 'pointer' : 'default',
-            transition: 'all .2s',
-            boxShadow: pw ? `0 6px 20px rgba(212,81,14,0.3)` : 'none',
-          }}>
+            width:'100%', padding:'13px',
+            background: pin ? '#12382A' : '#E5E9EF',
+            color: pin ? '#fff' : '#9BA8B5',
+            border:'none', borderRadius:9,
+            fontFamily:"'Plus Jakarta Sans',sans-serif",
+            fontSize:15, fontWeight:700,
+            cursor: pin ? 'pointer' : 'default',
+            transition:'all .2s',
+          }}
+        >
           Enter dashboard →
         </button>
 
-        {/* Back to site */}
-        <div style={{ textAlign: 'center', marginTop: 20 }}>
-          <button
-            onClick={() => window.location.reload()}
-            style={{
-              background: 'none', border: 'none',
-              color: S.teal, fontSize: 13, fontWeight: 600,
-              cursor: 'pointer', textDecoration: 'underline',
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-            }}>
-            ← Back to patient site
-          </button>
+        <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", marginTop:18, fontSize:11, color:'#9BA8B5', lineHeight:1.6 }}>
+          Default PIN: <strong>1234</strong><br/>Change it any time in Dashboard → Settings
         </div>
       </div>
     </div>
   )
 }
 
-/* ── Root App ────────────────────────────────────────────────── */
+/* ── App ─────────────────────────────────────────────────────── */
 export default function App() {
   const [view,       setView]       = useState('landing')
   const [mapplsKey,  setMapplsKey]  = useState('')
-  const [authed,     setAuthed]     = useState(false)
+  const [authed,     setAuthed]     = useState(() => sessionStorage.getItem(AUTH_KEY) === '1')
 
-  /* When navigating to dashboard, require login */
-  const goToDashboard = () => {
-    setView('dashboard')
-    // authed stays as is — once logged in, stays logged in for the session
+  const logout = () => {
+    sessionStorage.removeItem(AUTH_KEY)
+    setAuthed(false)
+    setView('landing')
   }
 
   return (
     <>
-      {view === 'landing' && (
+      {view === 'landing' ? (
         <LandingPage
-          onGoToDashboard={goToDashboard}
+          onGoToDashboard={() => setView('dashboard')}
           mapplsKey={mapplsKey}
           setMapplsKey={setMapplsKey}
         />
-      )}
-
-      {view === 'dashboard' && !authed && (
-        <LoginScreen onLogin={() => setAuthed(true)} />
-      )}
-
-      {view === 'dashboard' && authed && (
+      ) : authed ? (
         <Dashboard
-          onGoToLanding={() => { setView('landing'); setAuthed(false) }}
+          onGoToLanding={() => setView('landing')}
+          onLogout={logout}
           mapplsKey={mapplsKey}
           setMapplsKey={setMapplsKey}
         />
+      ) : (
+        <LoginGate onAuth={() => setAuthed(true)} />
       )}
     </>
   )
