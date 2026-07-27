@@ -4,7 +4,7 @@
  * Props: onGoToDashboard, mapplsKey, setMapplsKey
  */
 import { useState, useEffect, useRef } from 'react'
-import { supabase } from '../supabase.js'
+import { db } from '../supabase.js'
 import AIBookingChat from './AIBooking.jsx'
 
 const C = {
@@ -42,13 +42,29 @@ const AREAS = [
   'Hebbal','BTM Layout',
 ]
 
-const TICKER = [
+// Fallback ticker shown before Supabase loads
+const TICKER_FALLBACK = [
   'Rahul from Koramangala just booked a back pain session',
   'Priya from Indiranagar booked a knee recovery session',
   'Suresh from Whitefield booked an online consultation',
   'Anitha from HSR Layout booked a shoulder assessment',
   'Meera from Jayanagar just started her recovery plan',
 ]
+
+// Format a real booking row into a natural ticker string
+function formatTick(b) {
+  const firstName = (b.name || 'Someone').split(' ')[0]
+  const area      = b.area ? `from ${b.area}` : 'in Bengaluru'
+  const pain      = b.pain || 'physiotherapy'
+  const minsAgo   = Math.round((Date.now() - new Date(b.created_at).getTime()) / 60000)
+  const timeStr   = minsAgo < 2  ? 'just now'
+                  : minsAgo < 60 ? `${minsAgo} minutes ago`
+                  : minsAgo < 120? '1 hour ago'
+                  : `${Math.round(minsAgo/60)} hours ago`
+  const actions   = ['just booked a session','booked a free call','requested a consultation','just signed up']
+  const action    = actions[b.id % actions.length] || 'just booked'
+  return `${firstName} ${area} ${action} for ${pain} · ${timeStr}`
+}
 
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
@@ -187,15 +203,13 @@ function BookingModal({ onClose, onSuccess }) {
     if (!ok2) return
     setBusy(true)
     try {
-      const { error } = await supabase.from('leads').insert({
-        name:     f.name.trim(),
-        phone:    f.phone.trim(),
-        email:    f.email?.trim() || null,
-        area:     f.area,
-        pain:     f.pain,
-        note:     f.note?.trim() || null,
-        stage:    'new',
-        priority: 'medium',
+      const { error } = await db.from('bookings').insert({
+        name:  f.name,
+        phone: f.phone,
+        email: f.email || null,
+        area:  f.area,
+        pain:  f.pain,
+        note:  f.note  || null,
       })
       if (error) throw error
       onSuccess(f)
@@ -306,6 +320,8 @@ export default function LandingPage({ onGoToDashboard, mapplsKey }) {
   const [showModal, setShowModal] = useState(false)
   const [booked, setBooked]       = useState(null)
   const [tickIdx, setTickIdx]     = useState(0)
+  const [liveLeads, setLiveLeads] = useState(TICKER_FALLBACK)
+  const [totalToday, setTotalToday] = useState(null)
   const [w, setW]                 = useState(window.innerWidth)
   const [scrolled, setScrolled]   = useState(false)
 
@@ -318,8 +334,36 @@ export default function LandingPage({ onGoToDashboard, mapplsKey }) {
   }, [])
 
   useEffect(() => {
-    const t = setInterval(() => setTickIdx(p => (p + 1) % TICKER.length), 3500)
+    const t = setInterval(() => setTickIdx(p => (p + 1) % liveLeads.length), 3500)
     return () => clearInterval(t)
+  }, [liveLeads])
+
+  // Fetch real recent bookings from Supabase
+  useEffect(() => {
+    const fetchLeads = async () => {
+      try {
+        const { data, error } = await db
+          .from('bookings')
+          .select('id, name, area, pain, created_at')
+          .order('created_at', { ascending: false })
+          .limit(10)
+        if (!error && data && data.length > 0) {
+          setLiveLeads(data.map(formatTick))
+          // Count bookings from today
+          const today = new Date().toDateString()
+          const todayCount = data.filter(b =>
+            new Date(b.created_at).toDateString() === today
+          ).length
+          if (todayCount > 0) setTotalToday(todayCount)
+        }
+      } catch (e) {
+        // silently keep fallback data
+      }
+    }
+    fetchLeads()
+    // Refresh every 2 minutes
+    const interval = setInterval(fetchLeads, 120000)
+    return () => clearInterval(interval)
   }, [])
 
   useEffect(() => {
@@ -372,7 +416,12 @@ export default function LandingPage({ onGoToDashboard, mapplsKey }) {
       >
         <div style={{ maxWidth:1160, margin:'0 auto', display:'flex', alignItems:'center', gap:12 }}>
           <span style={{ background:'#D4510E', color:'#fff', padding:'2px 8px', borderRadius:4, fontWeight:700, fontSize:10, textTransform:'uppercase', letterSpacing:1, flexShrink:0, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>Live</span>
-          <span className="pj" style={{ fontSize:12, color:'rgba(255,255,255,.7)', animation:'ticker 3.5s ease infinite', display:'inline-block', flex:1 }}>{TICKER[tickIdx]}</span>
+          {totalToday !== null && (
+            <span style={{ background:'rgba(255,255,255,.15)', color:'rgba(255,255,255,.85)', padding:'2px 10px', borderRadius:4, fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:10, fontWeight:700, flexShrink:0 }}>
+              {totalToday} booking{totalToday !== 1 ? 's' : ''} today
+            </span>
+          )}
+          <span className="pj" style={{ fontSize:12, color:'rgba(255,255,255,.7)', animation:'ticker 3.5s ease infinite', display:'inline-block', flex:1 }}>{liveLeads[tickIdx % liveLeads.length]}</span>
           <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:11, color:'rgba(255,255,255,.4)', flexShrink:0, display:'flex', alignItems:'center', gap:4 }}>
             View in dashboard <span style={{ fontSize:13 }}>→</span>
           </span>
@@ -533,24 +582,6 @@ export default function LandingPage({ onGoToDashboard, mapplsKey }) {
           </div>
         </div>
       </footer>
-
-      {/* Floating Drishti chat button */}
-      <button
-        onClick={() => setShowModal(true)}
-        style={{
-          position:'fixed', bottom:24, right:24, zIndex:500,
-          width:58, height:58, borderRadius:'50%',
-          background:'linear-gradient(135deg,#12382A,#3A9A6B)',
-          border:'none', cursor:'pointer', color:'#fff', fontSize:26,
-          display:'flex', alignItems:'center', justifyContent:'center',
-          boxShadow:'0 4px 20px rgba(18,56,42,.4)',
-          transition:'transform .2s, box-shadow .2s',
-        }}
-        onMouseEnter={e => { e.currentTarget.style.transform='scale(1.1)'; e.currentTarget.style.boxShadow='0 6px 28px rgba(18,56,42,.55)' }}
-        onMouseLeave={e => { e.currentTarget.style.transform='scale(1)'; e.currentTarget.style.boxShadow='0 4px 20px rgba(18,56,42,.4)' }}
-        aria-label="Chat with Drishti"
-        title="Chat with Drishti"
-      >🌿</button>
 
       {showModal && <AIBookingChat onClose={()=>setShowModal(false)} onSuccess={f=>{setShowModal(false);setBooked(f)}} />}
     </div>
