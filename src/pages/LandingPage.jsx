@@ -5,7 +5,6 @@
  */
 import { useState, useEffect, useRef } from 'react'
 import { db } from '../supabase.js'
-import AIBookingChat from './AIBooking.jsx'
 
 const C = {
   forest:'#12382A', teal:'#0A6B5E', mint:'#3A9A6B',
@@ -122,6 +121,111 @@ function LogoImg({ size = 40 }) {
       alt="PhysioDrishti"
       style={{ width: size, height: size, objectFit: 'contain', flexShrink: 0 }}
     />
+  )
+}
+
+
+/* ── Simple Booking Modal (no external API needed) ──────────────── */
+function SimpleBooking({ onClose, onSuccess, db }) {
+  const [step, setStep] = useState(1)
+  const [f, setF]       = useState({ name:'', phone:'', email:'', area:'', pain:'', note:'', agree:false })
+  const [busy, setBusy] = useState(false)
+  const set = (k,v) => setF(p=>({...p,[k]:v}))
+  const ok1 = f.name.trim() && f.phone.trim()
+  const ok2 = f.area && f.pain && f.agree
+
+  const submit = async () => {
+    if (!ok2) return
+    setBusy(true)
+    try {
+      const { error } = await db.from('bookings').insert({
+        name: f.name, phone: f.phone, email: f.email||null,
+        area: f.area, pain: f.pain, note: f.note||null,
+      })
+      if (error) throw error
+      onSuccess(f)
+    } catch (err) {
+      console.error(err)
+      alert('Something went wrong. Please try again.')
+    } finally { setBusy(false) }
+  }
+
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.6)', zIndex:999, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }} onClick={onClose}>
+      <div style={{ background:'#fff', borderRadius:16, width:'100%', maxWidth:460, overflow:'hidden', boxShadow:'0 24px 64px rgba(0,0,0,.25)' }} onClick={e=>e.stopPropagation()}>
+        <div style={{ background:'#12382A', padding:'20px 24px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+          <div>
+            <div style={{ fontFamily:"'Playfair Display',serif", fontWeight:900, fontSize:'1.15rem', color:'#fff' }}>Book a free call</div>
+            <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, color:'rgba(255,255,255,.55)', marginTop:2 }}>Step {step} of 2 · {step===1?'Your details':'What's hurting?'}</div>
+          </div>
+          <button onClick={onClose} style={{ background:'rgba(255,255,255,.15)', border:'none', borderRadius:8, width:32, height:32, cursor:'pointer', color:'#fff', fontSize:16 }}>✕</button>
+        </div>
+        <div style={{ height:4, background:'#E5E9EF' }}><div style={{ height:'100%', width:`${step*50}%`, background:'#D4510E', transition:'width .4s' }}/></div>
+        <div style={{ padding:'24px 26px 22px' }}>
+          {step === 1 && (
+            <div>
+              <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:14, color:'#5C6878', marginBottom:18, lineHeight:1.6 }}>Just your name and number — we'll call you back and sort everything else.</p>
+              {[['Your name','name','text','e.g. Rahul Sharma'],['WhatsApp number','phone','tel','e.g. 98XXXXXXXX']].map(([l,k,t,ph])=>(
+                <div key={k} style={{ marginBottom:14 }}>
+                  <label style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, fontWeight:700, color:'#0A6B5E', display:'block', marginBottom:5 }}>{l}</label>
+                  <input type={t} placeholder={ph} value={f[k]} onChange={e=>set(k,e.target.value)}
+                    style={{ width:'100%', padding:'11px 14px', border:'1.5px solid #DDE4EF', borderRadius:8, fontSize:14, outline:'none', fontFamily:"'Plus Jakarta Sans',sans-serif" }}/>
+                </div>
+              ))}
+              <div style={{ marginBottom:18 }}>
+                <label style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, fontWeight:700, color:'#0A6B5E', display:'block', marginBottom:5 }}>Email <span style={{ fontWeight:400, color:'#5C6878' }}>(optional)</span></label>
+                <input type="email" placeholder="your@email.com" value={f.email} onChange={e=>set('email',e.target.value)}
+                  style={{ width:'100%', padding:'11px 14px', border:'1.5px solid #DDE4EF', borderRadius:8, fontSize:14, outline:'none', fontFamily:"'Plus Jakarta Sans',sans-serif" }}/>
+              </div>
+            </div>
+          )}
+          {step === 2 && (
+            <div>
+              <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:14, color:'#5C6878', marginBottom:18, lineHeight:1.6 }}>Help us find the right specialist for you.</p>
+              <div style={{ marginBottom:14 }}>
+                <label style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, fontWeight:700, color:'#0A6B5E', display:'block', marginBottom:5 }}>Your area in Bengaluru</label>
+                <select value={f.area} onChange={e=>set('area',e.target.value)}
+                  style={{ width:'100%', padding:'11px 14px', border:'1.5px solid #DDE4EF', borderRadius:8, fontSize:14, outline:'none', fontFamily:"'Plus Jakarta Sans',sans-serif", appearance:'none' }}>
+                  <option value="">Pick your area</option>
+                  {['Koramangala','HSR Layout','Whitefield','Indiranagar','Jayanagar','Marathahalli','JP Nagar','Electronic City','Bannerghatta Road','Yelahanka','Other'].map(a=><option key={a}>{a}</option>)}
+                </select>
+              </div>
+              <div style={{ marginBottom:14 }}>
+                <label style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, fontWeight:700, color:'#0A6B5E', display:'block', marginBottom:8 }}>Where does it hurt?</label>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+                  {['Back / Neck','Knee / Hip','Shoulder','Ankle / Foot','Post-surgery','Something else'].map(p=>(
+                    <button key={p} onClick={()=>set('pain',p)}
+                      style={{ padding:'7px 14px', border:`1.5px solid ${f.pain===p?'#12382A':'#DDE4EF'}`, borderRadius:20, background:f.pain===p?'#12382A':'#fff', color:f.pain===p?'#fff':'#5C6878', fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ marginBottom:14 }}>
+                <label style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, fontWeight:700, color:'#0A6B5E', display:'block', marginBottom:5 }}>Anything else? <span style={{ fontWeight:400, color:'#5C6878' }}>(optional)</span></label>
+                <textarea value={f.note} onChange={e=>set('note',e.target.value)} placeholder="How long? Tried anything before?"
+                  style={{ width:'100%', minHeight:60, resize:'none', padding:'11px 14px', border:'1.5px solid #DDE4EF', borderRadius:8, fontSize:14, outline:'none', fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1.5 }}/>
+              </div>
+              <div style={{ display:'flex', gap:10, alignItems:'flex-start', background:'#FFF8EF', borderRadius:8, padding:12, marginBottom:4 }}>
+                <input type="checkbox" id="agree" checked={f.agree} onChange={e=>set('agree',e.target.checked)} style={{ width:16, height:16, marginTop:2, accentColor:'#12382A', flexShrink:0 }}/>
+                <label htmlFor="agree" style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, color:'#5C6878', lineHeight:1.6, cursor:'pointer' }}>
+                  I'm happy for PhysioDrishti to contact me. My details stay private.
+                </label>
+              </div>
+            </div>
+          )}
+          <div style={{ display:'flex', gap:10, marginTop:18 }}>
+            {step===2 && <button onClick={()=>setStep(1)} style={{ flex:'0 0 90px', padding:13, border:'1.5px solid #DDE4EF', borderRadius:8, background:'#fff', color:'#5C6878', fontSize:14, fontWeight:600, cursor:'pointer', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>← Back</button>}
+            {step===1
+              ? <button onClick={()=>ok1&&setStep(2)} style={{ flex:1, padding:13, background:ok1?'#D4510E':'#DDE4EF', color:ok1?'#fff':'#5C6878', border:'none', borderRadius:8, fontSize:14, fontWeight:700, cursor:ok1?'pointer':'default', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>Next →</button>
+              : <button onClick={submit} style={{ flex:1, padding:13, background:ok2?'#D4510E':'#DDE4EF', color:ok2?'#fff':'#5C6878', border:'none', borderRadius:8, fontSize:14, fontWeight:700, cursor:ok2?'pointer':'default', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                  {busy?'⏳ Booking…':'Book my free call →'}
+                </button>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -583,7 +687,7 @@ export default function LandingPage({ onGoToDashboard, mapplsKey }) {
         </div>
       </footer>
 
-      {showModal && <AIBookingChat onClose={()=>setShowModal(false)} onSuccess={f=>{setShowModal(false);setBooked(f)}} />}
+      {showModal && <SimpleBooking onClose={()=>setShowModal(false)} onSuccess={f=>{setShowModal(false);setBooked(f)}} db={db}/>}
     </div>
   )
 }
