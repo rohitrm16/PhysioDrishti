@@ -15,16 +15,16 @@ const C = {
 
 const PAIN_AREAS = [
   { icon:'🦴', name:'Back & Neck Pain',   desc:'Aching back, stiff neck, pain that shoots down your arm or leg — we can help.' },
-  { icon:'🦵', name:'Knee & Hip Pain',    desc:'Trouble walking, climbing stairs, or getting up? Let\'s fix that together.' },
-  { icon:'💪', name:'Shoulder Problems',  desc:'Can\'t lift your arm, or shoulder hurts at night? We\'ll get you moving again.' },
+  { icon:'🦵', name:'Knee & Hip Pain',    desc:'Trouble walking, climbing stairs, or getting up? We can fix that together.' },
+  { icon:'💪', name:'Shoulder Problems',  desc:'Cannot lift your arm, or shoulder hurts at night? We will get you moving again.' },
   { icon:'⚡', name:'Sports Injuries',    desc:'Sprain, strain, or a niggling injury slowing you down — get back in the game.' },
-  { icon:'🔄', name:'After Surgery',      desc:'Recovering from an operation? We\'ll guide your recovery step by step.' },
+  { icon:'🔄', name:'After Surgery',      desc:'Recovering from an operation? We will guide your recovery step by step.' },
   { icon:'📱', name:'Online Sessions',    desc:'Talk to a specialist from home — on your phone or laptop. No travel needed.' },
 ]
 
 const HOW_IT_WORKS = [
-  { step:'01', icon:'📞', title:'Tell us what hurts',  desc:'Fill a short form — 60 seconds. Tell us where the pain is and how long it\'s been bothering you.' },
-  { step:'02', icon:'🩺', title:'We find the right fit',desc:'We match you with a specialist near you or set up a video call if you\'d prefer to stay home.' },
+  { step:'01', icon:'📞', title:'Tell us what hurts',  desc:'Fill a short form in 60 seconds. Tell us where the pain is and how long it has been bothering you.' },
+  { step:'02', icon:'🩺', title:'We find the right fit',desc:'We match you with a specialist near you or set up a video call if you prefer to stay home.' },
   { step:'03', icon:'💬', title:'Start your session',  desc:'Speak to your physiotherapist, get a plan made just for you, and start feeling better.' },
   { step:'04', icon:'🌟', title:'Get back to normal',  desc:'Follow your plan, track progress, and get back to the activities you love.' },
 ]
@@ -156,7 +156,7 @@ function SimpleBooking({ onClose, onSuccess, db }) {
         <div style={{ background:'#12382A', padding:'20px 24px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           <div>
             <div style={{ fontFamily:"'Playfair Display',serif", fontWeight:900, fontSize:'1.15rem', color:'#fff' }}>Book a free call</div>
-            <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, color:'rgba(255,255,255,.55)', marginTop:2 }}>Step {step} of 2 · {step===1?'Your details':'What's hurting?'}</div>
+            <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, color:'rgba(255,255,255,.55)', marginTop:2 }}>Step {step} of 2 · {step===1?'Your details':'What is hurting?'}</div>
           </div>
           <button onClick={onClose} style={{ background:'rgba(255,255,255,.15)', border:'none', borderRadius:8, width:32, height:32, cursor:'pointer', color:'#fff', fontSize:16 }}>✕</button>
         </div>
@@ -164,7 +164,7 @@ function SimpleBooking({ onClose, onSuccess, db }) {
         <div style={{ padding:'24px 26px 22px' }}>
           {step === 1 && (
             <div>
-              <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:14, color:'#5C6878', marginBottom:18, lineHeight:1.6 }}>Just your name and number — we'll call you back and sort everything else.</p>
+              <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:14, color:'#5C6878', marginBottom:18, lineHeight:1.6 }}>Just your name and number — we will call you back and sort everything else.</p>
               {[['Your name','name','text','e.g. Rahul Sharma'],['WhatsApp number','phone','tel','e.g. 98XXXXXXXX']].map(([l,k,t,ph])=>(
                 <div key={k} style={{ marginBottom:14 }}>
                   <label style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, fontWeight:700, color:'#0A6B5E', display:'block', marginBottom:5 }}>{l}</label>
@@ -209,7 +209,7 @@ function SimpleBooking({ onClose, onSuccess, db }) {
               <div style={{ display:'flex', gap:10, alignItems:'flex-start', background:'#FFF8EF', borderRadius:8, padding:12, marginBottom:4 }}>
                 <input type="checkbox" id="agree" checked={f.agree} onChange={e=>set('agree',e.target.checked)} style={{ width:16, height:16, marginTop:2, accentColor:'#12382A', flexShrink:0 }}/>
                 <label htmlFor="agree" style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, color:'#5C6878', lineHeight:1.6, cursor:'pointer' }}>
-                  I'm happy for PhysioDrishti to contact me. My details stay private.
+                  I am happy for PhysioDrishti to contact me. My details stay private.
                 </label>
               </div>
             </div>
@@ -327,13 +327,14 @@ function BookingModal({ onClose, onSuccess }) {
 
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.6)', zIndex:999, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }} onClick={onClose}>
+      
       <div style={{ background:'#fff', borderRadius:16, width:'100%', maxWidth:460, boxShadow:'0 24px 64px rgba(0,0,0,.25)', overflow:'hidden' }} onClick={e => e.stopPropagation()}>
 
         {/* Header */}
         <div style={{ background:'#12382A', padding:'20px 24px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           <div>
             <div className="pd" style={{ fontSize:'1.15rem', fontWeight:900, color:'#fff' }}>Book a free call</div>
-            <div className="pj" style={{ fontSize:12, color:'rgba(255,255,255,.55)', marginTop:2 }}>Step {step} of 2 · {step===1?'Your details':'What\'s hurting?'}</div>
+            <div className="pj" style={{ fontSize:12, color:'rgba(255,255,255,.55)', marginTop:2 }}>Step {step} of 2 · {step===1?'Your details':'What is hurting?'}</div>
           </div>
           <button onClick={onClose} style={{ background:'rgba(255,255,255,.15)', border:'none', borderRadius:8, width:32, height:32, cursor:'pointer', color:'#fff', fontSize:16 }}>✕</button>
         </div>
@@ -343,7 +344,7 @@ function BookingModal({ onClose, onSuccess }) {
           {step === 1 && (
             <div className="fade-lp">
               <p className="pj" style={{ fontSize:14, color:'#5C6878', marginBottom:20, lineHeight:1.6 }}>
-                Just your name and number — we'll call you back and sort out everything else.
+                Just your name and number — we will call you back and sort out everything else.
               </p>
               {[['Your name','name','text','e.g. Rahul Sharma'],['WhatsApp number','phone','tel','e.g. 98XXXXXXXX']].map(([l,k,t,ph])=>(
                 <div key={k} style={{ marginBottom:16 }}>
@@ -393,7 +394,7 @@ function BookingModal({ onClose, onSuccess }) {
               <div style={{ display:'flex', gap:10, alignItems:'flex-start', background:'#FFF8EF', borderRadius:8, padding:12, marginBottom:4 }}>
                 <input type="checkbox" id="agree" checked={f.agree} onChange={e=>set('agree',e.target.checked)} style={{ width:16, height:16, marginTop:2, accentColor:'#12382A', flexShrink:0 }} />
                 <label htmlFor="agree" className="pj" style={{ fontSize:12, color:'#5C6878', lineHeight:1.6, cursor:'pointer' }}>
-                  I'm happy for PhysioDrishti to contact me. My details stay private and won't be shared.
+                  I am happy for PhysioDrishti to contact me. My details stay private and won't be shared.
                 </label>
               </div>
             </div>
@@ -505,7 +506,7 @@ export default function LandingPage({ onGoToDashboard, mapplsKey }) {
       {/* Success bar */}
       {booked && (
         <div style={{ background:'#12382A', padding:'11px 5%', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
-          <div className="pj" style={{ fontSize:14, color:'#fff' }}>🎉 Done, <strong>{booked.name}</strong>! We'll WhatsApp you within 30 minutes.</div>
+          <div className="pj" style={{ fontSize:14, color:'#fff' }}>🎉 Done, <strong>{booked.name}</strong>! We will WhatsApp you within 30 minutes.</div>
           <button onClick={()=>setBooked(null)} style={{ background:'rgba(255,255,255,.15)', border:'none', borderRadius:6, padding:'3px 10px', color:'#fff', cursor:'pointer', fontSize:12 }}>✕</button>
         </div>
       )}
@@ -553,11 +554,11 @@ export default function LandingPage({ onGoToDashboard, mapplsKey }) {
                 Get back to doing<br /><em style={{ color:'#F4A574', fontStyle:'italic' }}>what you love.</em>
               </h1>
               <p className="pj" style={{ color:'rgba(255,255,255,.72)', fontSize:17, lineHeight:1.75, maxWidth:500, marginBottom:36 }}>
-                Whether it's back pain, a sports injury, or recovery after surgery — our physiotherapists come to you or meet you online. Real experts, real relief.
+                Whether it has back pain, a sports injury, or recovery after surgery — our physiotherapists come to you or meet you online. Real experts, real relief.
               </p>
               <div style={{ display:'flex', gap:12, flexWrap:'wrap', marginBottom:36 }}>
                 <button className="btn-main" style={{ padding:'14px 30px', fontSize:16 }} onClick={()=>setShowModal(true)}>Book a free call →</button>
-                <button className="btn-ghost" onClick={onGoToDashboard}>I'm a clinic</button>
+                <button className="btn-ghost" onClick={onGoToDashboard}>I am a clinic</button>
               </div>
               <div style={{ display:'flex', gap:28, flexWrap:'wrap' }}>
                 {[['⭐ 4.9','Rating'],['🏥 3,400+','Sessions done'],['📍 10+','Areas in Bengaluru'],['📱','Online & at home']].map(([v,l])=>(
@@ -570,7 +571,7 @@ export default function LandingPage({ onGoToDashboard, mapplsKey }) {
             <div className="hero-card" style={{ flex:'0 0 340px' }}>
               <div style={{ background:'rgba(255,255,255,.08)', backdropFilter:'blur(16px)', borderRadius:16, padding:28, border:'1px solid rgba(255,255,255,.13)' }}>
                 <div className="pd" style={{ fontSize:'1.05rem', fontWeight:800, color:'#fff', marginBottom:5 }}>Where does it hurt?</div>
-                <div className="pj" style={{ fontSize:12, color:'rgba(255,255,255,.55)', marginBottom:18 }}>Pick one and we'll find you the right specialist today.</div>
+                <div className="pj" style={{ fontSize:12, color:'rgba(255,255,255,.55)', marginBottom:18 }}>Pick one and we will find you the right specialist today.</div>
                 <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                   {['Back or neck pain','Knee or hip pain','Shoulder problem','Sports injury','After surgery','Something else'].map(p=>(
                     <button key={p} className="pain-btn" onClick={()=>setShowModal(true)}>{p}<span>→</span></button>
@@ -621,7 +622,7 @@ export default function LandingPage({ onGoToDashboard, mapplsKey }) {
             ))}
           </div>
           <div style={{ textAlign:'center', marginTop:40 }}>
-            <button className="btn-main" style={{ padding:'14px 36px', fontSize:16 }} onClick={()=>setShowModal(true)}>Start today — it's free →</button>
+            <button className="btn-main" style={{ padding:'14px 36px', fontSize:16 }} onClick={()=>setShowModal(true)}>Start today — it has free →</button>
           </div>
         </div>
       </section>
@@ -634,7 +635,7 @@ export default function LandingPage({ onGoToDashboard, mapplsKey }) {
             <h2 className="pd" style={{ fontSize:'2.2rem', fontWeight:900 }}>What people say</h2>
           </div>
           <div className="review-grid" style={{ display:'grid', gap:20 }}>
-            {REVIEWS.map(r=>(
+            { REVIEWS.map(r=>(
               <div key={r.name} className="card-lp" style={{ padding:24 }}>
                 <div style={{ marginBottom:12 }}>{'★★★★★'.split('').map((s,i)=><span key={i} className="star">{s}</span>)}</div>
                 <div className="pd" style={{ fontSize:'1rem', fontWeight:700, marginBottom:4 }}>{r.pain}</div>
@@ -650,7 +651,7 @@ export default function LandingPage({ onGoToDashboard, mapplsKey }) {
       {/* Final CTA */}
       <section style={{ padding:'72px 5%', background:'linear-gradient(135deg,#12382A,#0D3828)', textAlign:'center' }}>
         <div style={{ maxWidth:560, margin:'0 auto' }}>
-          <h2 className="pd" style={{ fontSize:'2.2rem', fontWeight:900, color:'#fff', marginBottom:14 }}>Pain is holding you back.<br /><em style={{ color:'#F4A574' }}>Let's change that.</em></h2>
+          <h2 className="pd" style={{ fontSize:'2.2rem', fontWeight:900, color:'#fff', marginBottom:14 }}>Pain is holding you back.<br /><em style={{ color:'#F4A574' }}>We can change that.</em></h2>
           <p className="pj" style={{ color:'rgba(255,255,255,.7)', fontSize:16, marginBottom:32, lineHeight:1.7 }}>Join thousands of people across India who got back to a pain-free life.</p>
           <button className="btn-main" style={{ padding:'15px 40px', fontSize:17 }} onClick={()=>setShowModal(true)}>Book my free call →</button>
         </div>
@@ -690,4 +691,4 @@ export default function LandingPage({ onGoToDashboard, mapplsKey }) {
       {showModal && <SimpleBooking onClose={()=>setShowModal(false)} onSuccess={f=>{setShowModal(false);setBooked(f)}} db={db}/>}
     </div>
   )
-}
+          }
