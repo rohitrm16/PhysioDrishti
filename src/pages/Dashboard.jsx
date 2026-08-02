@@ -187,16 +187,486 @@ function MapplsMap({ apiKey, height = 340, patients = [] }) {
   )
 }
 
+/* ─── Exercise prescription HTML builder ─────────────────────────── */
+function buildPrescriptionHTML(exercises, patient, doctorName, note, format) {
+  const dateStr = new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'long', year:'numeric' })
+  const filled = exercises.filter(e => e.name.trim())
+  const isIG = format === 'instagram'
+  const scale = isIG ? 2.4 : 1
+
+  const exRows = filled.map((ex, i) => `
+    <div style="display:flex;gap:${14*scale}px;margin-bottom:${16*scale}px;padding-bottom:${14*scale}px;border-bottom:1px solid #DDE4EF;align-items:flex-start">
+      <div style="width:${26*scale}px;height:${26*scale}px;background:#12382A;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:${11*scale}px;font-weight:800;font-family:Plus Jakarta Sans,sans-serif;flex-shrink:0">${i+1}</div>
+      <div style="flex:1">
+        <div style="font-size:${14*scale}px;font-weight:800;color:#0D1520;margin-bottom:${3*scale}px;font-family:Plus Jakarta Sans,sans-serif">${ex.name}</div>
+        <div style="font-size:${11*scale}px;color:#D4510E;font-weight:700;margin-bottom:${3*scale}px;font-family:Plus Jakarta Sans,sans-serif">${ex.sets} sets × ${ex.reps} reps · ${ex.frequency}</div>
+        ${ex.instructions ? `<div style="font-size:${11*scale}px;color:#5C6878;line-height:1.6;font-family:Plus Jakarta Sans,sans-serif">${ex.instructions}</div>` : ''}
+      </div>
+    </div>`).join('')
+
+  const reminders = ['Stop immediately if pain increases', 'Contact us if you feel any discomfort', 'Consistency matters — do these daily', 'Next check-in: reply here to book'].map(r =>
+    `<div style="display:flex;gap:${8*scale}px;align-items:center;margin-bottom:${6*scale}px;font-size:${11*scale}px;color:#5C6878;font-family:Plus Jakarta Sans,sans-serif"><div style="width:${5*scale}px;height:${5*scale}px;background:#3A9A6B;border-radius:50%;flex-shrink:0"></div>${r}</div>`
+  ).join('')
+
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>Exercise Prescription — ${patient.name}</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+@media print{@page{size:${isIG?'405px 720px':'A4 portrait'};margin:0}body{margin:0}}
+.page{width:${isIG?405:210}${isIG?'px':'mm'};${isIG?'height:720px;':'min-height:297mm;'}background:#fff;display:flex;flex-direction:column}
+</style></head><body>
+<div class="page">
+<div style="background:#12382A;padding:${22*scale}px ${30*scale}px;display:flex;align-items:center;gap:${14*scale}px">
+  <div style="width:${38*scale}px;height:${38*scale}px;background:rgba(255,255,255,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:${20*scale}px;border:2px solid rgba(255,255,255,.25);flex-shrink:0">🌿</div>
+  <div style="flex:1">
+    <div style="font-family:Playfair Display,serif;font-weight:900;color:#fff;font-size:${16*scale}px">PhysioDrishti</div>
+    <div style="color:rgba(255,255,255,.6);font-size:${9*scale}px;font-family:Plus Jakarta Sans,sans-serif">Dr. ${doctorName} · BPT, MPT</div>
+  </div>
+  <div style="background:#D4510E;color:#fff;padding:${4*scale}px ${12*scale}px;border-radius:${5*scale}px;font-size:${9*scale}px;font-weight:800;letter-spacing:1px;font-family:Plus Jakarta Sans,sans-serif;text-transform:uppercase">Exercise Rx</div>
+</div>
+<div style="background:#F3F6FA;padding:${12*scale}px ${30*scale}px;display:flex;gap:${32*scale}px;border-bottom:1px solid #DDE4EF">
+  ${[['Patient',patient.name],['Date',dateStr],['Condition',patient.pain||'General']].map(([l,v])=>`<div><div style="font-size:${8*scale}px;font-weight:800;color:#5C6878;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;font-family:Plus Jakarta Sans,sans-serif">${l}</div><div style="font-size:${13*scale}px;font-weight:700;color:#0D1520;font-family:Plus Jakarta Sans,sans-serif">${v}</div></div>`).join('')}
+</div>
+<div style="padding:${20*scale}px ${30*scale}px;flex:1">
+  <div style="font-size:${9*scale}px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#0A6B5E;margin-bottom:${14*scale}px;font-family:Plus Jakarta Sans,sans-serif">Your Exercise Plan</div>
+  ${exRows || `<div style="color:#9BA8B5;font-size:${12*scale}px;font-style:italic;font-family:Plus Jakarta Sans,sans-serif">No exercises added</div>`}
+</div>
+${note ? `<div style="margin:0 ${30*scale}px ${16*scale}px;background:#FFF8EF;border-left:${4*scale}px solid #D4510E;padding:${10*scale}px ${14*scale}px;border-radius:0 ${6*scale}px ${6*scale}px 0"><div style="font-size:${9*scale}px;font-weight:800;color:#D4510E;text-transform:uppercase;letter-spacing:1px;margin-bottom:${4*scale}px;font-family:Plus Jakarta Sans,sans-serif">Doctor's Notes</div><div style="font-size:${11*scale}px;color:#0D1520;line-height:1.65;font-family:Plus Jakarta Sans,sans-serif">${note}</div></div>` : ''}
+<div style="padding:0 ${30*scale}px ${20*scale}px">
+  <div style="font-size:${9*scale}px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#0A6B5E;margin-bottom:${10*scale}px;font-family:Plus Jakarta Sans,sans-serif">Important Reminders</div>
+  ${reminders}
+</div>
+<div style="background:#12382A;padding:${12*scale}px ${30*scale}px;display:flex;justify-content:space-between;align-items:center;margin-top:auto">
+  <div style="font-size:${11*scale}px;font-weight:700;color:#fff;font-family:Plus Jakarta Sans,sans-serif">PhysioDrishti · Bengaluru</div>
+  <div style="font-size:${10*scale}px;color:rgba(255,255,255,.5);font-family:Plus Jakarta Sans,sans-serif">physiodrishti.in</div>
+</div>
+</div></body></html>`
+}
+
+/* ─── Exercise prescription modal ───────────────────────────────── */
+function ExercisePrescriptionModal({ patient, doctorName, onClose }) {
+  const mkEx = () => ({ id: Date.now() + Math.random(), name:'', sets:'3', reps:'10', frequency:'Daily', instructions:'' })
+  const [exercises, setExercises] = useState([mkEx(), mkEx(), mkEx()])
+  const [note,   setNote]   = useState('')
+  const [format, setFormat] = useState('a4')
+
+  const updateEx = (id, key, val) => setExercises(p => p.map(e => e.id === id ? {...e, [key]: val} : e))
+  const removeEx = (id) => setExercises(p => p.filter(e => e.id !== id))
+
+  const printPDF = () => {
+    const html = buildPrescriptionHTML(exercises, patient, doctorName, note, format)
+    const w = window.open('', '_blank', 'width=1000,height=1300')
+    if (!w) { alert('Allow pop-ups to generate the PDF.'); return }
+    w.document.write(html)
+    w.document.close()
+    setTimeout(() => w.print(), 600)
+  }
+
+  const sendWA = () => {
+    const lines = exercises.filter(e=>e.name.trim()).map((e,i)=>`${i+1}. ${e.name} — ${e.sets} sets × ${e.reps} (${e.frequency})`)
+    const msg = `Hi ${patient.name}! 👋\n\nHere's your exercise plan from Dr. ${doctorName} at PhysioDrishti 🌿\n\n${lines.join('\n')}${note?`\n\nNote: ${note}`:''}\n\nDo these daily and WhatsApp us if anything hurts. See you at your next session! 💪`
+    openWhatsApp(patient.phone, msg)
+  }
+
+  const preview = (
+    <div style={{ background:'#fff', borderRadius:8, overflow:'hidden', boxShadow:'0 2px 14px rgba(0,0,0,.1)', fontSize:11 }}>
+      <div style={{ background:C.forest, padding:'10px 14px', display:'flex', alignItems:'center', gap:8 }}>
+        <div style={{ width:24, height:24, borderRadius:'50%', background:'rgba(255,255,255,.15)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12 }}>🌿</div>
+        <div style={{ flex:1 }}>
+          <div className="pd" style={{ fontSize:11, fontWeight:900, color:'#fff' }}>PhysioDrishti</div>
+          <div className="pj" style={{ fontSize:8, color:'rgba(255,255,255,.6)' }}>Dr. {doctorName}</div>
+        </div>
+        <div style={{ background:C.saffron, color:'#fff', padding:'2px 7px', borderRadius:4, fontSize:7, fontWeight:800 }}>Exercise Rx</div>
+      </div>
+      <div style={{ background:C.light, padding:'7px 12px', display:'flex', gap:14, borderBottom:`1px solid ${C.border}` }}>
+        <div><div className="pj" style={{ fontSize:7, color:C.gray, fontWeight:700, textTransform:'uppercase' }}>Patient</div><div className="pj" style={{ fontSize:10, fontWeight:700 }}>{patient.name}</div></div>
+        <div><div className="pj" style={{ fontSize:7, color:C.gray, fontWeight:700, textTransform:'uppercase' }}>Condition</div><div className="pj" style={{ fontSize:10, fontWeight:700 }}>{patient.pain||'General'}</div></div>
+      </div>
+      <div style={{ padding:'10px 12px' }}>
+        <div className="pj" style={{ fontSize:7, fontWeight:800, color:C.teal, textTransform:'uppercase', letterSpacing:1, marginBottom:7 }}>Exercise Plan</div>
+        {exercises.filter(e=>e.name.trim()).length===0
+          ? <div className="pj" style={{ fontSize:9, color:C.gray, fontStyle:'italic' }}>Add exercises on the left →</div>
+          : exercises.filter(e=>e.name.trim()).map((ex,i) => (
+            <div key={ex.id} style={{ display:'flex', gap:7, marginBottom:7, paddingBottom:7, borderBottom:`1px solid ${C.border}` }}>
+              <div style={{ width:16, height:16, borderRadius:'50%', background:C.forest, color:'#fff', fontSize:8, fontWeight:800, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontFamily:'Plus Jakarta Sans,sans-serif' }}>{i+1}</div>
+              <div>
+                <div className="pj" style={{ fontSize:10, fontWeight:800 }}>{ex.name}</div>
+                <div className="pj" style={{ fontSize:8, color:C.saffron, fontWeight:700 }}>{ex.sets}×{ex.reps} · {ex.frequency}</div>
+                {ex.instructions && <div className="pj" style={{ fontSize:8, color:C.gray, lineHeight:1.4 }}>{ex.instructions}</div>}
+              </div>
+            </div>
+          ))
+        }
+        {note && <div style={{ background:'#FFF8EF', borderLeft:`3px solid ${C.saffron}`, padding:'6px 8px', borderRadius:'0 5px 5px 0', marginTop:6 }}>
+          <div className="pj" style={{ fontSize:7, fontWeight:800, color:C.saffron, marginBottom:2 }}>DOCTOR'S NOTES</div>
+          <div className="pj" style={{ fontSize:8, color:C.ink, lineHeight:1.4 }}>{note}</div>
+        </div>}
+      </div>
+      <div style={{ background:C.forest, padding:'8px 12px', display:'flex', justifyContent:'space-between' }}>
+        <div className="pj" style={{ fontSize:8, fontWeight:700, color:'#fff' }}>PhysioDrishti</div>
+        <div className="pj" style={{ fontSize:7, color:'rgba(255,255,255,.5)' }}>physiodrishti.in</div>
+      </div>
+    </div>
+  )
+
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.6)', zIndex:950, display:'flex', alignItems:'center', justifyContent:'center', padding:12 }} onClick={onClose}>
+      <div style={{ background:'#fff', borderRadius:16, width:'100%', maxWidth:880, maxHeight:'92vh', overflow:'hidden', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,.3)' }} onClick={e=>e.stopPropagation()}>
+
+        {/* Header */}
+        <div style={{ background:C.forest, padding:'14px 22px', display:'flex', justifyContent:'space-between', alignItems:'center', flexShrink:0 }}>
+          <div>
+            <div className="pj" style={{ fontSize:10, color:'rgba(255,255,255,.55)', textTransform:'uppercase', letterSpacing:2 }}>Exercise Prescription</div>
+            <div className="pd" style={{ fontSize:'1.1rem', fontWeight:900, color:'#fff' }}>{patient.name} · {patient.pain||'General'}</div>
+          </div>
+          <div style={{ display:'flex', gap:8 }}>
+            {[['💬 WhatsApp','#25D366',sendWA],['📄 Print PDF',C.saffron,printPDF],['✕','rgba(255,255,255,.2)',onClose]].map(([l,bg,fn])=>(
+              <button key={l} onClick={fn} style={{ background:bg, border:'none', borderRadius:7, padding:'8px 14px', color:'#fff', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Plus Jakarta Sans,sans-serif' }}>{l}</button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
+          {/* Form */}
+          <div style={{ flex:1, overflowY:'auto', padding:22, borderRight:`1px solid ${C.border}` }}>
+            {/* Format toggle */}
+            <div style={{ display:'flex', gap:8, marginBottom:18 }}>
+              {[['a4','📄 A4 Print'],['instagram','📱 Square Card']].map(([f,l])=>(
+                <button key={f} onClick={()=>setFormat(f)} className="pj" style={{ flex:1, padding:'7px 0', border:`1.5px solid ${format===f?C.forest:C.border}`, borderRadius:7, background:format===f?C.forest:'#fff', color:format===f?'#fff':C.gray, fontSize:12, fontWeight:700, cursor:'pointer' }}>{l}</button>
+              ))}
+            </div>
+
+            {exercises.map((ex, i) => (
+              <div key={ex.id} style={{ background:C.light, borderRadius:10, padding:14, marginBottom:10 }}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+                  <span className="pj" style={{ fontSize:10, fontWeight:800, color:C.teal, textTransform:'uppercase', letterSpacing:1 }}>Exercise {i+1}</span>
+                  {exercises.length > 1 && <button onClick={()=>removeEx(ex.id)} style={{ background:'none', border:'none', cursor:'pointer', color:C.gray, fontSize:13 }}>✕</button>}
+                </div>
+                <input className="field-d" placeholder="Exercise name (e.g. Bridge Exercise)" value={ex.name} onChange={e=>updateEx(ex.id,'name',e.target.value)} style={{ marginBottom:8 }}/>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8, marginBottom:8 }}>
+                  {[['Sets','sets'],['Reps / Time','reps']].map(([label,key])=>(
+                    <div key={key}>
+                      <label className="pj" style={{ fontSize:10, fontWeight:700, color:C.gray, display:'block', marginBottom:4 }}>{label}</label>
+                      <input className="field-d" value={ex[key]} onChange={e=>updateEx(ex.id,key,e.target.value)} style={{ textAlign:'center' }}/>
+                    </div>
+                  ))}
+                  <div>
+                    <label className="pj" style={{ fontSize:10, fontWeight:700, color:C.gray, display:'block', marginBottom:4 }}>Frequency</label>
+                    <select className="field-d" value={ex.frequency} onChange={e=>updateEx(ex.id,'frequency',e.target.value)}>
+                      {['Daily','Twice daily','3× week','Every other day','Twice weekly'].map(f=><option key={f}>{f}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <textarea className="field-d" placeholder="Instructions / cues…" rows={2} value={ex.instructions} onChange={e=>updateEx(ex.id,'instructions',e.target.value)} style={{ resize:'none' }}/>
+              </div>
+            ))}
+
+            <button onClick={()=>setExercises(p=>[...p,mkEx()])} className="btn-soft" style={{ width:'100%', padding:10, marginBottom:14 }}>+ Add exercise</button>
+
+            <div>
+              <label className="pj" style={{ fontSize:12, fontWeight:700, color:C.teal, display:'block', marginBottom:6 }}>Doctor's note <span style={{ fontWeight:400, color:C.gray }}>(optional)</span></label>
+              <textarea className="field-d" rows={3} placeholder="Precautions, timeline, specific advice…" value={note} onChange={e=>setNote(e.target.value)} style={{ resize:'none' }}/>
+            </div>
+          </div>
+
+          {/* Preview */}
+          <div style={{ width:300, flexShrink:0, overflowY:'auto', padding:16, background:'#F7F9FC' }}>
+            <div className="pj" style={{ fontSize:10, fontWeight:800, color:C.gray, textTransform:'uppercase', letterSpacing:2, marginBottom:12 }}>Live preview</div>
+            {preview}
+            <div className="pj" style={{ fontSize:10, color:C.gray, marginTop:10, lineHeight:1.6, textAlign:'center' }}>
+              "Print PDF" opens a print-ready page → Save as PDF → Share on WhatsApp
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ─── Weekly calendar view ───────────────────────────────────────── */
+function WeeklyCalendar({ sessions, onSchedule, onJoinSession, patients, doctorName, meetLink, onPrescribe }) {
+  const getMonday = (d) => {
+    const dt = new Date(d); dt.setHours(0,0,0,0)
+    const day = dt.getDay()
+    dt.setDate(dt.getDate() - (day === 0 ? 6 : day - 1))
+    return dt
+  }
+  const [weekStart, setWeekStart] = useState(() => getMonday(new Date()))
+
+  const HOUR_START = 8
+  const HOUR_END   = 20
+  const HOUR_H     = 72  // px per hour
+  const GRID_H     = (HOUR_END - HOUR_START) * HOUR_H
+
+  const weekDays = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStart); d.setDate(weekStart.getDate() + i); return d
+  })
+
+  const todayISO = (() => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+  })()
+
+  const dayISO = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+
+  const parseTime = (str = '') => {
+    const m = str.match(/(\d+):(\d+)\s*(AM|PM)/i)
+    if (!m) return { hour: HOUR_START, min: 0 }
+    let h = parseInt(m[1]); const min = parseInt(m[2]); const p = m[3].toUpperCase()
+    if (p === 'PM' && h !== 12) h += 12
+    if (p === 'AM' && h === 12) h = 0
+    return { hour: h, min }
+  }
+  const parseDurMins = (str = '30 min') => parseInt(str.match(/\d+/)?.[0] || 30)
+
+  const sessionsForDay = (iso) => sessions.filter(s => (s.date || todayISO) === iso)
+
+  const label = `${weekStart.toLocaleDateString('en-IN',{day:'numeric',month:'short'})} – ${weekDays[6].toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}`
+
+  const shiftWeek = (n) => { const d = new Date(weekStart); d.setDate(d.getDate() + n * 7); setWeekStart(d) }
+
+  const handleGridClick = (e, iso) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const y = e.clientY - rect.top
+    const h = Math.min(Math.floor(y / HOUR_H) + HOUR_START, HOUR_END - 1)
+    const m = Math.round(((y % HOUR_H) / HOUR_H) * 2) * 30
+    const min = m >= 60 ? 0 : m
+    onSchedule(iso, `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`)
+  }
+
+  const hourLabels = Array.from({ length: HOUR_END - HOUR_START + 1 }, (_, i) => i + HOUR_START)
+
+  return (
+    <div>
+      {/* Controls */}
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14, flexWrap:'wrap', gap:10 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <button onClick={()=>shiftWeek(-1)} className="btn-soft" style={{ padding:'5px 11px', fontSize:17, lineHeight:1 }}>‹</button>
+          <span className="pj" style={{ fontSize:13, fontWeight:700, color:C.ink }}>{label}</span>
+          <button onClick={()=>shiftWeek(1)}  className="btn-soft" style={{ padding:'5px 11px', fontSize:17, lineHeight:1 }}>›</button>
+          <button onClick={()=>setWeekStart(getMonday(new Date()))} className="btn-soft" style={{ fontSize:11, padding:'5px 10px' }}>Today</button>
+        </div>
+        <button className="btn-o" onClick={()=>onSchedule(null, null)}>+ Schedule session</button>
+      </div>
+
+      {/* Grid */}
+      <div className="card-d" style={{ overflow:'auto' }}>
+        <div style={{ display:'flex', minWidth:680 }}>
+
+          {/* Time column */}
+          <div style={{ width:50, flexShrink:0 }}>
+            <div style={{ height:46, borderBottom:`1px solid ${C.border}` }}/>
+            <div style={{ position:'relative', height:GRID_H }}>
+              {hourLabels.map((h, i) => (
+                <div key={h} style={{ position:'absolute', top: i * HOUR_H - 9, left:0, right:0, paddingRight:8, textAlign:'right', pointerEvents:'none' }}>
+                  <span className="pj" style={{ fontSize:9.5, color:C.gray, fontWeight:600 }}>
+                    {h === 12 ? '12 pm' : h < 12 ? `${h} am` : `${h-12} pm`}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Day columns */}
+          {weekDays.map((day) => {
+            const iso = dayISO(day)
+            const isToday = iso === todayISO
+            const daySessions = sessionsForDay(iso)
+
+            return (
+              <div key={iso} style={{ flex:1, minWidth:84, borderLeft:`1px solid ${C.border}` }}>
+                {/* Day header */}
+                <div style={{ height:46, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', borderBottom:`1px solid ${C.border}`, background: isToday ? C.greenLight : 'transparent' }}>
+                  <span className="pj" style={{ fontSize:9, fontWeight:700, color: isToday ? C.teal : C.gray, textTransform:'uppercase', letterSpacing:.5 }}>
+                    {day.toLocaleDateString('en-IN',{weekday:'short'})}
+                  </span>
+                  <div style={{ width:24, height:24, borderRadius:'50%', background: isToday ? C.forest : 'transparent', display:'flex', alignItems:'center', justifyContent:'center', marginTop:1 }}>
+                    <span className="pj" style={{ fontSize:12, fontWeight:800, color: isToday ? '#fff' : C.ink }}>{day.getDate()}</span>
+                  </div>
+                </div>
+
+                {/* Grid body */}
+                <div
+                  style={{ position:'relative', height:GRID_H, background: isToday ? 'rgba(237,247,242,.25)' : 'transparent', cursor:'cell' }}
+                  onClick={e => handleGridClick(e, iso)}
+                >
+                  {/* Grid lines */}
+                  {hourLabels.map((h, i) => (
+                    <div key={h}>
+                      <div style={{ position:'absolute', top: i * HOUR_H, left:0, right:0, borderTop: i === 0 ? 'none' : `1px solid ${C.border}` }}/>
+                      {i < hourLabels.length - 1 && (
+                        <div style={{ position:'absolute', top: i * HOUR_H + HOUR_H/2, left:0, right:0, borderTop:`1px dashed rgba(221,228,239,.6)` }}/>
+                      )}
+                    </div>
+                  ))}
+
+                  {/* Session cards */}
+                  {daySessions.map(s => {
+                    const { hour, min } = parseTime(s.time)
+                    const durMins = parseDurMins(s.duration)
+                    const top    = (hour - HOUR_START) * HOUR_H + (min / 60) * HOUR_H
+                    const height = Math.max((durMins / 60) * HOUR_H, 40)
+                    const isLive = s.status === 'live'
+                    const pt = patients.find(p => p.name === s.name)
+
+                    return (
+                      <div key={s.id} onClick={e => e.stopPropagation()} style={{
+                        position:'absolute', left:3, right:3, top, height,
+                        borderRadius:6, padding:'4px 7px', overflow:'hidden',
+                        background: isLive ? `linear-gradient(135deg,${C.saffron},#BF4610)` : C.forest,
+                        boxShadow: isLive ? '0 2px 10px rgba(212,81,14,.4)' : '0 1px 5px rgba(0,0,0,.18)',
+                        cursor:'default', display:'flex', flexDirection:'column',
+                      }}>
+                        {isLive && (
+                          <div style={{ display:'flex', alignItems:'center', gap:3, marginBottom:2 }}>
+                            <div style={{ width:5, height:5, borderRadius:'50%', background:'#fff', animation:'blink 1s infinite' }}/>
+                            <span className="pj" style={{ fontSize:8, color:'rgba(255,255,255,.85)', fontWeight:700 }}>LIVE</span>
+                          </div>
+                        )}
+                        <div className="pj" style={{ fontSize:10, fontWeight:800, color:'#fff', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{s.name}</div>
+                        {height >= 54 && (
+                          <div className="pj" style={{ fontSize:8.5, color:'rgba(255,255,255,.65)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{s.time} · {s.duration}</div>
+                        )}
+                        {height >= 66 && (
+                          <div style={{ display:'flex', gap:3, marginTop:'auto' }}>
+                            <button onClick={()=>onJoinSession(s)} style={{ flex:1, background:'rgba(255,255,255,.2)', border:'none', borderRadius:3, padding:'2px 0', fontSize:8, color:'#fff', cursor:'pointer', fontFamily:'Plus Jakarta Sans,sans-serif', fontWeight:700 }}>
+                              {isLive ? '▶ Join' : '▶ Start'}
+                            </button>
+                            {onPrescribe && (
+                              <button onClick={()=>onPrescribe({ name:s.name, phone:pt?.phone||'', pain:s.pain })} style={{ background:'rgba(255,255,255,.2)', border:'none', borderRadius:3, padding:'2px 5px', fontSize:8, color:'#fff', cursor:'pointer', fontFamily:'Plus Jakarta Sans,sans-serif', fontWeight:700 }}>Rx</button>
+                            )}
+                            <button onClick={()=>openWhatsApp(pt?.phone||'', bookingConfirmMsg(s, doctorName, meetLink))} style={{ background:'rgba(37,211,102,.3)', border:'none', borderRadius:3, padding:'2px 5px', fontSize:8, color:'#fff', cursor:'pointer', fontFamily:'Plus Jakarta Sans,sans-serif', fontWeight:700 }}>WA</button>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div style={{ display:'flex', gap:16, marginTop:10, alignItems:'center', flexWrap:'wrap' }}>
+        {[[C.saffron,'Live now'],[C.forest,'Upcoming']].map(([col,lbl])=>(
+          <div key={lbl} style={{ display:'flex', alignItems:'center', gap:5 }}>
+            <div style={{ width:10, height:10, borderRadius:2, background:col }}/>
+            <span className="pj" style={{ fontSize:11, color:C.gray }}>{lbl}</span>
+          </div>
+        ))}
+        <span className="pj" style={{ fontSize:11, color:C.gray, marginLeft:'auto' }}>Click any empty slot to schedule · "Rx" to prescribe exercises</span>
+      </div>
+    </div>
+  )
+}
+
+/* ─── Pain score sparkline (pure SVG) ───────────────────────────── */
+function PainSparkline({ logs }) {
+  if (!logs || logs.length < 2) return null
+  const W = 220, H = 52
+  const scores = logs.map(l => l.score)
+  const pts = scores.map((s, i) => {
+    const x = (i / (scores.length - 1)) * W
+    const y = H - (s / 10) * H
+    return `${x},${y}`
+  }).join(' ')
+  const latest = scores[scores.length - 1]
+  const first  = scores[0]
+  const improving = latest < first
+  return (
+    <div style={{ background:'#F3F6FA', borderRadius:8, padding:'10px 14px' }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
+        <span className="pj" style={{ fontSize:10, fontWeight:800, letterSpacing:1, textTransform:'uppercase', color:C.gray }}>Pain trend</span>
+        <span className="pj" style={{ fontSize:11, fontWeight:700, color: improving ? C.green : C.red }}>
+          {improving ? `▼ ${first - latest} pts better` : first === latest ? '━ Same' : `▲ ${latest - first} pts worse`}
+        </span>
+      </div>
+      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ display:'block' }}>
+        <polyline points={pts} fill="none" stroke={improving ? '#3A9A6B' : '#D4510E'} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round"/>
+        {scores.map((s, i) => (
+          <circle key={i}
+            cx={(i / (scores.length - 1)) * W}
+            cy={H - (s / 10) * H}
+            r={4} fill={improving ? '#3A9A6B' : '#D4510E'} stroke="#fff" strokeWidth={1.5}/>
+        ))}
+      </svg>
+      <div style={{ display:'flex', justifyContent:'space-between', marginTop:2 }}>
+        <span className="pj" style={{ fontSize:9, color:C.gray }}>Session 1</span>
+        <span className="pj" style={{ fontSize:9, color:C.gray }}>Latest (pain {latest}/10)</span>
+      </div>
+    </div>
+  )
+}
+
+/* ─── Progress log modal ─────────────────────────────────────────── */
+function ProgressModal({ patient, onClose, onSave }) {
+  const [score, setScore] = useState(5)
+  const [notes, setNotes] = useState('')
+
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.5)', zIndex:900, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }} onClick={onClose}>
+      <div style={{ background:'#fff', borderRadius:14, width:'100%', maxWidth:400, padding:28 }} onClick={e=>e.stopPropagation()}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
+          <div>
+            <div className="pj" style={{ fontSize:12, fontWeight:800, color:C.saffron, textTransform:'uppercase', letterSpacing:1 }}>Log session</div>
+            <div className="pd" style={{ fontSize:'1.1rem', fontWeight:900, color:C.forest }}>{patient.name}</div>
+          </div>
+          <button onClick={onClose} style={{ background:'none', border:'none', fontSize:18, cursor:'pointer', color:C.gray }}>✕</button>
+        </div>
+
+        <div style={{ marginBottom:20 }}>
+          <label className="pj" style={{ fontSize:12, fontWeight:700, color:C.teal, display:'block', marginBottom:10 }}>
+            Pain score today: <strong style={{ color:C.ink, fontSize:16 }}>{score}/10</strong>
+            <span className="pj" style={{ fontSize:11, color:C.gray, marginLeft:8 }}>
+              {score<=2?'Almost none':score<=4?'Mild':score<=6?'Moderate':score<=8?'Significant':'Severe'}
+            </span>
+          </label>
+          <input type="range" min={0} max={10} step={1} value={score} onChange={e=>setScore(Number(e.target.value))}
+            style={{ width:'100%', accentColor:score<=4?C.mint:score<=7?C.amber:C.red, cursor:'pointer' }}/>
+          <div style={{ display:'flex', justifyContent:'space-between', marginTop:3 }}>
+            <span className="pj" style={{ fontSize:9, color:C.gray }}>No pain (0)</span>
+            <span className="pj" style={{ fontSize:9, color:C.gray }}>Worst (10)</span>
+          </div>
+        </div>
+
+        <div style={{ marginBottom:22 }}>
+          <label className="pj" style={{ fontSize:12, fontWeight:700, color:C.teal, display:'block', marginBottom:6 }}>Session notes</label>
+          <textarea className="field-d" rows={3} placeholder="Observations, exercises done, patient feedback…"
+            value={notes} onChange={e=>setNotes(e.target.value)}
+            style={{ resize:'none', lineHeight:1.55 }}/>
+        </div>
+
+        <div style={{ display:'flex', gap:10 }}>
+          <button className="btn-g" style={{ flex:1 }} onClick={()=>onSave({ score, notes, date: new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) })}>
+            Save log
+          </button>
+          <button onClick={onClose} className="btn-soft" style={{ flex:1 }}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ─── Video Call ─────────────────────────────────────────────────── */
-function VideoCall({ session, onClose }) {
+function VideoCall({ session, onClose, wherebyLink, onLogProgress }) {
   const [muted, setMuted]   = useState(false)
   const [cam, setCam]       = useState(true)
   const [t, setT]           = useState(0)
   const [notes, setNotes]   = useState('')
   const [exDone, setExDone] = useState([])
+  const [logDone, setLogDone] = useState(false)
   const exercises = ['Gentle knee bends','Leg raises','Seated marching','Calf stretches']
   useEffect(() => { const i = setInterval(() => setT(p=>p+1), 1000); return () => clearInterval(i) }, [])
   const fmt = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`
+
+  const handleEnd = () => {
+    if (onLogProgress && !logDone) onLogProgress(notes)
+    onClose()
+  }
 
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.88)', zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center', padding:12 }}>
@@ -207,26 +677,47 @@ function VideoCall({ session, onClose }) {
             <div style={{ width:9, height:9, borderRadius:'50%', background:'#22C55E', animation:'blink 1.5s infinite' }}/>
             <span className="pj" style={{ fontSize:13, color:'#fff', fontWeight:700 }}>Session with {session.name} · {fmt(t)}</span>
           </div>
-          <button onClick={onClose} style={{ background:'rgba(255,255,255,.12)', border:'none', borderRadius:6, padding:'5px 12px', color:'rgba(255,255,255,.75)', cursor:'pointer', fontSize:12 }}>✕ End</button>
+          <div style={{ display:'flex', gap:8 }}>
+            {wherebyLink && (
+              <a href={wherebyLink} target="_blank" rel="noreferrer"
+                style={{ background:'rgba(255,255,255,.12)', border:'none', borderRadius:6, padding:'5px 12px', color:'rgba(255,255,255,.75)', cursor:'pointer', fontSize:12, textDecoration:'none', fontFamily:'Plus Jakarta Sans,sans-serif' }}>
+                ↗ Open Whereby
+              </a>
+            )}
+            <button onClick={handleEnd} style={{ background:'rgba(255,255,255,.12)', border:'none', borderRadius:6, padding:'5px 12px', color:'rgba(255,255,255,.75)', cursor:'pointer', fontSize:12 }}>✕ End</button>
+          </div>
         </div>
 
         <div style={{ display:'grid', gridTemplateColumns:'1fr 240px', gap:10, padding:12 }}>
-          {/* Video */}
-          <div style={{ background:'#111', borderRadius:10, position:'relative', aspectRatio:'16/9' }}>
-            <div style={{ position:'absolute', inset:0, background:'linear-gradient(135deg,#1A3A2A,#0D2018)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-              <div style={{ textAlign:'center' }}>
-                <div style={{ fontSize:48, marginBottom:8 }}>{cam ? '👩‍⚕️' : '👤'}</div>
-                <div className="pj" style={{ fontSize:12, color:'rgba(255,255,255,.65)' }}>{session.name} · {session.area}</div>
-              </div>
-            </div>
-            {/* PiP */}
-            <div style={{ position:'absolute', bottom:10, right:10, width:90, height:65, background:'#0D2E1F', borderRadius:6, border:'2px solid rgba(255,255,255,.15)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-              <div style={{ textAlign:'center' }}><div style={{ fontSize:18 }}>🩺</div><div className="pj" style={{ fontSize:8, color:'rgba(255,255,255,.5)' }}>Dr. Priya Menon</div></div>
-            </div>
-            <div style={{ position:'absolute', top:10, left:10, background:'rgba(0,0,0,.5)', borderRadius:5, padding:'3px 8px', fontSize:12, color:'#fff', fontFamily:'Plus Jakarta Sans,sans-serif' }}>{fmt(t)}</div>
+          {/* Video area — real Whereby embed or mock */}
+          <div style={{ background:'#111', borderRadius:10, position:'relative', aspectRatio:'16/9', overflow:'hidden' }}>
+            {wherebyLink ? (
+              <iframe
+                src={`${wherebyLink}?skipMediaPermissionPrompt&background=off`}
+                allow="camera; microphone; fullscreen; speaker; display-capture"
+                style={{ width:'100%', height:'100%', border:'none' }}
+                title={`Session with ${session.name}`}
+              />
+            ) : (
+              <>
+                <div style={{ position:'absolute', inset:0, background:'linear-gradient(135deg,#1A3A2A,#0D2018)', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:12 }}>
+                  <div style={{ textAlign:'center' }}>
+                    <div style={{ fontSize:48, marginBottom:8 }}>{cam ? '👩‍⚕️' : '👤'}</div>
+                    <div className="pj" style={{ fontSize:12, color:'rgba(255,255,255,.65)' }}>{session.name} · {session.area}</div>
+                  </div>
+                  <div style={{ background:'rgba(255,255,255,.1)', borderRadius:8, padding:'8px 16px', marginTop:4 }}>
+                    <div className="pj" style={{ fontSize:11, color:'rgba(255,255,255,.5)', textAlign:'center' }}>Add your Whereby room URL in Settings to enable real video</div>
+                  </div>
+                </div>
+                <div style={{ position:'absolute', bottom:10, right:10, width:90, height:65, background:'#0D2E1F', borderRadius:6, border:'2px solid rgba(255,255,255,.15)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  <div style={{ textAlign:'center' }}><div style={{ fontSize:18 }}>🩺</div><div className="pj" style={{ fontSize:8, color:'rgba(255,255,255,.5)' }}>Dr. Priya Menon</div></div>
+                </div>
+                <div style={{ position:'absolute', top:10, left:10, background:'rgba(0,0,0,.5)', borderRadius:5, padding:'3px 8px', fontSize:12, color:'#fff', fontFamily:'Plus Jakarta Sans,sans-serif' }}>{fmt(t)}</div>
+              </>
+            )}
           </div>
 
-          {/* Right */}
+          {/* Right panel */}
           <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
             <div style={{ background:'rgba(255,255,255,.06)', borderRadius:8, padding:12 }}>
               <div className="pj" style={{ fontSize:10, fontWeight:800, letterSpacing:2, color:'rgba(255,255,255,.4)', textTransform:'uppercase', marginBottom:8 }}>Today's plan</div>
@@ -256,7 +747,10 @@ function VideoCall({ session, onClose }) {
           ].map(([icon, fn, active], i)=>(
             <button key={i} onClick={fn} style={{ width:42, height:42, borderRadius:'50%', border:'none', cursor:'pointer', fontSize:18, background:active?'rgba(185,50,50,.8)':'rgba(255,255,255,.12)', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', transition:'all .2s' }}>{icon}</button>
           ))}
-          <button onClick={onClose} style={{ background:'#C02020', border:'none', borderRadius:20, padding:'9px 22px', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Plus Jakarta Sans,sans-serif' }}>End session</button>
+          {onLogProgress && (
+            <button onClick={()=>{setLogDone(true);onLogProgress(notes)}} style={{ background:'rgba(58,154,107,.8)', border:'none', borderRadius:20, padding:'9px 16px', color:'#fff', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Plus Jakarta Sans,sans-serif' }}>📋 Log progress</button>
+          )}
+          <button onClick={handleEnd} style={{ background:'#C02020', border:'none', borderRadius:20, padding:'9px 22px', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Plus Jakarta Sans,sans-serif' }}>End session</button>
         </div>
       </div>
     </div>
@@ -272,8 +766,8 @@ function PatientModal({ mode, prefill, onClose, onSave }) {
     area: prefill?.area || '',
     pain: prefill?.pain || '',
     note: prefill?.note || '',
-    date: '',
-    time: '',
+    date: prefill?.date || '',
+    time: prefill?.time || '',
     sessionType: 'Video',
   })
   const set = (k,v) => setF(p=>({...p,[k]:v}))
@@ -384,7 +878,7 @@ function LogoImg({ size = 40 }) {
 
 
 /* ─── Dashboard ──────────────────────────────────────────────────── */
-export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
+export default function Dashboard({ onGoToLanding, onLogout, mapplsKey, setMapplsKey }) {
   const [tab, setTab]             = useState('overview')
   const [patients, setPatients]   = useState(INITIAL_PATIENTS)
   const [notif, setNotif]         = useState(0)
@@ -432,8 +926,16 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
   const [selected, setSelected]   = useState(null)  // selected patient
   const [w, setW]                 = useState(window.innerWidth)
   const [kwFilter, setKwFilter]   = useState('all')
-  const [meetLink, setMeetLink]     = useState(() => localStorage.getItem('pd_meet_link') || DEFAULT_MEET_LINK)
-  const [doctorName, setDoctorName] = useState(() => localStorage.getItem('pd_doctor_name') || 'Priya Menon')
+  const [meetLink,    setMeetLink]    = useState(() => localStorage.getItem('pd_meet_link')    || DEFAULT_MEET_LINK)
+  const [wherebyLink, setWherebyLink] = useState(() => localStorage.getItem('pd_whereby_link') || '')
+  const [doctorName,  setDoctorName]  = useState(() => localStorage.getItem('pd_doctor_name')  || 'Priya Menon')
+  const [followUps,   setFollowUps]   = useState(() => { try { return JSON.parse(localStorage.getItem('pd_follow_ups') || '[]') } catch { return [] } })
+  const [progress,    setProgress]    = useState(() => { try { return JSON.parse(localStorage.getItem('pd_progress')   || '{}') } catch { return {} } })
+  const [progressModal, setProgressModal] = useState(null)  // patient object when open
+  const [exerciseModal, setExerciseModal] = useState(null)  // patient object when open
+
+  useEffect(() => { localStorage.setItem('pd_follow_ups', JSON.stringify(followUps)) }, [followUps])
+  useEffect(() => { localStorage.setItem('pd_progress',   JSON.stringify(progress))  }, [progress])
 
   useEffect(() => {
     const h = () => setW(window.innerWidth)
@@ -466,8 +968,15 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
   }
 
   const scheduleSession = (form) => {
-    const timeStr = form.time ? form.time : '12:00 PM'
-    const newS = { id:Date.now(), name:form.name, pain:form.pain||'General session', time:timeStr, status:'upcoming', duration:'45 min', area:form.area||'Bengaluru', type:form.sessionType }
+    let timeStr = '12:00 PM'
+    if (form.time) {
+      const [hh, mm] = form.time.split(':').map(Number)
+      const period = hh >= 12 ? 'PM' : 'AM'
+      const h = hh % 12 || 12
+      timeStr = `${h}:${String(mm).padStart(2,'0')} ${period}`
+    }
+    const date = form.date || new Date().toISOString().split('T')[0]
+    const newS = { id:Date.now(), name:form.name, pain:form.pain||'General session', time:timeStr, date, status:'upcoming', duration:'45 min', area:form.area||'Bengaluru', type:form.sessionType }
     setSessions(p => [newS, ...p])
     setModal(null)
   }
@@ -525,6 +1034,12 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
             <span style={{ fontSize:17 }}>🌐</span>
             {(showLabel||(mob&&sideOpen)) && <span>Patient site</span>}
           </button>
+          {onLogout && (
+            <button className="side-btn" onClick={onLogout} style={{ color:'rgba(255,100,100,.75)' }}>
+              <span style={{ fontSize:17 }}>🔒</span>
+              {(showLabel||(mob&&sideOpen)) && <span>Lock dashboard</span>}
+            </button>
+          )}
         </div>
       </aside>
 
@@ -550,6 +1065,11 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
               {notif > 0 && <span style={{ position:'absolute', top:-4, right:-4, background:C.red, color:'#fff', borderRadius:'50%', width:15, height:15, display:'flex', alignItems:'center', justifyContent:'center', fontSize:8, fontWeight:800, fontFamily:'Plus Jakarta Sans,sans-serif' }}>{notif}</span>}
             </div>
             <div style={{ width:30, height:30, background:C.forest, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontSize:11, fontWeight:700, fontFamily:'Plus Jakarta Sans,sans-serif' }}>PM</div>
+            {!mob && onLogout && (
+              <button onClick={onLogout} className="btn-soft" style={{ fontSize:11, padding:'5px 12px' }} title="Sign out">
+                🔒 Lock
+              </button>
+            )}
           </div>
         </header>
 
@@ -618,6 +1138,33 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
                   ))}
                 </div>
               </div>
+
+              {/* Follow-up reminders */}
+              {followUps.filter(f=>!f.sent).length > 0 && (
+                <div className="card-d" style={{ padding:18, borderLeft:`4px solid ${C.amber}` }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+                    <div>
+                      <div className="pj" style={{ fontSize:10, fontWeight:800, letterSpacing:3, textTransform:'uppercase', color:C.amber, marginBottom:3 }}>Follow-ups</div>
+                      <div className="pd" style={{ fontSize:'1rem', fontWeight:800 }}>Pending reminders</div>
+                    </div>
+                    <span className="pj" style={{ background:'#FFF3EB', color:C.amber, padding:'3px 10px', borderRadius:20, fontSize:11, fontWeight:700 }}>{followUps.filter(f=>!f.sent).length} due</span>
+                  </div>
+                  {followUps.filter(f=>!f.sent).map(fu=>(
+                    <div key={fu.id} style={{ display:'flex', gap:10, alignItems:'center', padding:'9px 0', borderBottom:`1px solid ${C.border}` }}>
+                      <div style={{ flex:1 }}>
+                        <div className="pj" style={{ fontWeight:700, fontSize:13 }}>{fu.name}</div>
+                        <div className="pj" style={{ fontSize:11, color:C.gray }}>{fu.pain} · due {fu.dueDate}</div>
+                      </div>
+                      <button onClick={()=>{
+                        const msg = `Hi ${fu.name}! 👋 It's been 3 days since your last session.\n\nHow are you feeling? Is your ${fu.pain.toLowerCase()} getting better?\n\nReady to book your next session? Just reply here and we'll set it up.\n\n– Dr. ${doctorName}, PhysioDrishti 🌿`
+                        openWhatsApp(fu.phone, msg)
+                        setFollowUps(p=>p.map(f=>f.id===fu.id?{...f,sent:true}:f))
+                      }} style={{ background:'#25D366', color:'#fff', border:'none', borderRadius:7, padding:'6px 12px', fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Plus Jakarta Sans,sans-serif', flexShrink:0 }}>💬 Send</button>
+                      <button onClick={()=>setFollowUps(p=>p.filter(f=>f.id!==fu.id))} className="btn-soft" style={{ padding:'6px 10px', fontSize:11 }}>✕</button>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* Today's sessions */}
               <div className="card-d" style={{ padding:18 }}>
@@ -705,56 +1252,18 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
           {/* ── SESSIONS ── */}
           {tab === 'sessions' && (
             <div className="fade-d">
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:18, flexWrap:'wrap', gap:10 }}>
-                <div>
-                  <div className="pj" style={{ fontSize:10, fontWeight:800, letterSpacing:3, textTransform:'uppercase', color:C.saffron, marginBottom:3 }}>Sessions</div>
-                  <div className="pd" style={{ fontSize:'1.2rem', fontWeight:800 }}>Today's sessions · Dr. Priya Menon</div>
-                </div>
-                <button className="btn-o" onClick={()=>setModal({mode:'schedule'})}>+ Schedule session</button>
-              </div>
-
-              {/* Live banner */}
-              {sessions.filter(s=>s.status==='live').map(s=>(
-                <div key={s.id} style={{ background:'linear-gradient(135deg,#D4510E,#BF4610)', borderRadius:10, padding:'15px 20px', marginBottom:18, display:'flex', alignItems:'center', gap:14, flexWrap:'wrap' }}>
-                  <div style={{ width:10, height:10, borderRadius:'50%', background:'#fff', animation:'blink 1s infinite' }}/>
-                  <div style={{ flex:1 }}>
-                    <div className="pj" style={{ fontWeight:800, fontSize:14, color:'#fff' }}>🔴 Live now — {s.name}</div>
-                    <div className="pj" style={{ fontSize:12, color:'rgba(255,255,255,.8)' }}>{s.pain} · {s.area} · {s.duration}</div>
-                  </div>
-                  <button className="pj" onClick={()=>setLiveSession(s)} style={{ background:'#fff', color:C.saffron, border:'none', borderRadius:8, padding:'9px 20px', fontSize:13, fontWeight:800, cursor:'pointer' }}>📹 Join session</button>
-                </div>
-              ))}
-
-              <div className="g2" style={{ display:'grid', gap:14 }}>
-                {sessions.map(s=>(
-                  <div key={s.id} className="card-d" style={{ padding:20, border:s.status==='live'?`2px solid ${C.saffron}`:`1px solid ${C.border}` }}>
-                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:12 }}>
-                      <div style={{ display:'flex', gap:10, alignItems:'center' }}>
-                        <div style={{ width:38, height:38, borderRadius:'50%', background:s.status==='live'?`linear-gradient(135deg,${C.saffron},#BF4610)`:C.greenLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, flexShrink:0 }}>{s.status==='live'?'🔴':'⏰'}</div>
-                        <div>
-                          <div className="pj" style={{ fontWeight:800, fontSize:14 }}>{s.name}</div>
-                          <div className="pj" style={{ fontSize:11, color:C.gray }}>{s.area}</div>
-                        </div>
-                      </div>
-                      <span style={{ background:s.status==='live'?C.saffronLight:'#F0F2F5', color:s.status==='live'?C.saffron:C.gray, padding:'3px 9px', borderRadius:20, fontSize:11, fontWeight:700, fontFamily:'Plus Jakarta Sans,sans-serif' }}>{s.status==='live'?'● Live':s.time}</span>
-                    </div>
-                    <div className="pj" style={{ fontSize:13, fontWeight:600, marginBottom:2 }}>{s.pain}</div>
-                    <div className="pj" style={{ fontSize:12, color:C.gray, marginBottom:14 }}>{s.type} · {s.duration}</div>
-                    <div style={{ display:'flex', gap:8 }}>
-                      <button onClick={()=>setLiveSession(s)} className="pj"
-                        style={{ flex:1, background:s.status==='live'?C.saffron:C.forest, color:'#fff', border:'none', borderRadius:7, padding:'8px 0', fontSize:12, fontWeight:700, cursor:'pointer' }}>
-                        {s.status==='live'?'📹 Join now →':'📹 Start session'}
-                      </button>
-                      <button onClick={()=>openWhatsApp(
-                        patients.find(p=>p.name===s.name)?.phone||'',
-                        bookingConfirmMsg(s, doctorName, meetLink)
-                      )} style={{ flex:1, background:'#25D366', color:'#fff', border:'none', borderRadius:7, padding:'8px 0', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-                        📤 WhatsApp
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <WeeklyCalendar
+                sessions={sessions}
+                onSchedule={(dayISO, timeHHMM) => {
+                  const today = new Date().toISOString().split('T')[0]
+                  setModal({ mode:'schedule', prefill:{ date: dayISO || today, time: timeHHMM || '' } })
+                }}
+                onJoinSession={setLiveSession}
+                patients={patients}
+                doctorName={doctorName}
+                meetLink={meetLink}
+                onPrescribe={setExerciseModal}
+              />
             </div>
           )}
 
@@ -815,6 +1324,89 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
                   </tbody>
                 </table>
               </div>
+
+              {/* Strategic Recommendations */}
+              <div style={{ marginTop:24 }}>
+                <div className="pj" style={{ fontSize:10, fontWeight:800, letterSpacing:3, textTransform:'uppercase', color:C.saffron, marginBottom:4 }}>Strategic recommendations</div>
+                <div className="pd" style={{ fontSize:'1rem', fontWeight:800, marginBottom:16 }}>Grow your leads faster</div>
+                <div className="g3" style={{ display:'grid', gap:14 }}>
+
+                  {/* Card 1 — Long-tail keywords */}
+                  <div className="card-d" style={{ padding:20, borderLeft:`4px solid ${C.saffron}` }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:12 }}>
+                      <span style={{ fontSize:22 }}>🎯</span>
+                      <div className="pj" style={{ fontSize:13, fontWeight:800 }}>Target long-tail keywords</div>
+                    </div>
+                    <div className="pj" style={{ fontSize:12, color:C.gray, lineHeight:1.65, marginBottom:12 }}>
+                      High-intent, low-competition phrases that bring patients who are ready to book — not just browsing.
+                    </div>
+                    <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                      {[
+                        '"physiotherapy for lower back pain at home Bengaluru"',
+                        '"online physio for frozen shoulder India"',
+                        '"best physiotherapist after knee surgery Koramangala"',
+                        '"home visit physio for elderly HSR Layout"',
+                      ].map(kw => (
+                        <div key={kw} style={{ background:C.saffronLight, borderRadius:6, padding:'6px 10px', fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:11, fontWeight:600, color:C.saffron }}>
+                          {kw}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="pj" style={{ fontSize:11, color:C.green, fontWeight:700, marginTop:12 }}>
+                      ✓ Long-tail terms convert 3–5× better than broad terms
+                    </div>
+                  </div>
+
+                  {/* Card 2 — Near me / Local SEO */}
+                  <div className="card-d" style={{ padding:20, borderLeft:`4px solid ${C.green}` }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:12 }}>
+                      <span style={{ fontSize:22 }}>📍</span>
+                      <div className="pj" style={{ fontSize:13, fontWeight:800 }}>Win the "near me" factor</div>
+                    </div>
+                    <div className="pj" style={{ fontSize:12, color:C.gray, lineHeight:1.65, marginBottom:12 }}>
+                      60% of physio searches include a location. Dominate local results with these steps.
+                    </div>
+                    <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                      {[
+                        ['📸', 'Add 15+ photos to Google Business Profile — clinics with photos get 42% more direction requests'],
+                        ['⭐', 'Target 50+ Google reviews — ask every satisfied patient via WhatsApp'],
+                        ['🗺', 'List on Practo, Justdial, Sulekha, and 1mg — each listing boosts local authority'],
+                        ['📝', 'Write one blog per week on area-specific pain: "Knee pain treatment in Koramangala"'],
+                      ].map(([icon, text]) => (
+                        <div key={text} style={{ display:'flex', gap:8, alignItems:'flex-start' }}>
+                          <span style={{ fontSize:14, flexShrink:0, marginTop:1 }}>{icon}</span>
+                          <span className="pj" style={{ fontSize:12, color:C.ink, lineHeight:1.55 }}>{text}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Card 3 — Digital-first value */}
+                  <div className="card-d" style={{ padding:20, borderLeft:`4px solid ${C.teal}` }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:12 }}>
+                      <span style={{ fontSize:22 }}>💡</span>
+                      <div className="pj" style={{ fontSize:13, fontWeight:800 }}>Lead with digital-first value</div>
+                    </div>
+                    <div className="pj" style={{ fontSize:12, color:C.gray, lineHeight:1.65, marginBottom:12 }}>
+                      Your biggest competitive advantage: no commute, no waiting room. Make that the headline.
+                    </div>
+                    <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                      {[
+                        ['🚗', '"No Bengaluru traffic" — use this in all ads and landing pages. It resonates immediately.'],
+                        ['📲', 'WhatsApp-first follow-up — 95% of urban Indians read messages within 5 minutes'],
+                        ['🎁', 'Offer the first online session free — capture phone + pain details, convert later'],
+                        ['🎬', 'Post 60-second Reels showing exercises for back, knee, shoulder pain — free reach on Instagram'],
+                      ].map(([icon, text]) => (
+                        <div key={text} style={{ display:'flex', gap:8, alignItems:'flex-start' }}>
+                          <span style={{ fontSize:14, flexShrink:0, marginTop:1 }}>{icon}</span>
+                          <span className="pj" style={{ fontSize:12, color:C.ink, lineHeight:1.55 }}>{text}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                </div>
+              </div>
             </div>
           )}
 
@@ -842,8 +1434,21 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
                     Mappls is India's own mapping platform by MapmyIndia. Add your free API key below to show a live map of where your patients are.
                   </div>
                   <div style={{ marginBottom:14 }}>
-                    <label className="pj" style={{ fontSize:12, fontWeight:700, color:C.teal, display:'block', marginBottom:5 }}>Google Meet Link</label>
-                    <input className="field-d" placeholder="https://meet.google.com/xxx-yyyy-zzz" value={meetLink} onChange={e=>setMeetLink(e.target.value)}/>
+                    <label className="pj" style={{ fontSize:12, fontWeight:700, color:C.teal, display:'block', marginBottom:5 }}>
+                      Whereby room URL{' '}
+                      {wherebyLink && <span style={{ color:C.green, fontWeight:700 }}>✓ Active</span>}
+                    </label>
+                    <input className="field-d" placeholder="https://yourname.whereby.com/my-room" value={wherebyLink}
+                      onChange={e=>{ setWherebyLink(e.target.value); localStorage.setItem('pd_whereby_link',e.target.value) }}/>
+                    <div className="pj" style={{ fontSize:11, color:C.gray, marginTop:4, lineHeight:1.55 }}>
+                      Free at <a href="https://whereby.com" target="_blank" rel="noreferrer" style={{ color:C.teal }}>whereby.com</a> — create a room → copy the link. Patients join in the browser, no app needed.
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom:14 }}>
+                    <label className="pj" style={{ fontSize:12, fontWeight:700, color:C.teal, display:'block', marginBottom:5 }}>Google Meet Link (fallback)</label>
+                    <input className="field-d" placeholder="https://meet.google.com/xxx-yyyy-zzz" value={meetLink}
+                      onChange={e=>{ setMeetLink(e.target.value); localStorage.setItem('pd_meet_link',e.target.value) }}/>
                     <div className="pj" style={{ fontSize:11, color:C.gray, marginTop:4 }}>
                       Go to <a href="https://meet.google.com" target="_blank" rel="noreferrer" style={{ color:C.teal }}>meet.google.com</a> → New meeting → Create for later → copy the link
                     </div>
@@ -889,11 +1494,31 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
               ))}
             </div>
             {selected.note && (
-              <div style={{ background:'#FFF8EF', borderRadius:8, padding:14, marginBottom:20 }}>
+              <div style={{ background:'#FFF8EF', borderRadius:8, padding:14, marginBottom:16 }}>
                 <div className="pj" style={{ fontSize:12, fontWeight:700, color:C.amber, marginBottom:6 }}>Their note</div>
                 <div className="pj" style={{ fontSize:13, color:C.ink, lineHeight:1.6 }}>{selected.note}</div>
               </div>
             )}
+
+            {/* Progress chart */}
+            {progress[selected.id]?.length > 0 && (
+              <div style={{ marginBottom:16 }}>
+                <div className="pj" style={{ fontSize:12, fontWeight:700, color:C.teal, marginBottom:8 }}>Progress tracker</div>
+                <PainSparkline logs={progress[selected.id]} />
+                <div style={{ marginTop:8, display:'flex', flexDirection:'column', gap:4, maxHeight:120, overflowY:'auto' }}>
+                  {[...progress[selected.id]].reverse().slice(0,4).map((e,i)=>(
+                    <div key={i} style={{ display:'flex', gap:8, padding:'6px 10px', background:C.light, borderRadius:6, alignItems:'center' }}>
+                      <span style={{ width:22, height:22, borderRadius:'50%', background:e.score<=4?C.mint:e.score<=7?C.amber:C.red, color:'#fff', fontSize:10, fontWeight:800, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Plus Jakarta Sans,sans-serif', flexShrink:0 }}>{e.score}</span>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div className="pj" style={{ fontSize:11, fontWeight:600, color:C.ink, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{e.notes || 'No notes'}</div>
+                        <div className="pj" style={{ fontSize:10, color:C.gray }}>{e.date}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div style={{ marginBottom:16 }}>
               <div className="pj" style={{ fontSize:12, fontWeight:700, color:C.teal, marginBottom:8 }}>Move to</div>
               <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
@@ -905,13 +1530,26 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
                 ))}
               </div>
             </div>
-            <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+
+            <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:8 }}>
               <button className="btn-g" style={{ flex:1, padding:11 }} onClick={()=>{setModal({mode:'schedule',prefill:selected});setSelected(null)}}>📅 Book session</button>
               <button onClick={()=>openWhatsApp(selected.phone,`Hi ${selected.name}, this is Dr. ${doctorName} from PhysioDrishti 🌿\n\nWe'd love to schedule your session. When are you free?\n\nSee you soon!\n- PhysioDrishti`)}
                 style={{ flex:1, background:'#25D366', color:'#fff', border:'none', borderRadius:7, padding:11, fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:13, fontWeight:700, cursor:'pointer' }}>
                 💬 WhatsApp
               </button>
               <button onClick={()=>window.open('tel:'+selected.phone)} className="btn-soft" style={{ padding:'11px 14px' }}>📞</button>
+            </div>
+            <div style={{ display:'flex', gap:8, marginBottom:8 }}>
+              <button onClick={()=>setExerciseModal(selected)} className="btn-soft" style={{ flex:1, padding:10 }}>📄 Prescribe exercises</button>
+            </div>
+            <div style={{ display:'flex', gap:8 }}>
+              <button onClick={()=>setProgressModal(selected)} className="btn-soft" style={{ flex:1, padding:10 }}>📋 Log session</button>
+              <button onClick={()=>{
+                const due = new Date(); due.setDate(due.getDate()+3)
+                const dueStr = due.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})
+                setFollowUps(p=>[...p,{ id:Date.now(), patientId:selected.id, name:selected.name, phone:selected.phone, pain:selected.pain, dueDate:dueStr, sent:false }])
+                alert(`Follow-up reminder set for ${dueStr}!`)
+              }} className="btn-soft" style={{ flex:1, padding:10 }}>⏰ 3-day follow-up</button>
             </div>
           </div>
         </div>
@@ -920,7 +1558,37 @@ export default function Dashboard({ onGoToLanding, mapplsKey, setMapplsKey }) {
       {/* Modals */}
       {modal?.mode === 'add'      && <PatientModal mode="add"      prefill={modal.prefill} onClose={()=>setModal(null)} onSave={addPatient} />}
       {modal?.mode === 'schedule' && <PatientModal mode="schedule" prefill={modal.prefill} onClose={()=>setModal(null)} onSave={scheduleSession} />}
-      {liveSession && <VideoCall session={liveSession} onClose={()=>setLiveSession(null)} />}
+      {liveSession && (
+        <VideoCall
+          session={liveSession}
+          onClose={()=>setLiveSession(null)}
+          wherebyLink={wherebyLink}
+          onLogProgress={(sessionNotes) => {
+            const pt = patients.find(p => p.name === liveSession.name)
+            if (pt) setProgressModal(pt)
+          }}
+        />
+      )}
+      {progressModal && (
+        <ProgressModal
+          patient={progressModal}
+          onClose={()=>setProgressModal(null)}
+          onSave={(entry) => {
+            setProgress(prev => ({
+              ...prev,
+              [progressModal.id]: [...(prev[progressModal.id] || []), entry],
+            }))
+            setProgressModal(null)
+          }}
+        />
+      )}
+      {exerciseModal && (
+        <ExercisePrescriptionModal
+          patient={exerciseModal}
+          doctorName={doctorName}
+          onClose={()=>setExerciseModal(null)}
+        />
+      )}
     </div>
   )
 }
