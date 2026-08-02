@@ -4,7 +4,7 @@
  * Props: onGoToDashboard, mapplsKey, setMapplsKey
  */
 import { useState, useEffect, useRef } from 'react'
-import { db } from '../supabase.js'
+import { supabase } from '../supabase.js'
 
 const C = {
   forest:'#12382A', teal:'#0A6B5E', mint:'#3A9A6B',
@@ -126,7 +126,7 @@ function LogoImg({ size = 40 }) {
 
 
 /* ── Simple Booking Modal (no external API needed) ──────────────── */
-function SimpleBooking({ onClose, onSuccess, db }) {
+function SimpleBooking({ onClose, onSuccess }) {
   const [step, setStep] = useState(1)
   const [f, setF]       = useState({ name:'', phone:'', email:'', area:'', pain:'', note:'', agree:false })
   const [busy, setBusy] = useState(false)
@@ -138,9 +138,10 @@ function SimpleBooking({ onClose, onSuccess, db }) {
     if (!ok2) return
     setBusy(true)
     try {
-      const { error } = await db.from('bookings').insert({
+      const { error } = await supabase.from('leads').insert({
         name: f.name, phone: f.phone, email: f.email||null,
         area: f.area, pain: f.pain, note: f.note||null,
+        stage: 'new', priority: 'medium',
       })
       if (error) throw error
       onSuccess(f)
@@ -307,13 +308,14 @@ function BookingModal({ onClose, onSuccess }) {
     if (!ok2) return
     setBusy(true)
     try {
-      const { error } = await db.from('bookings').insert({
+      const { error } = await supabase.from('leads').insert({
         name:  f.name,
         phone: f.phone,
         email: f.email || null,
         area:  f.area,
         pain:  f.pain,
         note:  f.note  || null,
+        stage: 'new', priority: 'medium',
       })
       if (error) throw error
       onSuccess(f)
@@ -447,8 +449,8 @@ export default function LandingPage({ onGoToDashboard, onShowDoctor, mapplsKey }
   useEffect(() => {
     const fetchLeads = async () => {
       try {
-        const { data, error } = await db
-          .from('bookings')
+        const { data, error } = await supabase
+          .from('leads')
           .select('id, name, area, pain, created_at')
           .order('created_at', { ascending: false })
           .limit(10)
@@ -689,7 +691,7 @@ export default function LandingPage({ onGoToDashboard, onShowDoctor, mapplsKey }
         </div>
       </footer>
 
-      {showModal && <SimpleBooking onClose={()=>setShowModal(false)} onSuccess={f=>{setShowModal(false);setBooked(f)}} db={db}/>}
+      {showModal && <SimpleBooking onClose={()=>setShowModal(false)} onSuccess={f=>{setShowModal(false);setBooked(f)}}/>}
     </div>
   )
           }
