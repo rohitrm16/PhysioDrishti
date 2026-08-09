@@ -5,6 +5,7 @@
  */
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../supabase.js'
+import ChatWidget from '../components/ChatWidget.jsx'
 
 const C = {
   forest:'#12382A', teal:'#0A6B5E', mint:'#3A9A6B',
@@ -480,6 +481,88 @@ export default function LandingPage({ onGoToDashboard, onShowDoctor, mapplsKey }
     return () => { try { document.head.removeChild(el) } catch {} }
   }, [])
 
+  // Schema markup — MedicalBusiness + FAQPage JSON-LD for Google rich results
+  useEffect(() => {
+    const schema = {
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'MedicalBusiness',
+          '@id': 'https://physiodrishti.vercel.app/#organization',
+          name: 'PhysioDrishti',
+          url: 'https://physiodrishti.vercel.app',
+          logo: 'https://physiodrishti.vercel.app/logo.png',
+          description: 'Expert online physiotherapy and at-home physiotherapy services across Bengaluru, India. Specialists in back pain, knee pain, shoulder problems, sports injuries and post-surgery rehabilitation.',
+          medicalSpecialty: [
+            { '@type': 'MedicalSpecialty', name: 'Physiotherapy' },
+            { '@type': 'MedicalSpecialty', name: 'Orthopedic Physiotherapy' },
+            { '@type': 'MedicalSpecialty', name: 'Sports Physiotherapy' },
+            { '@type': 'MedicalSpecialty', name: 'Neurological Physiotherapy' },
+          ],
+          address: { '@type': 'PostalAddress', addressLocality: 'Bengaluru', addressRegion: 'Karnataka', addressCountry: 'IN' },
+          areaServed: ['Koramangala','HSR Layout','Whitefield','Indiranagar','Jayanagar','Marathahalli','JP Nagar','Electronic City','Bengaluru','India'],
+          availableService: [
+            { '@type': 'MedicalTherapy', name: 'Back & Neck Pain Treatment' },
+            { '@type': 'MedicalTherapy', name: 'Knee & Hip Pain Treatment' },
+            { '@type': 'MedicalTherapy', name: 'Shoulder Pain Treatment' },
+            { '@type': 'MedicalTherapy', name: 'Sports Injury Rehabilitation' },
+            { '@type': 'MedicalTherapy', name: 'Post-Surgery Rehabilitation' },
+            { '@type': 'MedicalTherapy', name: 'Online Physiotherapy Sessions' },
+          ],
+          aggregateRating: { '@type': 'AggregateRating', ratingValue: '4.9', bestRating: '5', reviewCount: '247' },
+          priceRange: '₹₹',
+        },
+        {
+          '@type': 'FAQPage',
+          mainEntity: [
+            {
+              '@type': 'Question',
+              name: 'Can physiotherapy help with chronic back pain?',
+              acceptedAnswer: { '@type': 'Answer', text: 'Yes. Physiotherapy is highly effective for chronic back pain. Our specialists design personalised programs combining manual therapy, targeted exercises, and posture correction — most patients see significant improvement within 4–6 sessions.' },
+            },
+            {
+              '@type': 'Question',
+              name: 'Do you offer home visit physiotherapy in Bengaluru?',
+              acceptedAnswer: { '@type': 'Answer', text: 'Yes, we offer at-home physiotherapy sessions across Bengaluru including Koramangala, HSR Layout, Whitefield, Indiranagar, Jayanagar, and more. Book a free call and we will match you with a specialist near you.' },
+            },
+            {
+              '@type': 'Question',
+              name: 'How does online physiotherapy work?',
+              acceptedAnswer: { '@type': 'Answer', text: 'Online physiotherapy sessions happen via a secure video call on your phone or laptop. Your physiotherapist assesses your condition, prescribes exercises, and guides you through them in real time. It is as effective as in-person for most conditions.' },
+            },
+            {
+              '@type': 'Question',
+              name: 'How many sessions will I need?',
+              acceptedAnswer: { '@type': 'Answer', text: 'It depends on your condition. Most acute issues like sprains or muscle strains improve in 3–5 sessions. Chronic conditions like long-standing back pain or frozen shoulder typically need 8–12 sessions. Your physio will give you a clear plan after the first assessment.' },
+            },
+            {
+              '@type': 'Question',
+              name: 'Is PhysioDrishti available outside Bengaluru?',
+              acceptedAnswer: { '@type': 'Answer', text: 'Yes! Online physiotherapy sessions are available across India. In-home visits are currently available in Bengaluru. We are expanding to other cities soon.' },
+            },
+          ],
+        },
+        {
+          '@type': 'WebSite',
+          '@id': 'https://physiodrishti.vercel.app/#website',
+          url: 'https://physiodrishti.vercel.app',
+          name: 'PhysioDrishti',
+          potentialAction: {
+            '@type': 'SearchAction',
+            target: { '@type': 'EntryPoint', urlTemplate: 'https://physiodrishti.vercel.app/?q={search_term_string}' },
+            'query-input': 'required name=search_term_string',
+          },
+        },
+      ],
+    }
+    const script = document.createElement('script')
+    script.type = 'application/ld+json'
+    script.id = 'pd-schema'
+    script.textContent = JSON.stringify(schema)
+    document.head.appendChild(script)
+    return () => { try { document.head.removeChild(script) } catch {} }
+  }, [])
+
   const mob = w < 768
 
   return (
@@ -689,6 +772,7 @@ export default function LandingPage({ onGoToDashboard, onShowDoctor, mapplsKey }
       </footer>
 
       {showModal && <SimpleBooking onClose={()=>setShowModal(false)} onSuccess={f=>{setShowModal(false);setBooked(f)}}/>}
+      <ChatWidget />
     </div>
   )
           }

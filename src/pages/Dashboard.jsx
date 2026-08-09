@@ -933,9 +933,22 @@ export default function Dashboard({ onGoToLanding, onLogout, mapplsKey, setMappl
   const [progress,    setProgress]    = useState(() => { try { return JSON.parse(localStorage.getItem('pd_progress')   || '{}') } catch { return {} } })
   const [progressModal, setProgressModal] = useState(null)  // patient object when open
   const [exerciseModal, setExerciseModal] = useState(null)  // patient object when open
+  const [seoData,    setSeoData]    = useState(null)   // { configured, gsc, ga4, error }
+  const [seoLoading, setSeoLoading] = useState(false)
 
   useEffect(() => { localStorage.setItem('pd_follow_ups', JSON.stringify(followUps)) }, [followUps])
   useEffect(() => { localStorage.setItem('pd_progress',   JSON.stringify(progress))  }, [progress])
+
+  // Fetch live GSC + GA4 data when rankings tab is opened
+  useEffect(() => {
+    if (tab !== 'rankings' || seoData !== null) return
+    setSeoLoading(true)
+    fetch('/api/analytics')
+      .then(r => r.json())
+      .then(d => setSeoData(d))
+      .catch(() => setSeoData({ configured: false, fetchFailed: true }))
+      .finally(() => setSeoLoading(false))
+  }, [tab, seoData])
 
   useEffect(() => {
     const h = () => setW(window.innerWidth)
@@ -1274,6 +1287,130 @@ export default function Dashboard({ onGoToLanding, onLogout, mapplsKey, setMappl
                 <div className="pj" style={{ fontSize:10, fontWeight:800, letterSpacing:3, textTransform:'uppercase', color:C.saffron, marginBottom:3 }}>Google search</div>
                 <div className="pd" style={{ fontSize:'1.2rem', fontWeight:800 }}>How people find you</div>
               </div>
+
+              {/* ── Live GSC + GA4 panel ── */}
+              {seoLoading && (
+                <div className="card-d" style={{ padding:20, display:'flex', alignItems:'center', gap:12, marginBottom:18 }}>
+                  <div style={{ width:20, height:20, border:`2px solid ${C.border}`, borderTop:`2px solid ${C.teal}`, borderRadius:'50%', animation:'spin .8s linear infinite', flexShrink:0 }}/>
+                  <div className="pj" style={{ fontSize:13, color:C.gray }}>Loading live data from Google…</div>
+                </div>
+              )}
+
+              {!seoLoading && seoData && !seoData.configured && (
+                <div className="card-d" style={{ padding:22, marginBottom:18, borderLeft:`4px solid ${C.saffron}` }}>
+                  <div style={{ display:'flex', alignItems:'flex-start', gap:14 }}>
+                    <span style={{ fontSize:28 }}>📊</span>
+                    <div style={{ flex:1 }}>
+                      <div className="pj" style={{ fontSize:13, fontWeight:800, marginBottom:6 }}>Connect Google Search Console + Analytics</div>
+                      <div className="pj" style={{ fontSize:12, color:C.gray, lineHeight:1.65, marginBottom:14 }}>
+                        See exactly which search queries bring visitors, click-through rates, and GA4 traffic — all live inside this dashboard.
+                      </div>
+                      <div className="pj" style={{ fontSize:11, fontWeight:700, color:C.teal, marginBottom:8 }}>Add these 3 environment variables in Vercel:</div>
+                      {[
+                        ['GOOGLE_SERVICE_ACCOUNT_KEY', 'Full JSON from Google Cloud service account'],
+                        ['GSC_SITE_URL',               'e.g. https://physiodrishti.vercel.app/'],
+                        ['GA4_PROPERTY_ID',            'e.g. 123456789 (from GA4 Admin → Property)'],
+                      ].map(([k, desc]) => (
+                        <div key={k} style={{ marginBottom:8 }}>
+                          <code style={{ background:'#F3F6FA', padding:'3px 7px', borderRadius:4, fontSize:11, fontFamily:'monospace', color:C.forest }}>{k}</code>
+                          <span className="pj" style={{ fontSize:11, color:C.gray, marginLeft:8 }}>{desc}</span>
+                        </div>
+                      ))}
+                      <div className="pj" style={{ fontSize:11, color:C.gray, marginTop:10, lineHeight:1.6 }}>
+                        Setup: Google Cloud Console → Create service account → Enable Search Console API + Analytics Data API → Share property access with the service account email.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {!seoLoading && seoData?.configured && seoData?.error && (
+                <div className="card-d" style={{ padding:16, marginBottom:18, borderLeft:`4px solid ${C.red||'#E74C3C'}` }}>
+                  <div className="pj" style={{ fontSize:12, color:C.gray }}>⚠️ Could not fetch Google data: <code style={{ fontSize:11 }}>{seoData.error}</code></div>
+                </div>
+              )}
+
+              {!seoLoading && seoData?.configured && seoData?.gsc && seoData?.ga4 && (() => {
+                // Flatten GA4 totals
+                const ga4Rows = seoData.ga4.rows ?? []
+                const totals = ga4Rows.reduce((acc, row) => {
+                  const [sessions, users, bounce, views] = row.metricValues.map(m => parseFloat(m.value))
+                  return { sessions: acc.sessions + sessions, users: acc.users + users, bounce: acc.bounce + bounce * sessions, views: acc.views + views, count: acc.count + sessions }
+                }, { sessions: 0, users: 0, bounce: 0, views: 0, count: 0 })
+                const avgBounce = totals.count ? totals.bounce / totals.count : 0
+
+                // GSC totals
+                const gscRows = seoData.gsc.rows ?? []
+                const gscTotals = gscRows.reduce((a, r) => ({ clicks: a.clicks + r.clicks, impressions: a.impressions + r.impressions }), { clicks: 0, impressions: 0 })
+                const avgCTR = gscTotals.impressions ? (gscTotals.clicks / gscTotals.impressions * 100).toFixed(1) : '0.0'
+
+                return (
+                  <>
+                    {/* KPI row */}
+                    <div className="g4" style={{ display:'grid', gap:12, marginBottom:18 }}>
+                      {[
+                        { label:'Organic Sessions', val: totals.sessions.toFixed(0), icon:'📈', note:'last 28 days' },
+                        { label:'Active Users',     val: totals.users.toFixed(0),    icon:'👤', note:'unique visitors' },
+                        { label:'Impressions',      val: gscTotals.impressions.toFixed(0), icon:'👁', note:'search appearances' },
+                        { label:'Click-through',    val: `${avgCTR}%`,              icon:'🎯', note:'impressions → clicks' },
+                      ].map(k => (
+                        <div key={k.label} className="card-d" style={{ padding:14 }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
+                            <span style={{ fontSize:18 }}>{k.icon}</span>
+                            <div className="pj" style={{ fontSize:11, color:C.gray }}>{k.label}</div>
+                          </div>
+                          <div className="pd" style={{ fontSize:'1.4rem', fontWeight:900, color:C.ink }}>{k.val}</div>
+                          <div className="pj" style={{ fontSize:10, color:C.gray, marginTop:2 }}>{k.note}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Top GSC queries */}
+                    <div className="card-d" style={{ overflow:'auto', marginBottom:18 }}>
+                      <div className="pj" style={{ fontSize:11, fontWeight:800, color:C.teal, letterSpacing:2, textTransform:'uppercase', padding:'14px 16px 8px' }}>Top Search Queries · Live from Google</div>
+                      <table className="tbl">
+                        <thead><tr><th>Query</th><th>Clicks</th><th>Impressions</th><th>CTR</th><th>Position</th></tr></thead>
+                        <tbody>
+                          {gscRows.slice(0,10).map((r,i) => (
+                            <tr key={i}>
+                              <td><span className="pj" style={{ fontSize:12, fontWeight:600 }}>{r.keys[0]}</span></td>
+                              <td><span className="pj" style={{ fontSize:12, fontWeight:700, color:C.green }}>{r.clicks}</span></td>
+                              <td><span className="pj" style={{ fontSize:12 }}>{r.impressions}</span></td>
+                              <td><span className="pj" style={{ fontSize:12 }}>{(r.ctr*100).toFixed(1)}%</span></td>
+                              <td>
+                                <div style={{ width:26, height:26, borderRadius:'50%', background: r.position <= 3 ? C.green : r.position <= 10 ? C.saffron : C.gray, display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontSize:10, fontWeight:800 }}>
+                                  {r.position.toFixed(0)}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Top GA4 pages */}
+                    <div className="card-d" style={{ overflow:'auto', marginBottom:18 }}>
+                      <div className="pj" style={{ fontSize:11, fontWeight:800, color:C.teal, letterSpacing:2, textTransform:'uppercase', padding:'14px 16px 8px' }}>Top Pages · Live from GA4</div>
+                      <table className="tbl">
+                        <thead><tr><th>Page</th><th>Sessions</th><th>Users</th><th>Page Views</th></tr></thead>
+                        <tbody>
+                          {ga4Rows.slice(0,8).map((r,i) => (
+                            <tr key={i}>
+                              <td><span className="pj" style={{ fontSize:11 }}>{r.dimensionValues[0].value}</span></td>
+                              <td><span className="pj" style={{ fontSize:12, fontWeight:700 }}>{parseFloat(r.metricValues[0].value).toFixed(0)}</span></td>
+                              <td><span className="pj" style={{ fontSize:12 }}>{parseFloat(r.metricValues[1].value).toFixed(0)}</span></td>
+                              <td><span className="pj" style={{ fontSize:12 }}>{parseFloat(r.metricValues[3].value).toFixed(0)}</span></td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )
+              })()}
+
+              <div style={{ borderTop:`1px solid ${C.border}`, marginBottom:20 }}/>
+
 
               <div style={{ background:'linear-gradient(135deg,#12382A,#0A6B5E)', borderRadius:12, padding:'18px 22px', marginBottom:18, display:'flex', alignItems:'center', gap:18, flexWrap:'wrap' }}>
                 <div style={{ fontSize:38 }}>🏆</div>
