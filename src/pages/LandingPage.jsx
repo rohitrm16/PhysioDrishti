@@ -120,7 +120,7 @@ function LogoImg({ size = 40 }) {
     <img
       src="/logo.png"
       alt="PhysioDrishti"
-      style={{ width: size, height: size, objectFit: 'contain', flexShrink: 0 }}
+      style={{ height: size, width: 'auto', maxWidth: size * 2.5, objectFit: 'contain', flexShrink: 0 }}
     />
   )
 }

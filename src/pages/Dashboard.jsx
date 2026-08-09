@@ -866,11 +866,10 @@ function LogoImg({ size = 40 }) {
     <img
       src="/logo.png"
       alt="PhysioDrishti"
-      style={{ width: size, height: size, objectFit: 'contain', flexShrink: 0 }}
+      style={{ height: size, width: 'auto', maxWidth: size * 2.5, objectFit: 'contain', flexShrink: 0 }}
       onError={e => {
-        // Fallback to text if image missing
         e.target.style.display = 'none'
-        e.target.parentNode.innerHTML = '<div style="width:' + size + 'px;height:' + size + 'px;background:#12382A;borderRadius:7px;display:flex;alignItems:center;justifyContent:center;color:#fff;fontWeight:700;fontSize:' + Math.round(size*0.4) + 'px">✚</div>'
+        e.target.parentNode.innerHTML = '<div style="height:' + size + 'px;padding:0 10px;background:#12382A;borderRadius:7px;display:flex;alignItems:center;justifyContent:center;color:#fff;fontWeight:700;fontSize:' + Math.round(size*0.4) + 'px">PD</div>'
       }}
     />
   )
