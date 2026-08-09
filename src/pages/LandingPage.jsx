@@ -5,7 +5,6 @@
  */
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../supabase.js'
-import ChatWidget from '../components/ChatWidget.jsx'
 
 const C = {
   forest:'#12382A', teal:'#0A6B5E', mint:'#3A9A6B',
@@ -772,7 +771,6 @@ export default function LandingPage({ onGoToDashboard, onShowDoctor, mapplsKey }
       </footer>
 
       {showModal && <SimpleBooking onClose={()=>setShowModal(false)} onSuccess={f=>{setShowModal(false);setBooked(f)}}/>}
-      <ChatWidget />
     </div>
   )
           }
