@@ -104,7 +104,11 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:#FDFAF3;color:#0D1520
   .steps-grid{grid-template-columns:repeat(4,1fr)}
   .review-grid{grid-template-columns:repeat(3,1fr)}
   .market-cols{display:flex}
-  .footer-cols{grid-template-columns:2fr 1fr 1fr}
+  .footer-cols{grid-template-columns:1fr}
+  .challenge-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:767px){
+  .challenge-grid{grid-template-columns:1fr!important}
 }
 `
 
@@ -709,6 +713,50 @@ export default function LandingPage({ onGoToDashboard, onShowDoctor, mapplsKey }
         </div>
       </section>
 
+      {/* Challenges */}
+      <section style={{ padding:'72px 5%', background:'#F3F6FA' }}>
+        <div style={{ maxWidth:1160, margin:'0 auto' }}>
+          <div style={{ textAlign:'center', marginBottom:48 }}>
+            <div className="pj" style={{ fontSize:11, fontWeight:800, letterSpacing:3, textTransform:'uppercase', color:'#D4510E', marginBottom:12 }}>Why PhysioDrishti exists</div>
+            <h2 className="pd" style={{ fontSize:'2.2rem', fontWeight:900, marginBottom:14 }}>Challenges faced by patients<br />& clinicians — and how we solve them</h2>
+            <p className="pj" style={{ fontSize:15, color:'#5C6878', maxWidth:560, margin:'0 auto', lineHeight:1.7 }}>The current physiotherapy system is broken in ways most people don't talk about. We're fixing that.</p>
+          </div>
+
+          <div style={{ marginBottom:48 }}>
+            <div className="pj" style={{ fontSize:13, fontWeight:800, letterSpacing:2, textTransform:'uppercase', color:'#0A6B5E', marginBottom:20 }}>For Patients</div>
+            <div className="challenge-grid" style={{ display:'grid', gap:20 }}>
+              {[
+                { icon:'📉', title:'The "80/20" Adherence Gap', body:'70% of patients struggle to complete their home exercise programs (HEPs). Low self-efficacy, pain during exercise, and lack of supervision make it hard to stay consistent — yet consistency is everything.' },
+                { icon:'💸', title:'Financial Burden & Insurance Limits', body:'Physiotherapy is often perceived as expensive or optional. Insurance plans cap the number of visits, require prior authorisation, and frequently deny claims — leaving real costs on patients.' },
+                { icon:'⏳', title:'Delayed & Invisible Progress', body:'Recovery takes time, but patients rarely see their own gains. Without clear milestones or feedback, they get discouraged and switch to quick fixes like pain medication instead of healing the root cause.' },
+              ].map(c => (
+                <div key={c.title} className="card-lp" style={{ padding:28 }}>
+                  <div style={{ fontSize:32, marginBottom:14 }}>{c.icon}</div>
+                  <h3 className="pd" style={{ fontSize:'1.1rem', fontWeight:800, marginBottom:10, color:'#0D1520' }}>{c.title}</h3>
+                  <p className="pj" style={{ fontSize:13, color:'#5C6878', lineHeight:1.7 }}>{c.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="pj" style={{ fontSize:13, fontWeight:800, letterSpacing:2, textTransform:'uppercase', color:'#D4510E', marginBottom:20 }}>For Clinicians</div>
+            <div className="challenge-grid" style={{ display:'grid', gap:20 }}>
+              {[
+                { icon:'📋', title:'Administrative & Documentation Overload', body:'Physiotherapists spend hours tracking patient activity, writing clinical histories, and navigating rigid software — time that should go to patient care. We cut paperwork so clinicians can focus on healing.' },
+                { icon:'🔗', title:'No Continuity Between Visits', body:'Without a connected view of a patient\'s progress between sessions, clinicians have to rebuild context every appointment. This slows treatment and increases the risk of regression.' },
+              ].map(c => (
+                <div key={c.title} className="card-lp" style={{ padding:28 }}>
+                  <div style={{ fontSize:32, marginBottom:14 }}>{c.icon}</div>
+                  <h3 className="pd" style={{ fontSize:'1.1rem', fontWeight:800, marginBottom:10, color:'#0D1520' }}>{c.title}</h3>
+                  <p className="pj" style={{ fontSize:13, color:'#5C6878', lineHeight:1.7 }}>{c.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Reviews */}
       <section style={{ padding:'72px 5%', background:'#fff' }}>
         <div style={{ maxWidth:1160, margin:'0 auto' }}>
@@ -753,15 +801,6 @@ export default function LandingPage({ onGoToDashboard, onShowDoctor, mapplsKey }
               </div>
               <p className="pj" style={{ color:'rgba(255,255,255,.4)', fontSize:12, lineHeight:1.8, maxWidth:260 }}>Expert physiotherapy and orthopaedic care — from home or near you. Helping people across India live pain-free.</p>
             </div>
-            {[
-              { h:'We treat',  l:['Back & Neck Pain','Knee & Hip Pain','Shoulder Problems','Sports Injuries','After Surgery','Online Sessions'] },
-              { h:'Company',   l:['About us','How it works','Our specialists','Contact us'] },
-            ].map(col=>(
-              <div key={col.h}>
-                <div className="pj" style={{ fontWeight:800, fontSize:12, color:'#3A9A6B', letterSpacing:1.5, textTransform:'uppercase', marginBottom:12 }}>{col.h}</div>
-                {col.l.map(i=><div key={i} className="pj" style={{ fontSize:12, color:'rgba(255,255,255,.4)', marginBottom:7, cursor:'pointer' }}>{i}</div>)}
-              </div>
-            ))}
           </div>
           <div style={{ borderTop:'1px solid rgba(255,255,255,.08)', paddingTop:20, display:'flex', justifyContent:'space-between', flexWrap:'wrap', gap:10 }}>
             <span className="pj" style={{ fontSize:11, color:'rgba(255,255,255,.3)' }}>© 2026 PhysioDrishti · Bengaluru, India</span>
