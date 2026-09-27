@@ -254,25 +254,36 @@ const BODY_ZONES = {
   ],
 }
 
-function BodyMap({ selected, onChange }) {
+function BodyMap({ selected, onChange, mainArea, onMainArea }) {
   const [view, setView] = useState('front')
   function toggle(id) {
     const next = new Set(selected)
-    next.has(id) ? next.delete(id) : next.add(id)
+    if (next.has(id)) { next.delete(id); if (mainArea===id) onMainArea(null) }
+    else next.add(id)
     onChange(next)
   }
+  function clear() { onChange(new Set()); onMainArea(null) }
   const zones = BODY_ZONES[view]
   const isFront = view === 'front'
   const oF = '#EEF2F7', oS = '#C8D0DB'
   return (
-    <div>
-      <div style={{ display:'flex', gap:8, marginBottom:12, justifyContent:'center' }}>
-        {['front','back'].map(v=>(
-          <button key={v} type="button" onClick={()=>setView(v)}
-            style={{ padding:'7px 22px', border:`1.5px solid ${view===v?'#12382A':'#DDE4EF'}`, borderRadius:20, background:view===v?'#12382A':'#fff', color:view===v?'#fff':'#5C6878', fontSize:13, fontWeight:600, cursor:'pointer', transition:'all .18s', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-            {v==='front'?'Front view':'Back view'}
+    <div style={{ marginBottom:14 }}>
+      <p className="pj" style={{ fontSize:12, color:'#5C6878', marginBottom:10, lineHeight:1.5 }}>Tap the body wherever you feel it. Turn the figure around for your back.</p>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+        <div style={{ display:'flex', background:'#F3F6FA', borderRadius:24, padding:3, gap:2 }}>
+          {['front','back'].map(v=>(
+            <button key={v} type="button" onClick={()=>setView(v)}
+              style={{ padding:'6px 18px', border:'none', borderRadius:20, background:view===v?'#12382A':'transparent', color:view===v?'#fff':'#5C6878', fontSize:13, fontWeight:600, cursor:'pointer', transition:'all .18s', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+              {v==='front'?'Front':'Back'}
+            </button>
+          ))}
+        </div>
+        {selected.size>0&&(
+          <button type="button" onClick={clear}
+            style={{ background:'none', border:'none', color:'#0A6B5E', fontWeight:600, fontSize:13, cursor:'pointer', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+            Clear
           </button>
-        ))}
+        )}
       </div>
       <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'center', gap:4 }}>
         <div style={{ display:'flex', flexDirection:'column', alignItems:'center', paddingTop:58, minWidth:36 }}>
@@ -280,7 +291,6 @@ function BodyMap({ selected, onChange }) {
           <div style={{ fontSize:14, color:'#CDD5DF', marginTop:2 }}>←</div>
         </div>
         <svg viewBox="0 0 220 440" width="160" style={{ display:'block', userSelect:'none', touchAction:'manipulation', flexShrink:0 }}>
-          {/* Body silhouette */}
           <ellipse cx="110" cy="28" rx="30" ry="27" fill={oF} stroke={oS} strokeWidth="1.5"/>
           <rect x="98" y="53" width="24" height="18" rx="4" fill={oF} stroke={oS} strokeWidth="1.5"/>
           <rect x="72" y="68" width="76" height="165" rx="14" fill={oF} stroke={oS} strokeWidth="1.5"/>
@@ -288,7 +298,6 @@ function BodyMap({ selected, onChange }) {
           <rect x="148" y="72" width="28" height="152" rx="10" fill={oF} stroke={oS} strokeWidth="1.5"/>
           <rect x="78" y="230" width="30" height="192" rx="12" fill={oF} stroke={oS} strokeWidth="1.5"/>
           <rect x="112" y="230" width="30" height="192" rx="12" fill={oF} stroke={oS} strokeWidth="1.5"/>
-          {/* Tappable zones */}
           {zones.map(z=>(
             <ellipse key={z.id} cx={z.cx} cy={z.cy} rx={z.rx} ry={z.ry}
               fill={selected.has(z.id)?'rgba(240,185,74,.75)':'rgba(58,154,107,.1)'}
@@ -303,16 +312,22 @@ function BodyMap({ selected, onChange }) {
           <div style={{ fontSize:14, color:'#CDD5DF', marginTop:2 }}>→</div>
         </div>
       </div>
-      <p style={{ fontSize:11, color:'#9BA8B5', textAlign:'center', margin:'4px 0 8px', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>Tap zones to select · tap again to deselect</p>
       {selected.size>0&&(
-        <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:4 }}>
-          {[...selected].map(id=>(
-            <span key={id} onClick={()=>toggle(id)}
-              style={{ padding:'4px 10px', background:'#FFF8EF', border:'1.5px solid #F0B94A', borderRadius:16, fontSize:12, fontWeight:600, color:'#0D1520', cursor:'pointer', display:'inline-flex', alignItems:'center', gap:5, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-              {ZONE_LABELS[id]||id}<span style={{ fontSize:10, color:'#9BA8B5' }}>✕</span>
-            </span>
-          ))}
-        </div>
+        <>
+          <p className="pj" style={{ fontSize:11, color:'#9BA8B5', textAlign:'center', margin:'6px 0 8px' }}>Tap ★ on the one that bothers you most.</p>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+            {[...selected].map(id=>(
+              <span key={id}
+                style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'4px 10px', background:'#FFF8EF', border:`1.5px solid ${mainArea===id?'#D4510E':'#F0B94A'}`, borderRadius:16, fontSize:12, fontWeight:600, color:'#0D1520', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                <span onClick={e=>{e.stopPropagation();onMainArea(mainArea===id?null:id)}}
+                  style={{ color:mainArea===id?'#D4510E':'#CDD5DF', cursor:'pointer', fontSize:13, lineHeight:1 }}>★</span>
+                {mainArea===id&&<span style={{ fontSize:10, color:'#D4510E', fontWeight:700 }}>Main</span>}
+                {ZONE_LABELS[id]||id}
+                <span onClick={()=>toggle(id)} style={{ fontSize:10, color:'#9BA8B5', cursor:'pointer', marginLeft:2 }}>×</span>
+              </span>
+            ))}
+          </div>
+        </>
       )}
     </div>
   )
@@ -347,6 +362,9 @@ function SimpleBooking({ onClose, onSuccess }) {
   const [conGps, setConGps] = useState('idle')
 
   const [bodySelected, setBodySelected] = useState(new Set())
+  const [mainArea, setMainArea] = useState(null)
+  const [worseTimes, setWorseTimes] = useState([])
+  const toggleWorseTime = (t) => setWorseTimes(p => p.includes(t)?p.filter(x=>x!==t):[...p,t])
 
   const painWords = ['No pain','Very mild','Mild','Mild','Moderate','Moderate','Moderate','Severe','Severe','Very severe','Worst']
 
@@ -387,14 +405,16 @@ function SimpleBooking({ onClose, onSuccess }) {
     setBusy(true)
     try {
       const area = BLG_PINS[con.pin] || (con.pin.startsWith('560') ? 'Bengaluru' : 'Outside Bengaluru')
-      const note = [`Pain scale: ${con.painScale}/10`, con.duration && `Duration: ${con.duration}`, `Session: ${con.sessionMode}`, `Slot: ${con.date}, ${con.slot}`, con.notes && `Notes: ${con.notes}`].filter(Boolean).join(' | ')
+      const note = [`Pain scale: ${con.painScale}/10`, mainArea && `Main area: ${ZONE_LABELS[mainArea]||mainArea}`, worseTimes.length && `Worse when: ${worseTimes.join(', ')}`, con.duration && `Duration: ${con.duration}`, `Session: ${con.sessionMode}`, `Slot: ${con.date}, ${con.slot}`, con.notes && `Notes: ${con.notes}`].filter(Boolean).join(' | ')
       await supabase.from('leads').insert({ name:con.name, phone:con.phone, area, pain:[...bodySelected].map(id=>ZONE_LABELS[id]||id).join(', '), note, stage:'new', priority:'medium' })
       const rows = [
         ['Patient', con.name + (con.age ? ', '+con.age+' yrs' : '') + (con.gender ? ', '+con.gender : '')],
         ['Mobile', '+91 '+con.phone],
         ['Area', area+' ('+con.pin+')'],
         ['Pain areas', [...bodySelected].map(id=>ZONE_LABELS[id]||id).join(', ')],
+        ...(mainArea ? [['Main concern', ZONE_LABELS[mainArea]||mainArea]] : []),
         ['Pain today', con.painScale+'/10 — '+painWords[con.painScale]],
+        ...(worseTimes.length ? [['Worse when', worseTimes.join(', ')]] : []),
         ['Duration', con.duration||'Not specified'],
         ['Session type', con.sessionMode],
         ['Preferred slot', new Date(con.date+'T00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})+', '+con.slot],
@@ -576,19 +596,30 @@ function SimpleBooking({ onClose, onSuccess }) {
               </label>
 
               {/* What hurts */}
-              <div className="pd" style={{ fontSize:'0.9rem', fontWeight:800, color:'#12382A', margin:'18px 0 12px', borderBottom:'1px solid #DDE4EF', paddingBottom:6 }}>Where does it hurt? *</div>
-              <BodyMap selected={bodySelected} onChange={ns=>{ setBodySelected(ns); sk('painAreas',[...ns].map(id=>ZONE_LABELS[id]||id)) }} />
+              <div style={{ fontSize:'0.95rem', fontWeight:700, color:'#0D1520', margin:'18px 0 0', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>Where does it hurt? *</div>
+              <BodyMap selected={bodySelected} onChange={ns=>{ setBodySelected(ns); sk('painAreas',[...ns].map(id=>ZONE_LABELS[id]||id)) }} mainArea={mainArea} onMainArea={setMainArea} />
+
+              {/* When is it worse */}
               <div style={{ marginBottom:14 }}>
-                <label style={LS}>Pain level today</label>
+                <label style={LS}>When is it worse? <span style={{ fontWeight:400, color:'#5C6878' }}>(choose any)</span></label>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+                  {['Mornings','Sitting long','Walking or stairs','Bending or lifting','At night','Sport or exercise'].map(t=>(
+                    <Chip key={t} label={t} active={worseTimes.includes(t)} onClick={()=>toggleWorseTime(t)} />
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ marginBottom:14 }}>
+                <label style={LS}>Pain today</label>
                 <div style={{ display:'flex', alignItems:'baseline', gap:10, marginBottom:6 }}>
                   <span className="pd" style={{ fontSize:'1.8rem', fontWeight:900, color:'#0D1520', minWidth:'2ch' }}>{con.painScale}</span>
                   <span className="pj" style={{ fontSize:13, color:'#5C6878', fontWeight:600 }}>{painWords[con.painScale]}</span>
                 </div>
                 <input type="range" min={0} max={10} value={con.painScale} onChange={e=>sk('painScale',+e.target.value)}
-                  style={{ width:'100%', height:8, borderRadius:8, appearance:'none', WebkitAppearance:'none', background:`linear-gradient(90deg,#3A9A6B ${con.painScale*10}%,#DDE4EF ${con.painScale*10}%)`, cursor:'pointer' }} />
+                  style={{ width:'100%', height:8, borderRadius:8, appearance:'none', WebkitAppearance:'none', background:'linear-gradient(90deg,#22C55E 0%,#EAB308 50%,#EF4444 100%)', cursor:'pointer' }} />
                 <div style={{ display:'flex', justifyContent:'space-between' }}>
                   <span className="pj" style={{ fontSize:10, color:'#9BA8B5' }}>No pain</span>
-                  <span className="pj" style={{ fontSize:10, color:'#9BA8B5' }}>Worst</span>
+                  <span className="pj" style={{ fontSize:10, color:'#9BA8B5' }}>Worst imaginable</span>
                 </div>
               </div>
               <div style={{ marginBottom:14 }}>
