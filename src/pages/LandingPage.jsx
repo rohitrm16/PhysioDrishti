@@ -138,6 +138,32 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:#FDFAF3;color:#0D1520
 @media(min-width:768px){
   .physio-results{grid-template-columns:repeat(3,1fr)}
 }
+
+/* ── Modal / form responsive ─────────────────────────────────────── */
+.modal-overlay{-webkit-overflow-scrolling:touch}
+.modal-scroll{-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.con-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.slot-col{display:flex;flex-direction:column;gap:6px}
+/* Range slider thumb */
+input[type=range]{-webkit-appearance:none;appearance:none;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:#12382A;cursor:pointer;border:3px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.25);margin-top:-8px}
+input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:8px}
+input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:#12382A;cursor:pointer;border:3px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.25)}
+/* Prevent iOS font-size zoom on inputs */
+@media(max-width:767px){
+  input,select,textarea{font-size:16px!important}
+  .modal-wrap{border-radius:20px 20px 0 0!important;margin-top:auto!important;max-width:100%!important}
+  .modal-overlay{align-items:flex-end!important;padding:0!important}
+  .modal-scroll{max-height:88dvh!important;max-height:88vh!important}
+  .con-grid-2{grid-template-columns:1fr!important}
+  .slot-col{flex-direction:row!important;flex-wrap:wrap!important;gap:8px!important}
+  .slot-col button{flex:1;min-width:80px}
+  .modal-tabs button{padding:9px 12px!important;font-size:12px!important}
+}
+@media(min-width:768px){
+  .modal-wrap{border-radius:16px;max-width:520px;margin-top:20px;margin-bottom:20px}
+  .modal-scroll{max-height:78vh}
+}
 `
 
 
@@ -174,7 +200,7 @@ function pinArea(pin) {
 }
 
 /* ── Reusable field styles ──────────────────────────────────────── */
-const FS = { width:'100%', padding:'11px 14px', border:'1.5px solid #DDE4EF', borderRadius:8, fontSize:14, outline:'none', fontFamily:"'Plus Jakarta Sans',sans-serif", color:'#0D1520', background:'#fff' }
+const FS = { width:'100%', padding:'11px 14px', border:'1.5px solid #DDE4EF', borderRadius:8, fontSize:16, outline:'none', fontFamily:"'Plus Jakarta Sans',sans-serif", color:'#0D1520', background:'#fff' }
 const LS = { fontSize:12, fontWeight:700, color:'#0A6B5E', display:'block', marginBottom:6, fontFamily:"'Plus Jakarta Sans',sans-serif" }
 const WA_NO = '91XXXXXXXXXX'
 
@@ -290,7 +316,7 @@ function BodyMap({ selected, onChange, mainArea, onMainArea }) {
           <div style={{ fontSize:9, fontWeight:800, color:'#9BA8B5', fontFamily:"'Plus Jakarta Sans',sans-serif", textAlign:'center', lineHeight:1.3 }}>YOUR<br/>{isFront?'RIGHT':'LEFT'}</div>
           <div style={{ fontSize:14, color:'#CDD5DF', marginTop:2 }}>←</div>
         </div>
-        <svg viewBox="0 0 220 440" width="160" style={{ display:'block', userSelect:'none', touchAction:'manipulation', flexShrink:0 }}>
+        <svg viewBox="0 0 220 440" style={{ display:'block', userSelect:'none', touchAction:'manipulation', flexShrink:0, width:'min(160px, 42vw)' }}>
           <ellipse cx="110" cy="28" rx="30" ry="27" fill={oF} stroke={oS} strokeWidth="1.5"/>
           <rect x="98" y="53" width="24" height="18" rx="4" fill={oF} stroke={oS} strokeWidth="1.5"/>
           <rect x="72" y="68" width="76" height="165" rx="14" fill={oF} stroke={oS} strokeWidth="1.5"/>
@@ -430,8 +456,8 @@ function SimpleBooking({ onClose, onSuccess }) {
 
   // Done screen
   if (done) return (
-    <div style={overlay} onClick={onClose}>
-      <div style={{ background:'#fff', borderRadius:16, width:'100%', maxWidth:480, marginTop:40, boxShadow:'0 24px 64px rgba(0,0,0,.25)', overflow:'hidden' }} onClick={e=>e.stopPropagation()}>
+    <div className="modal-overlay" style={overlay} onClick={onClose}>
+      <div className="modal-wrap" style={{ background:'#fff', width:'100%', maxWidth:480, boxShadow:'0 24px 64px rgba(0,0,0,.25)', overflow:'hidden' }} onClick={e=>e.stopPropagation()}>
         <div style={{ background:'linear-gradient(135deg,#12382A,#0A6B5E)', padding:'28px 24px', textAlign:'center' }}>
           <div style={{ width:56, height:56, borderRadius:'50%', background:'rgba(255,255,255,.15)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px', fontSize:28 }}>✓</div>
           <div className="pd" style={{ fontSize:'1.4rem', fontWeight:900, color:'#fff', marginBottom:6 }}>{done.title}</div>
@@ -458,27 +484,27 @@ function SimpleBooking({ onClose, onSuccess }) {
   )
 
   return (
-    <div style={overlay} onClick={onClose}>
-      <div style={{ background:'#fff', borderRadius:16, width:'100%', maxWidth:500, marginTop:20, boxShadow:'0 24px 64px rgba(0,0,0,.25)', overflow:'hidden' }} onClick={e=>e.stopPropagation()}>
+    <div className="modal-overlay" style={overlay} onClick={onClose}>
+      <div className="modal-wrap" style={{ background:'#fff', width:'100%', boxShadow:'0 24px 64px rgba(0,0,0,.25)', overflow:'hidden' }} onClick={e=>e.stopPropagation()}>
 
         {/* Header */}
-        <div style={{ background:'linear-gradient(135deg,#12382A,#0A6B5E)', padding:'18px 22px 0', display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
-          <div>
-            <div className="pd" style={{ fontSize:'1.2rem', fontWeight:900, color:'#fff', marginBottom:12 }}>Book a free call or consultation</div>
+        <div style={{ background:'linear-gradient(135deg,#12382A,#0A6B5E)', padding:'16px 18px 0', display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div className="pd" style={{ fontSize:'1.1rem', fontWeight:900, color:'#fff', marginBottom:10 }}>Book a free call or consultation</div>
             {/* Tabs */}
-            <div style={{ display:'flex', gap:2 }}>
+            <div className="modal-tabs" style={{ display:'flex', gap:2 }}>
               {[['call','Free call','30 sec'],['consult','Book consultation','2 min']].map(([m,label,t]) => (
                 <button key={m} onClick={()=>setMode(m)}
-                  style={{ padding:'9px 18px', border:'none', borderRadius:'8px 8px 0 0', background:mode===m?'#fff':'transparent', color:mode===m?'#12382A':'rgba(255,255,255,.65)', fontWeight:700, fontSize:13, cursor:'pointer', fontFamily:"'Plus Jakarta Sans',sans-serif", transition:'all .2s' }}>
+                  style={{ padding:'9px 16px', border:'none', borderRadius:'8px 8px 0 0', background:mode===m?'#fff':'transparent', color:mode===m?'#12382A':'rgba(255,255,255,.65)', fontWeight:700, fontSize:13, cursor:'pointer', fontFamily:"'Plus Jakarta Sans',sans-serif", transition:'all .2s', whiteSpace:'nowrap' }}>
                   {label} <span style={{ fontSize:10, opacity:.75 }}>· {t}</span>
                 </button>
               ))}
             </div>
           </div>
-          <button onClick={onClose} style={{ background:'rgba(255,255,255,.15)', border:'none', borderRadius:8, width:32, height:32, cursor:'pointer', color:'#fff', fontSize:16, flexShrink:0, marginTop:2 }}>✕</button>
+          <button onClick={onClose} style={{ background:'rgba(255,255,255,.15)', border:'none', borderRadius:8, width:36, height:36, cursor:'pointer', color:'#fff', fontSize:18, flexShrink:0, marginTop:2, marginLeft:8, display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
         </div>
 
-        <div style={{ padding:'22px 22px 24px', maxHeight:'75vh', overflowY:'auto' }}>
+        <div className="modal-scroll" style={{ padding:'18px 18px 24px', overflowY:'auto' }}>
 
           {/* ── FREE CALL FORM ── */}
           {mode === 'call' && (
@@ -573,7 +599,7 @@ function SimpleBooking({ onClose, onSuccess }) {
                 style={{ background:'none', border:'none', color:'#0A6B5E', fontWeight:600, fontSize:13, cursor:'pointer', padding:'4px 0', marginBottom:14, display:'flex', alignItems:'center', gap:6 }}>
                 {conGps==='loading'?'⏳ Locating…':'◎ Use my location instead'}
               </button>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14, marginTop:14 }}>
+              <div className="con-grid-2">
                 <div>
                   <label style={LS}>Age <span style={{ fontWeight:400, color:'#5C6878' }}>(optional)</span></label>
                   <input style={FS} type="number" min={1} max={110} placeholder="e.g. 42" value={con.age} onChange={e=>sk('age',e.target.value)} />
@@ -648,18 +674,18 @@ function SimpleBooking({ onClose, onSuccess }) {
                   ))}
                 </div>
               </div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
+              <div className="con-grid-2">
                 <div>
                   <label style={LS}>Preferred date *</label>
                   <input style={FS} type="date" min={todayStr} value={con.date} onChange={e=>sk('date',e.target.value)} />
                 </div>
                 <div>
                   <label style={LS}>Time *</label>
-                  <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-                    {[['Morning','AM'],['Afternoon','Noon'],['Evening','PM']].map(([full,short])=>(
+                  <div className="slot-col">
+                    {[['Morning','8 AM – 12 PM'],['Afternoon','12 – 4 PM'],['Evening','4 – 8 PM']].map(([full,sub])=>(
                       <button key={full} type="button" onClick={()=>sk('slot',full)}
-                        style={{ padding:'7px', border:`1.5px solid ${con.slot===full?'#12382A':'#DDE4EF'}`, borderRadius:6, background:con.slot===full?'#12382A':'#fff', color:con.slot===full?'#fff':'#5C6878', fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, fontWeight:700, cursor:'pointer' }}>
-                        {short}
+                        style={{ padding:'9px 8px', border:`1.5px solid ${con.slot===full?'#12382A':'#DDE4EF'}`, borderRadius:8, background:con.slot===full?'#12382A':'#fff', color:con.slot===full?'#fff':'#5C6878', fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, fontWeight:700, cursor:'pointer', textAlign:'center', minHeight:42 }}>
+                        <div>{full}</div><div style={{ fontSize:10, fontWeight:400, opacity:.7 }}>{sub}</div>
                       </button>
                     ))}
                   </div>
