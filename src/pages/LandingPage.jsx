@@ -35,25 +35,46 @@ const REVIEWS = [
   { name:'Priya K.', area:'Whitefield',  pain:'Frozen shoulder',        result:'Full movement restored',stars:5 },
 ]
 
-const AREAS = [
-  'Koramangala','HSR Layout','Whitefield','Indiranagar','Jayanagar',
-  'Marathahalli','JP Nagar','Electronic City','Bannerghatta Road','Yelahanka',
-  'Hebbal','BTM Layout',
-]
-
 const PHYSIOS = [
-  { id:1, name:'Dr. Ananya Sharma',   specialty:'Orthopedic & Sports Physiotherapy', area:'Koramangala',        pin:'560034', lat:12.9352, lng:77.6245, exp:'8 yrs',  rating:4.9, reviews:94,  avail:'Today',    mode:['Home visit','Online'] },
-  { id:2, name:'Dr. Rohan Mehta',     specialty:'Neuro & Post-Surgery Rehab',        area:'HSR Layout',         pin:'560102', lat:12.9081, lng:77.6476, exp:'12 yrs', rating:4.8, reviews:142, avail:'Today',    mode:['Home visit','Online'] },
-  { id:3, name:'Dr. Preethi Nair',    specialty:'Women\'s Health & Pelvic Floor',    area:'Indiranagar',        pin:'560038', lat:12.9784, lng:77.6408, exp:'6 yrs',  rating:4.9, reviews:81,  avail:'Tomorrow', mode:['Clinic','Online'] },
-  { id:4, name:'Dr. Kiran Reddy',     specialty:'Spine & Musculoskeletal',           area:'Whitefield',         pin:'560066', lat:12.9698, lng:77.7499, exp:'10 yrs', rating:4.7, reviews:203, avail:'Today',    mode:['Home visit','Clinic'] },
-  { id:5, name:'Dr. Suresh Kumar',    specialty:'Sports Injury & Rehab',             area:'Marathahalli',       pin:'560037', lat:12.9591, lng:77.6974, exp:'9 yrs',  rating:4.8, reviews:117, avail:'Today',    mode:['Home visit','Online'] },
-  { id:6, name:'Dr. Divya Iyer',      specialty:'Pediatric & Geriatric Physio',      area:'Jayanagar',          pin:'560041', lat:12.9250, lng:77.5938, exp:'7 yrs',  rating:4.9, reviews:66,  avail:'Today',    mode:['Home visit','Clinic'] },
-  { id:7, name:'Dr. Arun Bhat',       specialty:'Post-Surgical & Cardiac Rehab',     area:'JP Nagar',           pin:'560078', lat:12.9102, lng:77.5857, exp:'14 yrs', rating:4.8, reviews:189, avail:'Tomorrow', mode:['Clinic','Online'] },
-  { id:8, name:'Dr. Meghana Pai',     specialty:'Orthopedic & Manual Therapy',       area:'Electronic City',    pin:'560100', lat:12.8406, lng:77.6770, exp:'5 yrs',  rating:4.7, reviews:55,  avail:'Today',    mode:['Home visit','Online'] },
-  { id:9, name:'Dr. Vijay Sundar',    specialty:'Sports & Musculoskeletal',          area:'Hebbal',             pin:'560024', lat:13.0358, lng:77.5970, exp:'11 yrs', rating:4.9, reviews:130, avail:'Today',    mode:['Home visit','Clinic'] },
-  { id:10,name:'Dr. Lakshmi Prasad',  specialty:'Spine Rehab & Ergonomics',          area:'BTM Layout',         pin:'560076', lat:12.9166, lng:77.6101, exp:'8 yrs',  rating:4.8, reviews:98,  avail:'Today',    mode:['Home visit','Online'] },
-  { id:11,name:'Dr. Naveen Gowda',    specialty:'Neurological Physiotherapy',        area:'Bannerghatta Road',  pin:'560076', lat:12.8920, lng:77.5972, exp:'9 yrs',  rating:4.7, reviews:74,  avail:'Tomorrow', mode:['Clinic','Online'] },
-  { id:12,name:'Dr. Swathi Rao',      specialty:'Orthopedic & Sports Physio',        area:'Yelahanka',          pin:'560064', lat:13.1007, lng:77.5963, exp:'6 yrs',  rating:4.8, reviews:61,  avail:'Today',    mode:['Home visit','Online'] },
+  // Bengaluru
+  { id:1,  name:'Dr. Ananya Sharma',   specialty:'Orthopedic & Sports Physiotherapy', area:'Koramangala',       city:'Bengaluru',  state:'Karnataka',     pin:'560034', lat:12.9352, lng:77.6245, exp:'8 yrs',  rating:4.9, reviews:94,  avail:'Today',    mode:['Home visit','Online'] },
+  { id:2,  name:'Dr. Rohan Mehta',     specialty:'Neuro & Post-Surgery Rehab',        area:'HSR Layout',        city:'Bengaluru',  state:'Karnataka',     pin:'560102', lat:12.9081, lng:77.6476, exp:'12 yrs', rating:4.8, reviews:142, avail:'Today',    mode:['Home visit','Online'] },
+  { id:3,  name:'Dr. Preethi Nair',    specialty:"Women's Health & Pelvic Floor",     area:'Indiranagar',       city:'Bengaluru',  state:'Karnataka',     pin:'560038', lat:12.9784, lng:77.6408, exp:'6 yrs',  rating:4.9, reviews:81,  avail:'Tomorrow', mode:['In-person (clinic)','Online'] },
+  { id:4,  name:'Dr. Kiran Reddy',     specialty:'Spine & Musculoskeletal',           area:'Whitefield',        city:'Bengaluru',  state:'Karnataka',     pin:'560066', lat:12.9698, lng:77.7499, exp:'10 yrs', rating:4.7, reviews:203, avail:'Today',    mode:['Home visit','In-person (clinic)'] },
+  { id:5,  name:'Dr. Suresh Kumar',    specialty:'Sports Injury & Rehab',             area:'Marathahalli',      city:'Bengaluru',  state:'Karnataka',     pin:'560037', lat:12.9591, lng:77.6974, exp:'9 yrs',  rating:4.8, reviews:117, avail:'Today',    mode:['Home visit','Online'] },
+  { id:6,  name:'Dr. Divya Iyer',      specialty:'Pediatric & Geriatric Physio',      area:'Jayanagar',         city:'Bengaluru',  state:'Karnataka',     pin:'560041', lat:12.9250, lng:77.5938, exp:'7 yrs',  rating:4.9, reviews:66,  avail:'Today',    mode:['Home visit','In-person (clinic)'] },
+  { id:7,  name:'Dr. Arun Bhat',       specialty:'Post-Surgical & Cardiac Rehab',     area:'JP Nagar',          city:'Bengaluru',  state:'Karnataka',     pin:'560078', lat:12.9102, lng:77.5857, exp:'14 yrs', rating:4.8, reviews:189, avail:'Tomorrow', mode:['In-person (clinic)','Online'] },
+  { id:8,  name:'Dr. Meghana Pai',     specialty:'Orthopedic & Manual Therapy',       area:'Electronic City',   city:'Bengaluru',  state:'Karnataka',     pin:'560100', lat:12.8406, lng:77.6770, exp:'5 yrs',  rating:4.7, reviews:55,  avail:'Today',    mode:['Home visit','Online'] },
+  { id:9,  name:'Dr. Vijay Sundar',    specialty:'Sports & Musculoskeletal',          area:'Hebbal',            city:'Bengaluru',  state:'Karnataka',     pin:'560024', lat:13.0358, lng:77.5970, exp:'11 yrs', rating:4.9, reviews:130, avail:'Today',    mode:['Home visit','In-person (clinic)'] },
+  { id:10, name:'Dr. Lakshmi Prasad',  specialty:'Spine Rehab & Ergonomics',          area:'BTM Layout',        city:'Bengaluru',  state:'Karnataka',     pin:'560076', lat:12.9166, lng:77.6101, exp:'8 yrs',  rating:4.8, reviews:98,  avail:'Today',    mode:['Home visit','Online'] },
+  { id:11, name:'Dr. Naveen Gowda',    specialty:'Neurological Physiotherapy',        area:'Bannerghatta Road', city:'Bengaluru',  state:'Karnataka',     pin:'560076', lat:12.8920, lng:77.5972, exp:'9 yrs',  rating:4.7, reviews:74,  avail:'Tomorrow', mode:['In-person (clinic)','Online'] },
+  { id:12, name:'Dr. Swathi Rao',      specialty:'Orthopedic & Sports Physio',        area:'Yelahanka',         city:'Bengaluru',  state:'Karnataka',     pin:'560064', lat:13.1007, lng:77.5963, exp:'6 yrs',  rating:4.8, reviews:61,  avail:'Today',    mode:['Home visit','Online'] },
+  // Mumbai
+  { id:13, name:'Dr. Sanjay Kulkarni', specialty:'Orthopedic & Sports Physiotherapy', area:'Bandra West',       city:'Mumbai',     state:'Maharashtra',   pin:'400050', lat:19.0596, lng:72.8295, exp:'11 yrs', rating:4.8, reviews:178, avail:'Today',    mode:['Home visit','Online'] },
+  { id:14, name:'Dr. Nisha Joshi',     specialty:'Spine & Posture Rehab',             area:'Andheri East',      city:'Mumbai',     state:'Maharashtra',   pin:'400069', lat:19.1136, lng:72.8697, exp:'8 yrs',  rating:4.7, reviews:112, avail:'Today',    mode:['Home visit','In-person (clinic)'] },
+  { id:15, name:'Dr. Prakash More',    specialty:'Sports Injury & Manual Therapy',    area:'Powai',             city:'Mumbai',     state:'Maharashtra',   pin:'400076', lat:19.1197, lng:72.9051, exp:'9 yrs',  rating:4.9, reviews:93,  avail:'Tomorrow', mode:['In-person (clinic)','Online'] },
+  { id:16, name:'Dr. Alka Desai',      specialty:"Women's Health & Neuro Rehab",      area:'Dadar',             city:'Mumbai',     state:'Maharashtra',   pin:'400014', lat:19.0186, lng:72.8433, exp:'13 yrs', rating:4.8, reviews:207, avail:'Today',    mode:['Home visit','Online'] },
+  // Delhi NCR
+  { id:17, name:'Dr. Arjun Kapoor',    specialty:'Spine & Musculoskeletal',           area:'South Extension',   city:'New Delhi',  state:'Delhi',         pin:'110049', lat:28.5700, lng:77.2207, exp:'10 yrs', rating:4.8, reviews:154, avail:'Today',    mode:['Home visit','Online'] },
+  { id:18, name:'Dr. Pooja Malhotra',  specialty:'Post-Surgical & Sports Rehab',      area:'Dwarka',            city:'New Delhi',  state:'Delhi',         pin:'110078', lat:28.5921, lng:77.0460, exp:'7 yrs',  rating:4.7, reviews:88,  avail:'Today',    mode:['Home visit','In-person (clinic)'] },
+  { id:19, name:'Dr. Rahul Verma',     specialty:'Orthopedic & Manual Therapy',       area:'Gurgaon Sector 29', city:'Gurgaon',    state:'Haryana',       pin:'122001', lat:28.4595, lng:77.0266, exp:'12 yrs', rating:4.9, reviews:231, avail:'Today',    mode:['Home visit','Online'] },
+  { id:20, name:'Dr. Sneh Gupta',      specialty:'Neurological & Geriatric Physio',   area:'Noida Sector 18',   city:'Noida',      state:'Uttar Pradesh', pin:'201301', lat:28.5710, lng:77.3220, exp:'9 yrs',  rating:4.8, reviews:102, avail:'Tomorrow', mode:['In-person (clinic)','Online'] },
+  // Chennai
+  { id:21, name:'Dr. Kavitha Raman',   specialty:'Orthopedic & Sports Physiotherapy', area:'Anna Nagar',        city:'Chennai',    state:'Tamil Nadu',    pin:'600040', lat:13.0850, lng:80.2101, exp:'8 yrs',  rating:4.8, reviews:119, avail:'Today',    mode:['Home visit','Online'] },
+  { id:22, name:'Dr. Senthil Kumar',   specialty:'Spine & Neuro Rehab',               area:'Velachery',         city:'Chennai',    state:'Tamil Nadu',    pin:'600042', lat:12.9815, lng:80.2180, exp:'11 yrs', rating:4.7, reviews:143, avail:'Today',    mode:['Home visit','In-person (clinic)'] },
+  // Hyderabad
+  { id:23, name:'Dr. Madhuri Reddy',   specialty:'Sports Injury & Rehab',             area:'Banjara Hills',     city:'Hyderabad',  state:'Telangana',     pin:'500034', lat:17.4126, lng:78.4487, exp:'9 yrs',  rating:4.9, reviews:87,  avail:'Today',    mode:['Home visit','Online'] },
+  { id:24, name:'Dr. Ravi Shankar',    specialty:'Orthopedic & Manual Therapy',       area:'Gachibowli',        city:'Hyderabad',  state:'Telangana',     pin:'500032', lat:17.4401, lng:78.3489, exp:'10 yrs', rating:4.8, reviews:166, avail:'Tomorrow', mode:['In-person (clinic)','Online'] },
+  // Pune
+  { id:25, name:'Dr. Snehal Patil',    specialty:'Post-Surgical & Sports Rehab',      area:'Kothrud',           city:'Pune',       state:'Maharashtra',   pin:'411038', lat:18.5074, lng:73.8077, exp:'7 yrs',  rating:4.8, reviews:74,  avail:'Today',    mode:['Home visit','Online'] },
+  { id:26, name:'Dr. Amol Deshpande',  specialty:'Spine & Musculoskeletal',           area:'Viman Nagar',       city:'Pune',       state:'Maharashtra',   pin:'411014', lat:18.5679, lng:73.9143, exp:'9 yrs',  rating:4.7, reviews:98,  avail:'Today',    mode:['Home visit','In-person (clinic)'] },
+  // Kolkata
+  { id:27, name:'Dr. Indrani Bose',    specialty:"Women's Health & Geriatric Physio", area:'Salt Lake',         city:'Kolkata',    state:'West Bengal',   pin:'700091', lat:22.5726, lng:88.4190, exp:'12 yrs', rating:4.8, reviews:137, avail:'Today',    mode:['Home visit','Online'] },
+  { id:28, name:'Dr. Suman Das',       specialty:'Neuro & Orthopedic Rehab',          area:'Park Street',       city:'Kolkata',    state:'West Bengal',   pin:'700016', lat:22.5498, lng:88.3513, exp:'8 yrs',  rating:4.7, reviews:89,  avail:'Tomorrow', mode:['In-person (clinic)','Online'] },
+  // Ahmedabad
+  { id:29, name:'Dr. Hetal Shah',      specialty:'Orthopedic & Sports Physiotherapy', area:'Satellite',         city:'Ahmedabad',  state:'Gujarat',       pin:'380015', lat:23.0151, lng:72.5297, exp:'10 yrs', rating:4.8, reviews:111, avail:'Today',    mode:['Home visit','Online'] },
+  // Jaipur
+  { id:30, name:'Dr. Priya Sharma',    specialty:'Spine & Musculoskeletal',           area:'Malviya Nagar',     city:'Jaipur',     state:'Rajasthan',     pin:'302017', lat:26.8505, lng:75.8069, exp:'7 yrs',  rating:4.7, reviews:63,  avail:'Today',    mode:['Home visit','In-person (clinic)'] },
 ]
 
 function haversineKm(lat1, lng1, lat2, lng2) {
@@ -177,20 +198,80 @@ function LogoImg({ size = 40 }) {
 }
 
 
-/* ── PIN → area lookup ──────────────────────────────────────────── */
-const BLG_PINS = {
-  '560003':'Malleswaram','560004':'Basavanagudi','560010':'Rajajinagar','560011':'Jayanagar',
-  '560017':'Vijayanagar','560024':'Hebbal','560029':'Banashankari','560034':'Koramangala',
-  '560037':'Marathahalli','560038':'Indiranagar','560041':'BTM Layout','560043':'Kalyan Nagar',
-  '560048':'Mahadevapura','560050':'Bannerghatta Road','560064':'Yelahanka','560066':'Whitefield',
-  '560076':'Jayanagar / BTM','560078':'JP Nagar','560093':'CV Raman Nagar',
-  '560100':'Electronic City','560102':'HSR Layout','560103':'Bellandur',
+/* ── PIN → city/state lookup ────────────────────────────────────── */
+const PIN_CITY = {
+  // Bengaluru
+  '560003':'Malleswaram, Bengaluru','560004':'Basavanagudi, Bengaluru','560010':'Rajajinagar, Bengaluru',
+  '560011':'Jayanagar, Bengaluru','560017':'Vijayanagar, Bengaluru','560024':'Hebbal, Bengaluru',
+  '560029':'Banashankari, Bengaluru','560034':'Koramangala, Bengaluru','560037':'Marathahalli, Bengaluru',
+  '560038':'Indiranagar, Bengaluru','560041':'BTM Layout, Bengaluru','560043':'Kalyan Nagar, Bengaluru',
+  '560048':'Mahadevapura, Bengaluru','560050':'Bannerghatta Road, Bengaluru','560064':'Yelahanka, Bengaluru',
+  '560066':'Whitefield, Bengaluru','560076':'Jayanagar / BTM, Bengaluru','560078':'JP Nagar, Bengaluru',
+  '560093':'CV Raman Nagar, Bengaluru','560100':'Electronic City, Bengaluru','560102':'HSR Layout, Bengaluru',
+  '560103':'Bellandur, Bengaluru',
+  // Mumbai
+  '400001':'Fort, Mumbai','400005':'Colaba, Mumbai','400012':'Parel, Mumbai','400013':'Dadar East, Mumbai',
+  '400014':'Dadar West, Mumbai','400016':'Mahim, Mumbai','400022':'Sion, Mumbai','400025':'Prabhadevi, Mumbai',
+  '400028':'Worli, Mumbai','400050':'Bandra West, Mumbai','400051':'Bandra East, Mumbai',
+  '400052':'Khar, Mumbai','400053':'Santacruz West, Mumbai','400054':'Santacruz East, Mumbai',
+  '400055':'Juhu, Mumbai','400056':'Vile Parle West, Mumbai','400057':'Vile Parle East, Mumbai',
+  '400058':'Andheri West, Mumbai','400059':'Andheri East, Mumbai','400063':'Malad West, Mumbai',
+  '400064':'Malad East, Mumbai','400066':'Kandivali West, Mumbai','400067':'Kandivali East, Mumbai',
+  '400068':'Borivali West, Mumbai','400069':'Andheri East (MIDC), Mumbai','400076':'Powai, Mumbai',
+  '400093':'Thane West, Thane','400601':'Thane East, Thane','400705':'Navi Mumbai, Navi Mumbai',
+  // Delhi
+  '110001':'Connaught Place, New Delhi','110003':'Lodhi Road, New Delhi','110005':'Karol Bagh, New Delhi',
+  '110007':'Kamla Nagar, New Delhi','110017':'Lajpat Nagar, New Delhi','110019':'Kalkaji, New Delhi',
+  '110024':'Lajpat Nagar II, New Delhi','110025':'Sarojini Nagar, New Delhi','110048':'Vasant Vihar, New Delhi',
+  '110049':'South Extension, New Delhi','110051':'Preet Vihar, New Delhi','110057':'Pitampura, New Delhi',
+  '110058':'Vikaspuri, New Delhi','110059':'Janakpuri, New Delhi','110065':'Hauz Khas, New Delhi',
+  '110075':'Dwarka Sector 6, New Delhi','110077':'Dwarka Sector 9, New Delhi','110078':'Dwarka, New Delhi',
+  '110085':'Rohini, New Delhi','110092':'Patparganj, New Delhi','110096':'Mayur Vihar, New Delhi',
+  // Gurgaon / NCR
+  '122001':'Gurgaon Sector 14, Gurgaon','122002':'Gurgaon Sector 29, Gurgaon','122018':'DLF Phase 1, Gurgaon',
+  '122022':'Sohna Road, Gurgaon','122051':'Golf Course Road, Gurgaon',
+  // Noida
+  '201301':'Noida Sector 18, Noida','201304':'Noida Sector 62, Noida','201307':'Noida Sector 137, Noida',
+  // Chennai
+  '600001':'George Town, Chennai','600006':'Mylapore, Chennai','600010':'Nungambakkam, Chennai',
+  '600017':'Alwarpet, Chennai','600020':'Adyar, Chennai','600028':'Velachery, Chennai',
+  '600035':'T Nagar, Chennai','600040':'Anna Nagar, Chennai','600042':'Velachery East, Chennai',
+  '600083':'Perungudi, Chennai','600096':'Sholinganallur, Chennai',
+  // Hyderabad
+  '500001':'Hyderabad City, Hyderabad','500016':'Banjara Hills, Hyderabad','500029':'Jubilee Hills, Hyderabad',
+  '500032':'Gachibowli, Hyderabad','500033':'Kondapur, Hyderabad','500034':'Banjara Hills Road, Hyderabad',
+  '500081':'HITEC City, Hyderabad','500084':'Madhapur, Hyderabad',
+  // Pune
+  '411001':'Pune City, Pune','411004':'Shivajinagar, Pune','411007':'Kothrud, Pune',
+  '411014':'Viman Nagar, Pune','411028':'Baner, Pune','411038':'Kothrud West, Pune',
+  '411045':'Hadapsar, Pune','411057':'Hinjewadi, Pune',
+  // Kolkata
+  '700001':'BBD Bagh, Kolkata','700016':'Park Street, Kolkata','700019':'Ballygunge, Kolkata',
+  '700026':'Dhakuria, Kolkata','700029':'Alipore, Kolkata','700091':'Salt Lake, Kolkata',
+  '700106':'New Town, Kolkata',
+  // Ahmedabad
+  '380001':'Ahmedabad City, Ahmedabad','380006':'Ellis Bridge, Ahmedabad','380009':'Navrangpura, Ahmedabad',
+  '380015':'Satellite, Ahmedabad','380052':'Vastrapur, Ahmedabad','380054':'Bodakdev, Ahmedabad',
+  '380059':'SG Highway, Ahmedabad',
+  // Jaipur
+  '302001':'Jaipur City, Jaipur','302004':'Bani Park, Jaipur','302012':'Raja Park, Jaipur',
+  '302017':'Malviya Nagar, Jaipur','302021':'Vaishali Nagar, Jaipur',
 }
+
+// PIN prefix → city fallback (first 3 digits)
+const PIN_PREFIX = {
+  '110':'New Delhi','111':'Delhi NCR','112':'Delhi NCR','400':'Mumbai','401':'Mumbai region',
+  '411':'Pune','500':'Hyderabad','560':'Bengaluru','600':'Chennai','700':'Kolkata',
+  '122':'Gurgaon','201':'Noida','380':'Ahmedabad','302':'Jaipur','226':'Lucknow',
+  '160':'Chandigarh','440':'Nagpur','530':'Visakhapatnam','641':'Coimbatore','682':'Kochi',
+}
+
 function pinArea(pin) {
   if (pin.length < 6) return null
-  if (BLG_PINS[pin]) return '✓ ' + BLG_PINS[pin] + ', Bengaluru'
-  if (pin.startsWith('560')) return '✓ Bengaluru — we\'ll confirm the nearest specialist'
-  return 'Outside Bengaluru — online sessions available everywhere'
+  if (PIN_CITY[pin]) return '✓ ' + PIN_CITY[pin]
+  const prefix3 = pin.slice(0,3)
+  if (PIN_PREFIX[prefix3]) return '✓ ' + PIN_PREFIX[prefix3] + ' — we\'ll confirm the nearest specialist'
+  return '✓ We have specialists and online sessions available across India'
 }
 
 /* ── Reusable field styles ──────────────────────────────────────── */
@@ -410,7 +491,7 @@ function SimpleBooking({ onClose, onSuccess }) {
     if (!callOk) { setErrors({ submit:'Please fill all required fields.' }); return }
     setBusy(true)
     try {
-      const area = BLG_PINS[call.pin] || (call.pin.startsWith('560') ? 'Bengaluru' : 'Outside Bengaluru')
+      const area = PIN_CITY[call.pin] || PIN_PREFIX[call.pin.slice(0,3)] || 'India'
       await supabase.from('leads').insert({ name:call.name, phone:call.phone, area, pain:call.issue||'Not specified', note:`Call time: ${call.callTime}`, stage:'new', priority:'medium' })
       const rows = [['Name',call.name],['Mobile','+91 '+call.phone],['Area',area+' ('+call.pin+')'],['Concern',call.issue||'Not specified'],['Best time to call',call.callTime]]
       const wa = `Hi PhysioDrishti, I'd like a free call.\n${rows.map(r=>r[0]+': '+r[1]).join('\n')}`
@@ -424,7 +505,7 @@ function SimpleBooking({ onClose, onSuccess }) {
     if (!conOk) { setErrors({ submit:'Please fill all required fields.' }); return }
     setBusy(true)
     try {
-      const area = BLG_PINS[con.pin] || (con.pin.startsWith('560') ? 'Bengaluru' : 'Outside Bengaluru')
+      const area = PIN_CITY[con.pin] || PIN_PREFIX[con.pin.slice(0,3)] || 'India'
       const fmtSlot = con.slot ? new Date('1970-01-01T'+con.slot).toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit',hour12:true}) : ''
       const note = [`Pain scale: ${con.painScale}/10`, mainArea && `Main area: ${ZONE_LABELS[mainArea]||mainArea}`, con.hadSurgery && `Surgery: ${con.hadSurgery}`, worseTimes.length && `Worse when: ${worseTimes.join(', ')}`, con.duration && `Duration: ${con.duration}`, `Session: ${con.sessionMode}`, `Slot: ${con.date}, ${fmtSlot}`, con.notes && `Notes: ${con.notes}`].filter(Boolean).join(' | ')
       await supabase.from('leads').insert({ name:con.name, phone:con.phone, area, pain:[...bodySelected].map(id=>ZONE_LABELS[id]||id).join(', '), note, stage:'new', priority:'medium' })
@@ -999,7 +1080,7 @@ export default function LandingPage({ onGoToDashboard, onShowDoctor, mapplsKey }
                 <button className="btn-ghost" onClick={onGoToDashboard}>I am a clinic</button>
               </div>
               <div style={{ display:'flex', gap:28, flexWrap:'wrap' }}>
-                {[['⭐ 4.9','Rating'],['🏥 3,400+','Sessions done'],['📍 10+','Areas in Bengaluru'],['📱','Online & at home']].map(([v,l])=>(
+                {[['⭐ 4.9','Rating'],['🏥 3,400+','Sessions done'],['📍 10+','Cities across India'],['📱','Online & at home']].map(([v,l])=>(
                   <div key={l}><div className="pj" style={{ fontSize:'1.1rem', fontWeight:800, color:'#fff' }}>{v}</div><div className="pj" style={{ fontSize:11, color:'rgba(255,255,255,.5)' }}>{l}</div></div>
                 ))}
               </div>
@@ -1122,7 +1203,7 @@ export default function LandingPage({ onGoToDashboard, onShowDoctor, mapplsKey }
                       <div style={{ background:'#FFF8EF', borderRadius:6, padding:'3px 9px', fontSize:11, fontWeight:700, color:'#D4510E', fontFamily:"'Plus Jakarta Sans',sans-serif", flexShrink:0 }}>{p.avail}</div>
                     </div>
                     <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:14 }}>
-                      <span className="pj" style={{ fontSize:11, color:'#5C6878', display:'flex', alignItems:'center', gap:4 }}>📍 {p.area} · {p.pin}</span>
+                      <span className="pj" style={{ fontSize:11, color:'#5C6878', display:'flex', alignItems:'center', gap:4 }}>📍 {p.area}, {p.city} · {p.state}</span>
                       {p.distKm !== undefined && (
                         <span className="pj" style={{ fontSize:11, color:'#3A9A6B', fontWeight:700 }}>~{p.distKm < 1 ? '<1' : p.distKm.toFixed(1)} km away</span>
                       )}
@@ -1147,17 +1228,24 @@ export default function LandingPage({ onGoToDashboard, onShowDoctor, mapplsKey }
           {/* Default prompt — no search yet */}
           {findResults === null && gpsState === 'idle' && (
             <div style={{ display:'flex', flexWrap:'wrap', gap:10, justifyContent:'center' }}>
-              {['560034','560102','560038','560066','560037','560041'].map(pin => (
+              {[
+                { pin:'560034', label:'Koramangala, Bengaluru' },
+                { pin:'400050', label:'Bandra, Mumbai' },
+                { pin:'110049', label:'South Extn, Delhi' },
+                { pin:'500034', label:'Banjara Hills, Hyderabad' },
+                { pin:'600040', label:'Anna Nagar, Chennai' },
+                { pin:'411007', label:'Kothrud, Pune' },
+              ].map(({ pin, label }) => (
                 <button key={pin} className="pj"
                   onClick={() => {
                     setPinInput(pin)
-                    setFindResults(PHYSIOS.filter(p => p.pin === pin))
+                    setFindResults(PHYSIOS.filter(p => p.pin.startsWith(pin.slice(0,3))))
                     setFindMode('pin')
                   }}
                   style={{ padding:'7px 16px', borderRadius:20, border:'1px solid #DDE4EF', background:'#fff', fontSize:12, color:'#5C6878', cursor:'pointer', transition:'all .2s' }}
                   onMouseEnter={e=>{ e.currentTarget.style.borderColor='#3A9A6B'; e.currentTarget.style.color='#0A6B5E' }}
                   onMouseLeave={e=>{ e.currentTarget.style.borderColor='#DDE4EF'; e.currentTarget.style.color='#5C6878' }}
-                >📍 {PHYSIOS.find(p=>p.pin===pin)?.area} ({pin})</button>
+                >📍 {label}</button>
               ))}
             </div>
           )}
@@ -1170,7 +1258,7 @@ export default function LandingPage({ onGoToDashboard, onShowDoctor, mapplsKey }
           <div style={{ textAlign:'center', marginBottom:46 }}>
             <div className="pj" style={{ fontSize:11, fontWeight:800, letterSpacing:3, textTransform:'uppercase', color:'#D4510E', marginBottom:12 }}>We can help with</div>
             <h2 className="pd" style={{ fontSize:'2.2rem', fontWeight:900 }}>Pain we treat</h2>
-            <p className="pj" style={{ color:'#5C6878', fontSize:15, marginTop:10, maxWidth:460, margin:'10px auto 0' }}>We've helped thousands of people across Bengaluru get back to their normal lives.</p>
+            <p className="pj" style={{ color:'#5C6878', fontSize:15, marginTop:10, maxWidth:460, margin:'10px auto 0' }}>We've helped thousands of people across India get back to their normal lives.</p>
           </div>
           <div className="pain-grid" style={{ display:'grid', gap:20 }}>
             {PAIN_AREAS.map(p=>(
