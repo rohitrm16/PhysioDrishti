@@ -138,6 +138,32 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:#FDFAF3;color:#0D1520
 @media(min-width:768px){
   .physio-results{grid-template-columns:repeat(3,1fr)}
 }
+
+/* ── Modal / form responsive ─────────────────────────────────────── */
+.modal-overlay{-webkit-overflow-scrolling:touch}
+.modal-scroll{-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.con-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.slot-col{display:flex;flex-direction:column;gap:6px}
+/* Range slider thumb */
+input[type=range]{-webkit-appearance:none;appearance:none;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:#12382A;cursor:pointer;border:3px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.25);margin-top:-8px}
+input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:8px}
+input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:#12382A;cursor:pointer;border:3px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.25)}
+/* Prevent iOS font-size zoom on inputs */
+@media(max-width:767px){
+  input,select,textarea{font-size:16px!important}
+  .modal-wrap{border-radius:20px 20px 0 0!important;margin-top:auto!important;max-width:100%!important}
+  .modal-overlay{align-items:flex-end!important;padding:0!important}
+  .modal-scroll{max-height:88dvh!important;max-height:88vh!important}
+  .con-grid-2{grid-template-columns:1fr!important}
+  .slot-col{flex-direction:row!important;flex-wrap:wrap!important;gap:8px!important}
+  .slot-col button{flex:1;min-width:80px}
+  .modal-tabs button{padding:9px 12px!important;font-size:12px!important}
+}
+@media(min-width:768px){
+  .modal-wrap{border-radius:16px;max-width:520px;margin-top:20px;margin-bottom:20px}
+  .modal-scroll{max-height:78vh}
+}
 `
 
 
@@ -174,7 +200,7 @@ function pinArea(pin) {
 }
 
 /* ── Reusable field styles ──────────────────────────────────────── */
-const FS = { width:'100%', padding:'11px 14px', border:'1.5px solid #DDE4EF', borderRadius:8, fontSize:14, outline:'none', fontFamily:"'Plus Jakarta Sans',sans-serif", color:'#0D1520', background:'#fff' }
+const FS = { width:'100%', padding:'11px 14px', border:'1.5px solid #DDE4EF', borderRadius:8, fontSize:16, outline:'none', fontFamily:"'Plus Jakarta Sans',sans-serif", color:'#0D1520', background:'#fff' }
 const LS = { fontSize:12, fontWeight:700, color:'#0A6B5E', display:'block', marginBottom:6, fontFamily:"'Plus Jakarta Sans',sans-serif" }
 const WA_NO = '91XXXXXXXXXX'
 
@@ -254,33 +280,43 @@ const BODY_ZONES = {
   ],
 }
 
-function BodyMap({ selected, onChange }) {
+function BodyMap({ selected, onChange, mainArea, onMainArea }) {
   const [view, setView] = useState('front')
   function toggle(id) {
     const next = new Set(selected)
-    next.has(id) ? next.delete(id) : next.add(id)
+    if (next.has(id)) { next.delete(id); if (mainArea===id) onMainArea(null) }
+    else next.add(id)
     onChange(next)
   }
+  function clear() { onChange(new Set()); onMainArea(null) }
   const zones = BODY_ZONES[view]
   const isFront = view === 'front'
   const oF = '#EEF2F7', oS = '#C8D0DB'
   return (
-    <div>
-      <div style={{ display:'flex', gap:8, marginBottom:12, justifyContent:'center' }}>
-        {['front','back'].map(v=>(
-          <button key={v} type="button" onClick={()=>setView(v)}
-            style={{ padding:'7px 22px', border:`1.5px solid ${view===v?'#12382A':'#DDE4EF'}`, borderRadius:20, background:view===v?'#12382A':'#fff', color:view===v?'#fff':'#5C6878', fontSize:13, fontWeight:600, cursor:'pointer', transition:'all .18s', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-            {v==='front'?'Front view':'Back view'}
+    <div style={{ marginBottom:14 }}>
+      <p className="pj" style={{ fontSize:12, color:'#5C6878', marginBottom:10, lineHeight:1.5 }}>Tap the body wherever you feel it. Turn the figure around for your back.</p>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+        <div style={{ display:'flex', background:'#F3F6FA', borderRadius:24, padding:3, gap:2 }}>
+          {['front','back'].map(v=>(
+            <button key={v} type="button" onClick={()=>setView(v)}
+              style={{ padding:'6px 18px', border:'none', borderRadius:20, background:view===v?'#12382A':'transparent', color:view===v?'#fff':'#5C6878', fontSize:13, fontWeight:600, cursor:'pointer', transition:'all .18s', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+              {v==='front'?'Front':'Back'}
+            </button>
+          ))}
+        </div>
+        {selected.size>0&&(
+          <button type="button" onClick={clear}
+            style={{ background:'none', border:'none', color:'#0A6B5E', fontWeight:600, fontSize:13, cursor:'pointer', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+            Clear
           </button>
-        ))}
+        )}
       </div>
       <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'center', gap:4 }}>
         <div style={{ display:'flex', flexDirection:'column', alignItems:'center', paddingTop:58, minWidth:36 }}>
           <div style={{ fontSize:9, fontWeight:800, color:'#9BA8B5', fontFamily:"'Plus Jakarta Sans',sans-serif", textAlign:'center', lineHeight:1.3 }}>YOUR<br/>{isFront?'RIGHT':'LEFT'}</div>
           <div style={{ fontSize:14, color:'#CDD5DF', marginTop:2 }}>←</div>
         </div>
-        <svg viewBox="0 0 220 440" width="160" style={{ display:'block', userSelect:'none', touchAction:'manipulation', flexShrink:0 }}>
-          {/* Body silhouette */}
+        <svg viewBox="0 0 220 440" style={{ display:'block', userSelect:'none', touchAction:'manipulation', flexShrink:0, width:'min(160px, 42vw)' }}>
           <ellipse cx="110" cy="28" rx="30" ry="27" fill={oF} stroke={oS} strokeWidth="1.5"/>
           <rect x="98" y="53" width="24" height="18" rx="4" fill={oF} stroke={oS} strokeWidth="1.5"/>
           <rect x="72" y="68" width="76" height="165" rx="14" fill={oF} stroke={oS} strokeWidth="1.5"/>
@@ -288,7 +324,6 @@ function BodyMap({ selected, onChange }) {
           <rect x="148" y="72" width="28" height="152" rx="10" fill={oF} stroke={oS} strokeWidth="1.5"/>
           <rect x="78" y="230" width="30" height="192" rx="12" fill={oF} stroke={oS} strokeWidth="1.5"/>
           <rect x="112" y="230" width="30" height="192" rx="12" fill={oF} stroke={oS} strokeWidth="1.5"/>
-          {/* Tappable zones */}
           {zones.map(z=>(
             <ellipse key={z.id} cx={z.cx} cy={z.cy} rx={z.rx} ry={z.ry}
               fill={selected.has(z.id)?'rgba(240,185,74,.75)':'rgba(58,154,107,.1)'}
@@ -303,16 +338,22 @@ function BodyMap({ selected, onChange }) {
           <div style={{ fontSize:14, color:'#CDD5DF', marginTop:2 }}>→</div>
         </div>
       </div>
-      <p style={{ fontSize:11, color:'#9BA8B5', textAlign:'center', margin:'4px 0 8px', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>Tap zones to select · tap again to deselect</p>
       {selected.size>0&&(
-        <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:4 }}>
-          {[...selected].map(id=>(
-            <span key={id} onClick={()=>toggle(id)}
-              style={{ padding:'4px 10px', background:'#FFF8EF', border:'1.5px solid #F0B94A', borderRadius:16, fontSize:12, fontWeight:600, color:'#0D1520', cursor:'pointer', display:'inline-flex', alignItems:'center', gap:5, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-              {ZONE_LABELS[id]||id}<span style={{ fontSize:10, color:'#9BA8B5' }}>✕</span>
-            </span>
-          ))}
-        </div>
+        <>
+          <p className="pj" style={{ fontSize:11, color:'#9BA8B5', textAlign:'center', margin:'6px 0 8px' }}>Tap ★ on the one that bothers you most.</p>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+            {[...selected].map(id=>(
+              <span key={id}
+                style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'4px 10px', background:'#FFF8EF', border:`1.5px solid ${mainArea===id?'#D4510E':'#F0B94A'}`, borderRadius:16, fontSize:12, fontWeight:600, color:'#0D1520', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                <span onClick={e=>{e.stopPropagation();onMainArea(mainArea===id?null:id)}}
+                  style={{ color:mainArea===id?'#D4510E':'#CDD5DF', cursor:'pointer', fontSize:13, lineHeight:1 }}>★</span>
+                {mainArea===id&&<span style={{ fontSize:10, color:'#D4510E', fontWeight:700 }}>Main</span>}
+                {ZONE_LABELS[id]||id}
+                <span onClick={()=>toggle(id)} style={{ fontSize:10, color:'#9BA8B5', cursor:'pointer', marginLeft:2 }}>×</span>
+              </span>
+            ))}
+          </div>
+        </>
       )}
     </div>
   )
@@ -347,6 +388,9 @@ function SimpleBooking({ onClose, onSuccess }) {
   const [conGps, setConGps] = useState('idle')
 
   const [bodySelected, setBodySelected] = useState(new Set())
+  const [mainArea, setMainArea] = useState(null)
+  const [worseTimes, setWorseTimes] = useState([])
+  const toggleWorseTime = (t) => setWorseTimes(p => p.includes(t)?p.filter(x=>x!==t):[...p,t])
 
   const painWords = ['No pain','Very mild','Mild','Mild','Moderate','Moderate','Moderate','Severe','Severe','Very severe','Worst']
 
@@ -387,14 +431,16 @@ function SimpleBooking({ onClose, onSuccess }) {
     setBusy(true)
     try {
       const area = BLG_PINS[con.pin] || (con.pin.startsWith('560') ? 'Bengaluru' : 'Outside Bengaluru')
-      const note = [`Pain scale: ${con.painScale}/10`, con.duration && `Duration: ${con.duration}`, `Session: ${con.sessionMode}`, `Slot: ${con.date}, ${con.slot}`, con.notes && `Notes: ${con.notes}`].filter(Boolean).join(' | ')
+      const note = [`Pain scale: ${con.painScale}/10`, mainArea && `Main area: ${ZONE_LABELS[mainArea]||mainArea}`, worseTimes.length && `Worse when: ${worseTimes.join(', ')}`, con.duration && `Duration: ${con.duration}`, `Session: ${con.sessionMode}`, `Slot: ${con.date}, ${con.slot}`, con.notes && `Notes: ${con.notes}`].filter(Boolean).join(' | ')
       await supabase.from('leads').insert({ name:con.name, phone:con.phone, area, pain:[...bodySelected].map(id=>ZONE_LABELS[id]||id).join(', '), note, stage:'new', priority:'medium' })
       const rows = [
         ['Patient', con.name + (con.age ? ', '+con.age+' yrs' : '') + (con.gender ? ', '+con.gender : '')],
         ['Mobile', '+91 '+con.phone],
         ['Area', area+' ('+con.pin+')'],
         ['Pain areas', [...bodySelected].map(id=>ZONE_LABELS[id]||id).join(', ')],
+        ...(mainArea ? [['Main concern', ZONE_LABELS[mainArea]||mainArea]] : []),
         ['Pain today', con.painScale+'/10 — '+painWords[con.painScale]],
+        ...(worseTimes.length ? [['Worse when', worseTimes.join(', ')]] : []),
         ['Duration', con.duration||'Not specified'],
         ['Session type', con.sessionMode],
         ['Preferred slot', new Date(con.date+'T00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})+', '+con.slot],
@@ -410,8 +456,8 @@ function SimpleBooking({ onClose, onSuccess }) {
 
   // Done screen
   if (done) return (
-    <div style={overlay} onClick={onClose}>
-      <div style={{ background:'#fff', borderRadius:16, width:'100%', maxWidth:480, marginTop:40, boxShadow:'0 24px 64px rgba(0,0,0,.25)', overflow:'hidden' }} onClick={e=>e.stopPropagation()}>
+    <div className="modal-overlay" style={overlay} onClick={onClose}>
+      <div className="modal-wrap" style={{ background:'#fff', width:'100%', maxWidth:480, boxShadow:'0 24px 64px rgba(0,0,0,.25)', overflow:'hidden' }} onClick={e=>e.stopPropagation()}>
         <div style={{ background:'linear-gradient(135deg,#12382A,#0A6B5E)', padding:'28px 24px', textAlign:'center' }}>
           <div style={{ width:56, height:56, borderRadius:'50%', background:'rgba(255,255,255,.15)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px', fontSize:28 }}>✓</div>
           <div className="pd" style={{ fontSize:'1.4rem', fontWeight:900, color:'#fff', marginBottom:6 }}>{done.title}</div>
@@ -438,27 +484,27 @@ function SimpleBooking({ onClose, onSuccess }) {
   )
 
   return (
-    <div style={overlay} onClick={onClose}>
-      <div style={{ background:'#fff', borderRadius:16, width:'100%', maxWidth:500, marginTop:20, boxShadow:'0 24px 64px rgba(0,0,0,.25)', overflow:'hidden' }} onClick={e=>e.stopPropagation()}>
+    <div className="modal-overlay" style={overlay} onClick={onClose}>
+      <div className="modal-wrap" style={{ background:'#fff', width:'100%', boxShadow:'0 24px 64px rgba(0,0,0,.25)', overflow:'hidden' }} onClick={e=>e.stopPropagation()}>
 
         {/* Header */}
-        <div style={{ background:'linear-gradient(135deg,#12382A,#0A6B5E)', padding:'18px 22px 0', display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
-          <div>
-            <div className="pd" style={{ fontSize:'1.2rem', fontWeight:900, color:'#fff', marginBottom:12 }}>Book a free call or consultation</div>
+        <div style={{ background:'linear-gradient(135deg,#12382A,#0A6B5E)', padding:'16px 18px 0', display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div className="pd" style={{ fontSize:'1.1rem', fontWeight:900, color:'#fff', marginBottom:10 }}>Book a free call or consultation</div>
             {/* Tabs */}
-            <div style={{ display:'flex', gap:2 }}>
+            <div className="modal-tabs" style={{ display:'flex', gap:2 }}>
               {[['call','Free call','30 sec'],['consult','Book consultation','2 min']].map(([m,label,t]) => (
                 <button key={m} onClick={()=>setMode(m)}
-                  style={{ padding:'9px 18px', border:'none', borderRadius:'8px 8px 0 0', background:mode===m?'#fff':'transparent', color:mode===m?'#12382A':'rgba(255,255,255,.65)', fontWeight:700, fontSize:13, cursor:'pointer', fontFamily:"'Plus Jakarta Sans',sans-serif", transition:'all .2s' }}>
+                  style={{ padding:'9px 16px', border:'none', borderRadius:'8px 8px 0 0', background:mode===m?'#fff':'transparent', color:mode===m?'#12382A':'rgba(255,255,255,.65)', fontWeight:700, fontSize:13, cursor:'pointer', fontFamily:"'Plus Jakarta Sans',sans-serif", transition:'all .2s', whiteSpace:'nowrap' }}>
                   {label} <span style={{ fontSize:10, opacity:.75 }}>· {t}</span>
                 </button>
               ))}
             </div>
           </div>
-          <button onClick={onClose} style={{ background:'rgba(255,255,255,.15)', border:'none', borderRadius:8, width:32, height:32, cursor:'pointer', color:'#fff', fontSize:16, flexShrink:0, marginTop:2 }}>✕</button>
+          <button onClick={onClose} style={{ background:'rgba(255,255,255,.15)', border:'none', borderRadius:8, width:36, height:36, cursor:'pointer', color:'#fff', fontSize:18, flexShrink:0, marginTop:2, marginLeft:8, display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
         </div>
 
-        <div style={{ padding:'22px 22px 24px', maxHeight:'75vh', overflowY:'auto' }}>
+        <div className="modal-scroll" style={{ padding:'18px 18px 24px', overflowY:'auto' }}>
 
           {/* ── FREE CALL FORM ── */}
           {mode === 'call' && (
@@ -543,52 +589,63 @@ function SimpleBooking({ onClose, onSuccess }) {
                   <input style={{ ...FS, borderRadius:'0 8px 8px 0', borderLeft:'none' }} type="tel" inputMode="numeric" maxLength={10} placeholder="10-digit number" value={con.phone} onChange={e=>sk('phone',e.target.value.replace(/\D/g,''))} />
                 </div>
               </div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:6 }}>
-                <div>
-                  <label style={LS}>Age</label>
-                  <input style={FS} type="number" min={1} max={110} placeholder="e.g. 42" value={con.age} onChange={e=>sk('age',e.target.value)} />
-                </div>
-                <div>
-                  <label style={LS}>PIN code *</label>
-                  <input style={FS} type="text" inputMode="numeric" maxLength={6} placeholder="e.g. 560034" value={con.pin}
-                    onChange={e=>{ const v=e.target.value.replace(/\D/g,''); sk('pin',v); setConPinNote(pinArea(v)||'') }} />
-                </div>
+              <div style={{ marginBottom:6 }}>
+                <label style={LS}>PIN code *</label>
+                <input style={FS} type="text" inputMode="numeric" maxLength={6} placeholder="e.g. 560034" value={con.pin}
+                  onChange={e=>{ const v=e.target.value.replace(/\D/g,''); sk('pin',v); setConPinNote(pinArea(v)||'') }} />
               </div>
               {conPinNote && <div className="pj" style={{ fontSize:12, color: conPinNote.startsWith('✓')?'#177A45':'#D4510E', marginBottom:4 }}>{conPinNote}</div>}
               <button type="button" className="pj" onClick={()=>useGps(sk, setConPinNote, setConGps)}
                 style={{ background:'none', border:'none', color:'#0A6B5E', fontWeight:600, fontSize:13, cursor:'pointer', padding:'4px 0', marginBottom:14, display:'flex', alignItems:'center', gap:6 }}>
                 {conGps==='loading'?'⏳ Locating…':'◎ Use my location instead'}
               </button>
+              <div className="con-grid-2">
+                <div>
+                  <label style={LS}>Age <span style={{ fontWeight:400, color:'#5C6878' }}>(optional)</span></label>
+                  <input style={FS} type="number" min={1} max={110} placeholder="e.g. 42" value={con.age} onChange={e=>sk('age',e.target.value)} />
+                </div>
+                <div>
+                  <label style={LS}>Gender <span style={{ fontWeight:400, color:'#5C6878' }}>(optional)</span></label>
+                  <div style={{ display:'flex', gap:8 }}>
+                    {['Female','Male'].map(g=>(
+                      <Chip key={g} label={g} active={con.gender===g} onClick={()=>sk('gender', con.gender===g?'':g)} />
+                    ))}
+                  </div>
+                </div>
+              </div>
               {+con.age > 0 && +con.age < 18 && (
                 <div className="pj" style={{ fontSize:12, color:'#D4510E', background:'#FFF3F0', borderRadius:6, padding:'8px 12px', marginBottom:14 }}>A parent or guardian must be present for patients under 18.</div>
               )}
-              <div style={{ marginBottom:14 }}>
-                <label style={LS}>Gender <span style={{ fontWeight:400, color:'#5C6878' }}>(optional)</span></label>
-                <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-                  {['Female','Male','Other','Prefer not to say'].map(g=>(
-                    <Chip key={g} label={g} active={con.gender===g} onClick={()=>sk('gender', con.gender===g?'':g)} />
-                  ))}
-                </div>
-                <label style={{ display:'flex', alignItems:'center', gap:8, marginTop:10, cursor:'pointer' }}>
-                  <input type="checkbox" checked={con.samePref} onChange={e=>sk('samePref',e.target.checked)} style={{ accentColor:'#12382A', width:15, height:15 }} />
-                  <span className="pj" style={{ fontSize:12, color:'#5C6878' }}>I'd prefer a physiotherapist of the same gender</span>
-                </label>
-              </div>
+              <label style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14, cursor:'pointer' }}>
+                <input type="checkbox" checked={con.samePref} onChange={e=>sk('samePref',e.target.checked)} style={{ accentColor:'#12382A', width:15, height:15 }} />
+                <span className="pj" style={{ fontSize:12, color:'#5C6878' }}>I'd prefer a physiotherapist of the same gender</span>
+              </label>
 
               {/* What hurts */}
-              <div className="pd" style={{ fontSize:'0.9rem', fontWeight:800, color:'#12382A', margin:'18px 0 12px', borderBottom:'1px solid #DDE4EF', paddingBottom:6 }}>Where does it hurt? *</div>
-              <BodyMap selected={bodySelected} onChange={ns=>{ setBodySelected(ns); sk('painAreas',[...ns].map(id=>ZONE_LABELS[id]||id)) }} />
+              <div style={{ fontSize:'0.95rem', fontWeight:700, color:'#0D1520', margin:'18px 0 0', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>Where does it hurt? *</div>
+              <BodyMap selected={bodySelected} onChange={ns=>{ setBodySelected(ns); sk('painAreas',[...ns].map(id=>ZONE_LABELS[id]||id)) }} mainArea={mainArea} onMainArea={setMainArea} />
+
+              {/* When is it worse */}
               <div style={{ marginBottom:14 }}>
-                <label style={LS}>Pain level today</label>
+                <label style={LS}>When is it worse? <span style={{ fontWeight:400, color:'#5C6878' }}>(choose any)</span></label>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+                  {['Mornings','Sitting long','Walking or stairs','Bending or lifting','At night','Sport or exercise'].map(t=>(
+                    <Chip key={t} label={t} active={worseTimes.includes(t)} onClick={()=>toggleWorseTime(t)} />
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ marginBottom:14 }}>
+                <label style={LS}>Pain today</label>
                 <div style={{ display:'flex', alignItems:'baseline', gap:10, marginBottom:6 }}>
                   <span className="pd" style={{ fontSize:'1.8rem', fontWeight:900, color:'#0D1520', minWidth:'2ch' }}>{con.painScale}</span>
                   <span className="pj" style={{ fontSize:13, color:'#5C6878', fontWeight:600 }}>{painWords[con.painScale]}</span>
                 </div>
                 <input type="range" min={0} max={10} value={con.painScale} onChange={e=>sk('painScale',+e.target.value)}
-                  style={{ width:'100%', height:8, borderRadius:8, appearance:'none', WebkitAppearance:'none', background:`linear-gradient(90deg,#3A9A6B ${con.painScale*10}%,#DDE4EF ${con.painScale*10}%)`, cursor:'pointer' }} />
+                  style={{ width:'100%', height:8, borderRadius:8, appearance:'none', WebkitAppearance:'none', background:'linear-gradient(90deg,#22C55E 0%,#EAB308 50%,#EF4444 100%)', cursor:'pointer' }} />
                 <div style={{ display:'flex', justifyContent:'space-between' }}>
                   <span className="pj" style={{ fontSize:10, color:'#9BA8B5' }}>No pain</span>
-                  <span className="pj" style={{ fontSize:10, color:'#9BA8B5' }}>Worst</span>
+                  <span className="pj" style={{ fontSize:10, color:'#9BA8B5' }}>Worst imaginable</span>
                 </div>
               </div>
               <div style={{ marginBottom:14 }}>
@@ -617,18 +674,18 @@ function SimpleBooking({ onClose, onSuccess }) {
                   ))}
                 </div>
               </div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
+              <div className="con-grid-2">
                 <div>
                   <label style={LS}>Preferred date *</label>
                   <input style={FS} type="date" min={todayStr} value={con.date} onChange={e=>sk('date',e.target.value)} />
                 </div>
                 <div>
                   <label style={LS}>Time *</label>
-                  <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-                    {[['Morning','AM'],['Afternoon','Noon'],['Evening','PM']].map(([full,short])=>(
+                  <div className="slot-col">
+                    {[['Morning','8 AM – 12 PM'],['Afternoon','12 – 4 PM'],['Evening','4 – 8 PM']].map(([full,sub])=>(
                       <button key={full} type="button" onClick={()=>sk('slot',full)}
-                        style={{ padding:'7px', border:`1.5px solid ${con.slot===full?'#12382A':'#DDE4EF'}`, borderRadius:6, background:con.slot===full?'#12382A':'#fff', color:con.slot===full?'#fff':'#5C6878', fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, fontWeight:700, cursor:'pointer' }}>
-                        {short}
+                        style={{ padding:'9px 8px', border:`1.5px solid ${con.slot===full?'#12382A':'#DDE4EF'}`, borderRadius:8, background:con.slot===full?'#12382A':'#fff', color:con.slot===full?'#fff':'#5C6878', fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, fontWeight:700, cursor:'pointer', textAlign:'center', minHeight:42 }}>
+                        <div>{full}</div><div style={{ fontSize:10, fontWeight:400, opacity:.7 }}>{sub}</div>
                       </button>
                     ))}
                   </div>
