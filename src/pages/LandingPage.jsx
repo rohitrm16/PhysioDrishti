@@ -543,37 +543,37 @@ function SimpleBooking({ onClose, onSuccess }) {
                   <input style={{ ...FS, borderRadius:'0 8px 8px 0', borderLeft:'none' }} type="tel" inputMode="numeric" maxLength={10} placeholder="10-digit number" value={con.phone} onChange={e=>sk('phone',e.target.value.replace(/\D/g,''))} />
                 </div>
               </div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:6 }}>
-                <div>
-                  <label style={LS}>Age</label>
-                  <input style={FS} type="number" min={1} max={110} placeholder="e.g. 42" value={con.age} onChange={e=>sk('age',e.target.value)} />
-                </div>
-                <div>
-                  <label style={LS}>PIN code *</label>
-                  <input style={FS} type="text" inputMode="numeric" maxLength={6} placeholder="e.g. 560034" value={con.pin}
-                    onChange={e=>{ const v=e.target.value.replace(/\D/g,''); sk('pin',v); setConPinNote(pinArea(v)||'') }} />
-                </div>
+              <div style={{ marginBottom:6 }}>
+                <label style={LS}>PIN code *</label>
+                <input style={FS} type="text" inputMode="numeric" maxLength={6} placeholder="e.g. 560034" value={con.pin}
+                  onChange={e=>{ const v=e.target.value.replace(/\D/g,''); sk('pin',v); setConPinNote(pinArea(v)||'') }} />
               </div>
               {conPinNote && <div className="pj" style={{ fontSize:12, color: conPinNote.startsWith('✓')?'#177A45':'#D4510E', marginBottom:4 }}>{conPinNote}</div>}
               <button type="button" className="pj" onClick={()=>useGps(sk, setConPinNote, setConGps)}
                 style={{ background:'none', border:'none', color:'#0A6B5E', fontWeight:600, fontSize:13, cursor:'pointer', padding:'4px 0', marginBottom:14, display:'flex', alignItems:'center', gap:6 }}>
                 {conGps==='loading'?'⏳ Locating…':'◎ Use my location instead'}
               </button>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14, marginTop:14 }}>
+                <div>
+                  <label style={LS}>Age <span style={{ fontWeight:400, color:'#5C6878' }}>(optional)</span></label>
+                  <input style={FS} type="number" min={1} max={110} placeholder="e.g. 42" value={con.age} onChange={e=>sk('age',e.target.value)} />
+                </div>
+                <div>
+                  <label style={LS}>Gender <span style={{ fontWeight:400, color:'#5C6878' }}>(optional)</span></label>
+                  <div style={{ display:'flex', gap:8 }}>
+                    {['Female','Male'].map(g=>(
+                      <Chip key={g} label={g} active={con.gender===g} onClick={()=>sk('gender', con.gender===g?'':g)} />
+                    ))}
+                  </div>
+                </div>
+              </div>
               {+con.age > 0 && +con.age < 18 && (
                 <div className="pj" style={{ fontSize:12, color:'#D4510E', background:'#FFF3F0', borderRadius:6, padding:'8px 12px', marginBottom:14 }}>A parent or guardian must be present for patients under 18.</div>
               )}
-              <div style={{ marginBottom:14 }}>
-                <label style={LS}>Gender <span style={{ fontWeight:400, color:'#5C6878' }}>(optional)</span></label>
-                <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-                  {['Female','Male','Other','Prefer not to say'].map(g=>(
-                    <Chip key={g} label={g} active={con.gender===g} onClick={()=>sk('gender', con.gender===g?'':g)} />
-                  ))}
-                </div>
-                <label style={{ display:'flex', alignItems:'center', gap:8, marginTop:10, cursor:'pointer' }}>
-                  <input type="checkbox" checked={con.samePref} onChange={e=>sk('samePref',e.target.checked)} style={{ accentColor:'#12382A', width:15, height:15 }} />
-                  <span className="pj" style={{ fontSize:12, color:'#5C6878' }}>I'd prefer a physiotherapist of the same gender</span>
-                </label>
-              </div>
+              <label style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14, cursor:'pointer' }}>
+                <input type="checkbox" checked={con.samePref} onChange={e=>sk('samePref',e.target.checked)} style={{ accentColor:'#12382A', width:15, height:15 }} />
+                <span className="pj" style={{ fontSize:12, color:'#5C6878' }}>I'd prefer a physiotherapist of the same gender</span>
+              </label>
 
               {/* What hurts */}
               <div className="pd" style={{ fontSize:'0.9rem', fontWeight:800, color:'#12382A', margin:'18px 0 12px', borderBottom:'1px solid #DDE4EF', paddingBottom:6 }}>Where does it hurt? *</div>
