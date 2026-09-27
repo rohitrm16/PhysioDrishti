@@ -727,7 +727,6 @@ export default function LandingPage({ onGoToDashboard, onShowDoctor, mapplsKey }
             <div className="challenge-grid" style={{ display:'grid', gap:20 }}>
               {[
                 { icon:'📉', title:'The "80/20" Adherence Gap', body:'70% of patients struggle to complete their home exercise programs (HEPs). Low self-efficacy, pain during exercise, and lack of supervision make it hard to stay consistent — yet consistency is everything.' },
-                { icon:'💸', title:'Financial Burden & Insurance Limits', body:'Physiotherapy is often perceived as expensive or optional. Insurance plans cap the number of visits, require prior authorisation, and frequently deny claims — leaving real costs on patients.' },
                 { icon:'⏳', title:'Delayed & Invisible Progress', body:'Recovery takes time, but patients rarely see their own gains. Without clear milestones or feedback, they get discouraged and switch to quick fixes like pain medication instead of healing the root cause.' },
               ].map(c => (
                 <div key={c.title} className="card-lp" style={{ padding:28 }}>
