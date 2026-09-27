@@ -111,8 +111,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:#FDFAF3;color:#0D1520
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes ticker{0%{opacity:0;transform:translateY(-6px)}10%,90%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(6px)}}
 .star{color:#FBBF24}
-.pain-btn{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:rgba(255,255,255,.85);font-size:14px;cursor:pointer;transition:all .18s;text-align:left;width:100%;font-family:'Plus Jakarta Sans',sans-serif}
-.pain-btn:hover{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.35)}
 @media(max-width:767px){
   .hero-cols{flex-direction:column!important}
   .pain-grid{grid-template-columns:1fr 1fr!important}
@@ -120,7 +118,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:#FDFAF3;color:#0D1520
   .market-cols{flex-direction:column!important}
   .review-grid{grid-template-columns:1fr!important}
   .footer-cols{grid-template-columns:1fr!important}
-  .hero-card{display:none!important}
 }
 @media(min-width:768px){
   .pain-grid{grid-template-columns:repeat(3,1fr)}
@@ -143,7 +140,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:#FDFAF3;color:#0D1520
 .modal-overlay{-webkit-overflow-scrolling:touch}
 .modal-scroll{-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .con-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
-.slot-col{display:flex;flex-direction:column;gap:6px}
 /* Range slider thumb */
 input[type=range]{-webkit-appearance:none;appearance:none;outline:none}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:#12382A;cursor:pointer;border:3px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.25);margin-top:-8px}
@@ -156,8 +152,6 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;bac
   .modal-overlay{align-items:flex-end!important;padding:0!important}
   .modal-scroll{max-height:88dvh!important;max-height:88vh!important}
   .con-grid-2{grid-template-columns:1fr!important}
-  .slot-col{flex-direction:row!important;flex-wrap:wrap!important;gap:8px!important}
-  .slot-col button{flex:1;min-width:80px}
   .modal-tabs button{padding:9px 12px!important;font-size:12px!important}
 }
 @media(min-width:768px){
@@ -326,8 +320,8 @@ function BodyMap({ selected, onChange, mainArea, onMainArea }) {
           <rect x="112" y="230" width="30" height="192" rx="12" fill={oF} stroke={oS} strokeWidth="1.5"/>
           {zones.map(z=>(
             <ellipse key={z.id} cx={z.cx} cy={z.cy} rx={z.rx} ry={z.ry}
-              fill={selected.has(z.id)?'rgba(240,185,74,.75)':'rgba(58,154,107,.1)'}
-              stroke={selected.has(z.id)?'#D4510E':'rgba(58,154,107,.4)'}
+              fill={selected.has(z.id)?'rgba(240,185,74,.85)':'#C8D2DC'}
+              stroke={selected.has(z.id)?'#D4510E':'#8E9BAB'}
               strokeWidth={selected.has(z.id)?2:1}
               onClick={()=>toggle(z.id)}
               style={{ cursor:'pointer' }}/>
@@ -382,7 +376,7 @@ function SimpleBooking({ onClose, onSuccess }) {
   const [callGps, setCallGps] = useState('idle')
 
   // Consultation form
-  const [con, setCon] = useState({ name:'', phone:'', age:'', pin:'', gender:'', samePref:false, painAreas:[], painScale:5, duration:'', sessionMode:'', date:'', slot:'', notes:'', consent:false })
+  const [con, setCon] = useState({ name:'', phone:'', age:'', pin:'', gender:'', samePref:false, painAreas:[], painScale:5, hadSurgery:'', duration:'', sessionMode:'', date:'', slot:'', notes:'', consent:false })
   const sk = (k, v) => setCon(p => ({ ...p, [k]: v }))
   const [conPinNote, setConPinNote] = useState('')
   const [conGps, setConGps] = useState('idle')
@@ -431,7 +425,8 @@ function SimpleBooking({ onClose, onSuccess }) {
     setBusy(true)
     try {
       const area = BLG_PINS[con.pin] || (con.pin.startsWith('560') ? 'Bengaluru' : 'Outside Bengaluru')
-      const note = [`Pain scale: ${con.painScale}/10`, mainArea && `Main area: ${ZONE_LABELS[mainArea]||mainArea}`, worseTimes.length && `Worse when: ${worseTimes.join(', ')}`, con.duration && `Duration: ${con.duration}`, `Session: ${con.sessionMode}`, `Slot: ${con.date}, ${con.slot}`, con.notes && `Notes: ${con.notes}`].filter(Boolean).join(' | ')
+      const fmtSlot = con.slot ? new Date('1970-01-01T'+con.slot).toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit',hour12:true}) : ''
+      const note = [`Pain scale: ${con.painScale}/10`, mainArea && `Main area: ${ZONE_LABELS[mainArea]||mainArea}`, con.hadSurgery && `Surgery: ${con.hadSurgery}`, worseTimes.length && `Worse when: ${worseTimes.join(', ')}`, con.duration && `Duration: ${con.duration}`, `Session: ${con.sessionMode}`, `Slot: ${con.date}, ${fmtSlot}`, con.notes && `Notes: ${con.notes}`].filter(Boolean).join(' | ')
       await supabase.from('leads').insert({ name:con.name, phone:con.phone, area, pain:[...bodySelected].map(id=>ZONE_LABELS[id]||id).join(', '), note, stage:'new', priority:'medium' })
       const rows = [
         ['Patient', con.name + (con.age ? ', '+con.age+' yrs' : '') + (con.gender ? ', '+con.gender : '')],
@@ -440,10 +435,11 @@ function SimpleBooking({ onClose, onSuccess }) {
         ['Pain areas', [...bodySelected].map(id=>ZONE_LABELS[id]||id).join(', ')],
         ...(mainArea ? [['Main concern', ZONE_LABELS[mainArea]||mainArea]] : []),
         ['Pain today', con.painScale+'/10 — '+painWords[con.painScale]],
+        ...(con.hadSurgery ? [['Had surgery recently', con.hadSurgery]] : []),
         ...(worseTimes.length ? [['Worse when', worseTimes.join(', ')]] : []),
         ['Duration', con.duration||'Not specified'],
         ['Session type', con.sessionMode],
-        ['Preferred slot', new Date(con.date+'T00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})+', '+con.slot],
+        ['Preferred slot', new Date(con.date+'T00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})+', '+(con.slot ? new Date('1970-01-01T'+con.slot).toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit',hour12:true}) : '')],
       ]
       const wa = `Hi PhysioDrishti, I'd like to book a consultation.\n${rows.map(r=>r[0]+': '+r[1]).join('\n')}${con.notes ? '\nDetails: '+con.notes : ''}`
       setDone({ title:'Consultation booked 🎉', sub:"We'll confirm your slot and fee on WhatsApp before the session.", rows, wa })
@@ -625,6 +621,19 @@ function SimpleBooking({ onClose, onSuccess }) {
               <div style={{ fontSize:'0.95rem', fontWeight:700, color:'#0D1520', margin:'18px 0 0', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>Where does it hurt? *</div>
               <BodyMap selected={bodySelected} onChange={ns=>{ setBodySelected(ns); sk('painAreas',[...ns].map(id=>ZONE_LABELS[id]||id)) }} mainArea={mainArea} onMainArea={setMainArea} />
 
+              {/* Had surgery recently */}
+              <div style={{ marginBottom:14 }}>
+                <label style={LS}>Had surgery recently? <span style={{ fontWeight:400, color:'#5C6878' }}>(optional)</span></label>
+                <div style={{ display:'flex', gap:8 }}>
+                  {['Yes','No'].map(v=>(
+                    <button key={v} type="button" onClick={()=>sk('hadSurgery', con.hadSurgery===v?'':v)}
+                      style={{ flex:1, padding:'10px 8px', border:`1.5px solid ${con.hadSurgery===v?'#12382A':'#DDE4EF'}`, borderRadius:8, background:con.hadSurgery===v?'#12382A':'#fff', color:con.hadSurgery===v?'#fff':'#5C6878', fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:14, fontWeight:700, cursor:'pointer', transition:'all .18s' }}>
+                      {v}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* When is it worse */}
               <div style={{ marginBottom:14 }}>
                 <label style={LS}>When is it worse? <span style={{ fontWeight:400, color:'#5C6878' }}>(choose any)</span></label>
@@ -666,7 +675,7 @@ function SimpleBooking({ onClose, onSuccess }) {
               <div style={{ marginBottom:14 }}>
                 <label style={LS}>Session type *</label>
                 <div style={{ display:'flex', gap:8 }}>
-                  {['Home visit','Online video','Help me decide'].map(m=>(
+                  {['Home visit','In-person (clinic)','Online video'].map(m=>(
                     <button key={m} type="button" onClick={()=>sk('sessionMode',m)}
                       style={{ flex:1, padding:'9px 6px', border:`1.5px solid ${con.sessionMode===m?'#12382A':'#DDE4EF'}`, borderRadius:8, background:con.sessionMode===m?'#12382A':'#fff', color:con.sessionMode===m?'#fff':'#5C6878', fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, fontWeight:700, cursor:'pointer', transition:'all .18s' }}>
                       {m}
@@ -681,14 +690,8 @@ function SimpleBooking({ onClose, onSuccess }) {
                 </div>
                 <div>
                   <label style={LS}>Time *</label>
-                  <div className="slot-col">
-                    {[['Morning','8 AM – 12 PM'],['Afternoon','12 – 4 PM'],['Evening','4 – 8 PM']].map(([full,sub])=>(
-                      <button key={full} type="button" onClick={()=>sk('slot',full)}
-                        style={{ padding:'9px 8px', border:`1.5px solid ${con.slot===full?'#12382A':'#DDE4EF'}`, borderRadius:8, background:con.slot===full?'#12382A':'#fff', color:con.slot===full?'#fff':'#5C6878', fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, fontWeight:700, cursor:'pointer', textAlign:'center', minHeight:42 }}>
-                        <div>{full}</div><div style={{ fontSize:10, fontWeight:400, opacity:.7 }}>{sub}</div>
-                      </button>
-                    ))}
-                  </div>
+                  <input style={FS} type="time" min="08:00" max="20:00" step="900" value={con.slot} onChange={e=>sk('slot',e.target.value)} />
+                  <div className="pj" style={{ fontSize:11, color:'#9BA8B5', marginTop:4 }}>Sessions: 8 AM – 8 PM</div>
                 </div>
               </div>
 
@@ -1007,18 +1010,6 @@ export default function LandingPage({ onGoToDashboard, onShowDoctor, mapplsKey }
               </div>
             </div>
 
-            {/* Quick-pick card */}
-            <div className="hero-card" style={{ flex:'0 0 340px' }}>
-              <div style={{ background:'rgba(255,255,255,.08)', backdropFilter:'blur(16px)', borderRadius:16, padding:28, border:'1px solid rgba(255,255,255,.13)' }}>
-                <div className="pd" style={{ fontSize:'1.05rem', fontWeight:800, color:'#fff', marginBottom:5 }}>Where does it hurt?</div>
-                <div className="pj" style={{ fontSize:12, color:'rgba(255,255,255,.55)', marginBottom:18 }}>Pick one and we will find you the right specialist today.</div>
-                <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                  {['Back or neck pain','Knee or hip pain','Shoulder problem','Sports injury','After surgery','Something else'].map(p=>(
-                    <button key={p} className="pain-btn" onClick={()=>setShowModal(true)}>{p}<span>→</span></button>
-                  ))}
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
