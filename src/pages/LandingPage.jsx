@@ -41,6 +41,29 @@ const AREAS = [
   'Hebbal','BTM Layout',
 ]
 
+const PHYSIOS = [
+  { id:1, name:'Dr. Ananya Sharma',   specialty:'Orthopedic & Sports Physiotherapy', area:'Koramangala',        pin:'560034', lat:12.9352, lng:77.6245, exp:'8 yrs',  rating:4.9, reviews:94,  avail:'Today',    mode:['Home visit','Online'] },
+  { id:2, name:'Dr. Rohan Mehta',     specialty:'Neuro & Post-Surgery Rehab',        area:'HSR Layout',         pin:'560102', lat:12.9081, lng:77.6476, exp:'12 yrs', rating:4.8, reviews:142, avail:'Today',    mode:['Home visit','Online'] },
+  { id:3, name:'Dr. Preethi Nair',    specialty:'Women\'s Health & Pelvic Floor',    area:'Indiranagar',        pin:'560038', lat:12.9784, lng:77.6408, exp:'6 yrs',  rating:4.9, reviews:81,  avail:'Tomorrow', mode:['Clinic','Online'] },
+  { id:4, name:'Dr. Kiran Reddy',     specialty:'Spine & Musculoskeletal',           area:'Whitefield',         pin:'560066', lat:12.9698, lng:77.7499, exp:'10 yrs', rating:4.7, reviews:203, avail:'Today',    mode:['Home visit','Clinic'] },
+  { id:5, name:'Dr. Suresh Kumar',    specialty:'Sports Injury & Rehab',             area:'Marathahalli',       pin:'560037', lat:12.9591, lng:77.6974, exp:'9 yrs',  rating:4.8, reviews:117, avail:'Today',    mode:['Home visit','Online'] },
+  { id:6, name:'Dr. Divya Iyer',      specialty:'Pediatric & Geriatric Physio',      area:'Jayanagar',          pin:'560041', lat:12.9250, lng:77.5938, exp:'7 yrs',  rating:4.9, reviews:66,  avail:'Today',    mode:['Home visit','Clinic'] },
+  { id:7, name:'Dr. Arun Bhat',       specialty:'Post-Surgical & Cardiac Rehab',     area:'JP Nagar',           pin:'560078', lat:12.9102, lng:77.5857, exp:'14 yrs', rating:4.8, reviews:189, avail:'Tomorrow', mode:['Clinic','Online'] },
+  { id:8, name:'Dr. Meghana Pai',     specialty:'Orthopedic & Manual Therapy',       area:'Electronic City',    pin:'560100', lat:12.8406, lng:77.6770, exp:'5 yrs',  rating:4.7, reviews:55,  avail:'Today',    mode:['Home visit','Online'] },
+  { id:9, name:'Dr. Vijay Sundar',    specialty:'Sports & Musculoskeletal',          area:'Hebbal',             pin:'560024', lat:13.0358, lng:77.5970, exp:'11 yrs', rating:4.9, reviews:130, avail:'Today',    mode:['Home visit','Clinic'] },
+  { id:10,name:'Dr. Lakshmi Prasad',  specialty:'Spine Rehab & Ergonomics',          area:'BTM Layout',         pin:'560076', lat:12.9166, lng:77.6101, exp:'8 yrs',  rating:4.8, reviews:98,  avail:'Today',    mode:['Home visit','Online'] },
+  { id:11,name:'Dr. Naveen Gowda',    specialty:'Neurological Physiotherapy',        area:'Bannerghatta Road',  pin:'560076', lat:12.8920, lng:77.5972, exp:'9 yrs',  rating:4.7, reviews:74,  avail:'Tomorrow', mode:['Clinic','Online'] },
+  { id:12,name:'Dr. Swathi Rao',      specialty:'Orthopedic & Sports Physio',        area:'Yelahanka',          pin:'560064', lat:13.1007, lng:77.5963, exp:'6 yrs',  rating:4.8, reviews:61,  avail:'Today',    mode:['Home visit','Online'] },
+]
+
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLng = (lng2 - lng1) * Math.PI / 180
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+}
+
 // Fallback ticker shown before Supabase loads
 const TICKER_FALLBACK = [
   'Rahul from Koramangala just booked a back pain session',
@@ -109,6 +132,11 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:#FDFAF3;color:#0D1520
 }
 @media(max-width:767px){
   .challenge-grid{grid-template-columns:1fr!important}
+  .physio-results{grid-template-columns:1fr!important}
+  .find-row{flex-direction:column!important}
+}
+@media(min-width:768px){
+  .physio-results{grid-template-columns:repeat(3,1fr)}
 }
 `
 
@@ -435,6 +463,11 @@ export default function LandingPage({ onGoToDashboard, onShowDoctor, mapplsKey }
   const [totalToday, setTotalToday] = useState(null)
   const [w, setW]                 = useState(window.innerWidth)
   const [scrolled, setScrolled]   = useState(false)
+  const [pinInput, setPinInput]   = useState('')
+  const [gpsState, setGpsState]   = useState('idle') // idle | loading | done | error
+  const [userCoords, setUserCoords] = useState(null)
+  const [findResults, setFindResults] = useState(null)
+  const [findMode, setFindMode]   = useState(null) // 'pin' | 'gps'
 
   useEffect(() => {
     const onR = () => setW(window.innerWidth)
@@ -669,6 +702,161 @@ export default function LandingPage({ onGoToDashboard, onShowDoctor, mapplsKey }
         </div>
       </section>
 
+      {/* Find a Physiotherapist */}
+      <section style={{ padding:'64px 5%', background:'#F3F6FA' }}>
+        <div style={{ maxWidth:860, margin:'0 auto' }}>
+          <div style={{ textAlign:'center', marginBottom:36 }}>
+            <div className="pj" style={{ fontSize:11, fontWeight:800, letterSpacing:3, textTransform:'uppercase', color:'#D4510E', marginBottom:12 }}>Find near you</div>
+            <h2 className="pd" style={{ fontSize:'2rem', fontWeight:900, marginBottom:10 }}>Find a physiotherapist near you</h2>
+            <p className="pj" style={{ fontSize:14, color:'#5C6878', lineHeight:1.7 }}>Enter your PIN code or allow location access to see specialists in your area.</p>
+          </div>
+
+          {/* Search bar */}
+          <div className="find-row" style={{ display:'flex', gap:12, marginBottom:28 }}>
+            <div style={{ flex:1, display:'flex', gap:0, borderRadius:10, overflow:'hidden', border:'1.5px solid #DDE4EF', background:'#fff', boxShadow:'0 2px 12px rgba(13,21,32,.06)' }}>
+              <span style={{ display:'flex', alignItems:'center', padding:'0 14px', fontSize:18, color:'#9BA8B5', flexShrink:0 }}>📍</span>
+              <input
+                className="pj"
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="Enter 6-digit PIN code (e.g. 560034)"
+                value={pinInput}
+                onChange={e => {
+                  const v = e.target.value.replace(/\D/g,'')
+                  setPinInput(v)
+                  if (v.length >= 3) {
+                    const res = PHYSIOS.filter(p => p.pin.startsWith(v))
+                    setFindResults(res)
+                    setFindMode('pin')
+                  } else if (v.length === 0) {
+                    setFindResults(null)
+                    setFindMode(null)
+                  }
+                }}
+                style={{ flex:1, padding:'14px 12px', border:'none', outline:'none', fontSize:14, fontFamily:"'Plus Jakarta Sans',sans-serif", color:'#0D1520', background:'transparent' }}
+              />
+              {pinInput && (
+                <button
+                  onClick={() => { setPinInput(''); setFindResults(null); setFindMode(null) }}
+                  style={{ padding:'0 14px', background:'none', border:'none', cursor:'pointer', color:'#9BA8B5', fontSize:16 }}
+                >✕</button>
+              )}
+            </div>
+            <button
+              className="pj"
+              onClick={() => {
+                if (!navigator.geolocation) { setGpsState('error'); return }
+                setGpsState('loading')
+                setPinInput('')
+                navigator.geolocation.getCurrentPosition(
+                  pos => {
+                    const { latitude: lat, longitude: lng } = pos.coords
+                    setUserCoords({ lat, lng })
+                    const withDist = PHYSIOS.map(p => ({ ...p, distKm: haversineKm(lat, lng, p.lat, p.lng) }))
+                      .sort((a,b) => a.distKm - b.distKm)
+                    setFindResults(withDist.slice(0, 6))
+                    setFindMode('gps')
+                    setGpsState('done')
+                  },
+                  () => setGpsState('error')
+                )
+              }}
+              style={{
+                flexShrink:0, padding:'14px 20px', borderRadius:10, border:'1.5px solid #0A6B5E',
+                background: gpsState === 'done' ? '#0A6B5E' : '#fff',
+                color: gpsState === 'done' ? '#fff' : '#0A6B5E',
+                fontWeight:700, fontSize:14, cursor:'pointer', display:'flex', alignItems:'center', gap:8,
+                whiteSpace:'nowrap', boxShadow:'0 2px 12px rgba(13,21,32,.06)', transition:'all .2s'
+              }}
+            >
+              {gpsState === 'loading' ? <><span style={{ animation:'spin .8s linear infinite', display:'inline-block' }}>⏳</span> Locating…</> : gpsState === 'error' ? '⚠ Location off' : '🎯 Use my location'}
+            </button>
+          </div>
+
+          {/* Error state */}
+          {gpsState === 'error' && (
+            <div className="pj" style={{ textAlign:'center', fontSize:13, color:'#D4510E', marginBottom:20 }}>
+              Location access was denied. Please allow it in your browser or use a PIN code above.
+            </div>
+          )}
+
+          {/* Results */}
+          {findResults !== null && findResults.length === 0 && (
+            <div style={{ textAlign:'center', padding:36 }}>
+              <div style={{ fontSize:36, marginBottom:12 }}>🔍</div>
+              <div className="pd" style={{ fontSize:'1.1rem', fontWeight:700, marginBottom:8 }}>No specialists found for this PIN</div>
+              <div className="pj" style={{ fontSize:13, color:'#5C6878', marginBottom:20 }}>We may not cover your area yet, but we do offer online sessions everywhere in India.</div>
+              <button className="btn-main" style={{ padding:'12px 28px' }} onClick={()=>setShowModal(true)}>Book an online session →</button>
+            </div>
+          )}
+
+          {findResults !== null && findResults.length > 0 && (
+            <>
+              <div className="pj" style={{ fontSize:12, color:'#5C6878', marginBottom:16 }}>
+                {findMode === 'gps'
+                  ? `${findResults.length} specialists near you · sorted by distance`
+                  : `${findResults.length} specialist${findResults.length !== 1 ? 's' : ''} in PIN ${pinInput}`}
+              </div>
+              <div className="physio-results" style={{ display:'grid', gap:16 }}>
+                {findResults.map(p => (
+                  <div key={p.id} style={{ background:'#fff', borderRadius:14, padding:22, boxShadow:'0 2px 16px rgba(13,21,32,.07)', border:'1px solid #EEF1F6', transition:'all .25s' }}
+                    onMouseEnter={e=>{ e.currentTarget.style.boxShadow='0 8px 28px rgba(13,21,32,.12)'; e.currentTarget.style.transform='translateY(-3px)' }}
+                    onMouseLeave={e=>{ e.currentTarget.style.boxShadow='0 2px 16px rgba(13,21,32,.07)'; e.currentTarget.style.transform='none' }}
+                  >
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:10, gap:8 }}>
+                      <div style={{ width:44, height:44, borderRadius:12, background:'linear-gradient(135deg,#12382A,#3A9A6B)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                        <span style={{ fontSize:20 }}>🩺</span>
+                      </div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div className="pd" style={{ fontWeight:800, fontSize:'0.95rem', color:'#0D1520', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{p.name}</div>
+                        <div className="pj" style={{ fontSize:11, color:'#0A6B5E', fontWeight:600, marginTop:2 }}>{p.specialty}</div>
+                      </div>
+                      <div style={{ background:'#FFF8EF', borderRadius:6, padding:'3px 9px', fontSize:11, fontWeight:700, color:'#D4510E', fontFamily:"'Plus Jakarta Sans',sans-serif", flexShrink:0 }}>{p.avail}</div>
+                    </div>
+                    <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:14 }}>
+                      <span className="pj" style={{ fontSize:11, color:'#5C6878', display:'flex', alignItems:'center', gap:4 }}>📍 {p.area} · {p.pin}</span>
+                      {p.distKm !== undefined && (
+                        <span className="pj" style={{ fontSize:11, color:'#3A9A6B', fontWeight:700 }}>~{p.distKm < 1 ? '<1' : p.distKm.toFixed(1)} km away</span>
+                      )}
+                    </div>
+                    <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:14 }}>
+                      {p.mode.map(m => (
+                        <span key={m} className="pj" style={{ fontSize:10, fontWeight:700, padding:'3px 9px', borderRadius:20, background:'#F3F6FA', color:'#5C6878', letterSpacing:.3 }}>{m}</span>
+                      ))}
+                    </div>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                      <div className="pj" style={{ fontSize:12, color:'#5C6878' }}>
+                        <span style={{ color:'#FBBF24', fontWeight:700 }}>★ {p.rating}</span> · {p.reviews} reviews · {p.exp}
+                      </div>
+                      <button className="btn-main" style={{ padding:'7px 16px', fontSize:12 }} onClick={()=>setShowModal(true)}>Book →</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Default prompt — no search yet */}
+          {findResults === null && gpsState === 'idle' && (
+            <div style={{ display:'flex', flexWrap:'wrap', gap:10, justifyContent:'center' }}>
+              {['560034','560102','560038','560066','560037','560041'].map(pin => (
+                <button key={pin} className="pj"
+                  onClick={() => {
+                    setPinInput(pin)
+                    setFindResults(PHYSIOS.filter(p => p.pin === pin))
+                    setFindMode('pin')
+                  }}
+                  style={{ padding:'7px 16px', borderRadius:20, border:'1px solid #DDE4EF', background:'#fff', fontSize:12, color:'#5C6878', cursor:'pointer', transition:'all .2s' }}
+                  onMouseEnter={e=>{ e.currentTarget.style.borderColor='#3A9A6B'; e.currentTarget.style.color='#0A6B5E' }}
+                  onMouseLeave={e=>{ e.currentTarget.style.borderColor='#DDE4EF'; e.currentTarget.style.color='#5C6878' }}
+                >📍 {PHYSIOS.find(p=>p.pin===pin)?.area} ({pin})</button>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* Pain we treat */}
       <section style={{ padding:'72px 5%', background:'#fff' }}>
         <div style={{ maxWidth:1160, margin:'0 auto' }}>
@@ -727,7 +915,6 @@ export default function LandingPage({ onGoToDashboard, onShowDoctor, mapplsKey }
             <div className="challenge-grid" style={{ display:'grid', gap:20 }}>
               {[
                 { icon:'📉', title:'The "80/20" Adherence Gap', body:'70% of patients struggle to complete their home exercise programs (HEPs). Low self-efficacy, pain during exercise, and lack of supervision make it hard to stay consistent — yet consistency is everything.' },
-                { icon:'💸', title:'Financial Burden & Insurance Limits', body:'Physiotherapy is often perceived as expensive or optional. Insurance plans cap the number of visits, require prior authorisation, and frequently deny claims — leaving real costs on patients.' },
                 { icon:'⏳', title:'Delayed & Invisible Progress', body:'Recovery takes time, but patients rarely see their own gains. Without clear milestones or feedback, they get discouraged and switch to quick fixes like pain medication instead of healing the root cause.' },
               ].map(c => (
                 <div key={c.title} className="card-lp" style={{ padding:28 }}>
