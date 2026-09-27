@@ -157,105 +157,360 @@ function LogoImg({ size = 40 }) {
 }
 
 
-/* ── Simple Booking Modal (no external API needed) ──────────────── */
-function SimpleBooking({ onClose, onSuccess }) {
-  const [step, setStep] = useState(1)
-  const [f, setF]       = useState({ name:'', phone:'', email:'', area:'', pain:'', note:'', agree:false })
-  const [busy, setBusy] = useState(false)
-  const set = (k,v) => setF(p=>({...p,[k]:v}))
-  const ok1 = f.name.trim() && f.phone.trim()
-  const ok2 = f.area && f.pain && f.agree
+/* ── PIN → area lookup ──────────────────────────────────────────── */
+const BLG_PINS = {
+  '560003':'Malleswaram','560004':'Basavanagudi','560010':'Rajajinagar','560011':'Jayanagar',
+  '560017':'Vijayanagar','560024':'Hebbal','560029':'Banashankari','560034':'Koramangala',
+  '560037':'Marathahalli','560038':'Indiranagar','560041':'BTM Layout','560043':'Kalyan Nagar',
+  '560048':'Mahadevapura','560050':'Bannerghatta Road','560064':'Yelahanka','560066':'Whitefield',
+  '560076':'Jayanagar / BTM','560078':'JP Nagar','560093':'CV Raman Nagar',
+  '560100':'Electronic City','560102':'HSR Layout','560103':'Bellandur',
+}
+function pinArea(pin) {
+  if (pin.length < 6) return null
+  if (BLG_PINS[pin]) return '✓ ' + BLG_PINS[pin] + ', Bengaluru'
+  if (pin.startsWith('560')) return '✓ Bengaluru — we\'ll confirm the nearest specialist'
+  return 'Outside Bengaluru — online sessions available everywhere'
+}
 
-  const submit = async () => {
-    if (!ok2) return
-    setBusy(true)
-    try {
-      const { error } = await supabase.from('leads').insert({
-        name: f.name, phone: f.phone, email: f.email||null,
-        area: f.area, pain: f.pain, note: f.note||null,
-        stage: 'new', priority: 'medium',
-      })
-      if (error) throw error
-      onSuccess(f)
-    } catch (err) {
-      console.error(err)
-      alert('Something went wrong. Please try again.')
-    } finally { setBusy(false) }
+/* ── Reusable field styles ──────────────────────────────────────── */
+const FS = { width:'100%', padding:'11px 14px', border:'1.5px solid #DDE4EF', borderRadius:8, fontSize:14, outline:'none', fontFamily:"'Plus Jakarta Sans',sans-serif", color:'#0D1520', background:'#fff' }
+const LS = { fontSize:12, fontWeight:700, color:'#0A6B5E', display:'block', marginBottom:6, fontFamily:"'Plus Jakarta Sans',sans-serif" }
+const WA_NO = '91XXXXXXXXXX'
+
+function Chip({ label, active, onClick }) {
+  return (
+    <button type="button" onClick={onClick}
+      style={{ padding:'7px 14px', border:`1.5px solid ${active?'#12382A':'#DDE4EF'}`, borderRadius:20, background:active?'#12382A':'#fff', color:active?'#fff':'#5C6878', fontSize:13, fontWeight:600, cursor:'pointer', transition:'all .18s', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+      {label}
+    </button>
+  )
+}
+
+/* ── Booking Modal ──────────────────────────────────────────────── */
+function SimpleBooking({ onClose, onSuccess }) {
+  const [mode, setMode]   = useState('call')
+  const [done, setDone]   = useState(null)
+  const [busy, setBusy]   = useState(false)
+  const [errors, setErrors] = useState({})
+
+  // Free call form
+  const [call, setCall] = useState({ name:'', phone:'', pin:'', issue:'', callTime:'', consent:false })
+  const sc = (k, v) => setCall(p => ({ ...p, [k]: v }))
+  const [callPinNote, setCallPinNote] = useState('')
+  const [callGps, setCallGps] = useState('idle')
+
+  // Consultation form
+  const [con, setCon] = useState({ name:'', phone:'', age:'', pin:'', gender:'', samePref:false, painAreas:[], painScale:5, duration:'', sessionMode:'', date:'', slot:'', notes:'', consent:false })
+  const sk = (k, v) => setCon(p => ({ ...p, [k]: v }))
+  const [conPinNote, setConPinNote] = useState('')
+  const [conGps, setConGps] = useState('idle')
+
+  const toggleArea = (a) => setCon(p => ({ ...p, painAreas: p.painAreas.includes(a) ? p.painAreas.filter(x=>x!==a) : [...p.painAreas, a] }))
+
+  const painWords = ['No pain','Very mild','Mild','Mild','Moderate','Moderate','Moderate','Severe','Severe','Very severe','Worst']
+
+  // PIN GPS helper
+  function useGps(setter, setNote, setGps) {
+    if (!navigator.geolocation) { setNote('Location not available — enter PIN manually'); return }
+    setGps('loading')
+    navigator.geolocation.getCurrentPosition(
+      () => { setNote('✓ Location captured — we\'ll match your nearest specialist'); setGps('done') },
+      () => { setNote('Location blocked — enter your PIN manually'); setGps('idle') },
+      { timeout: 8000 }
+    )
   }
 
-  return (
-    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.6)', zIndex:999, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }} onClick={onClose}>
-      <div style={{ background:'#fff', borderRadius:16, width:'100%', maxWidth:460, overflow:'hidden', boxShadow:'0 24px 64px rgba(0,0,0,.25)' }} onClick={e=>e.stopPropagation()}>
-        <div style={{ background:'#12382A', padding:'20px 24px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-          <div>
-            <div style={{ fontFamily:"'Playfair Display',serif", fontWeight:900, fontSize:'1.15rem', color:'#fff' }}>Book a free call</div>
-            <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, color:'rgba(255,255,255,.55)', marginTop:2 }}>Step {step} of 2 · {step===1?'Your details':'What is hurting?'}</div>
-          </div>
-          <button onClick={onClose} style={{ background:'rgba(255,255,255,.15)', border:'none', borderRadius:8, width:32, height:32, cursor:'pointer', color:'#fff', fontSize:16 }}>✕</button>
+  // Validation
+  const callOk = call.name.trim().length >= 2 && /^[6-9]\d{9}$/.test(call.phone) && /^\d{6}$/.test(call.pin) && call.callTime && call.consent
+  const conOk  = con.name.trim().length >= 2 && /^[6-9]\d{9}$/.test(con.phone) && /^\d{6}$/.test(con.pin) && con.painAreas.length > 0 && con.sessionMode && con.date && con.slot && con.consent
+
+  // Today's date for min
+  const todayStr = new Date().toISOString().slice(0,10)
+
+  const submitCall = async () => {
+    if (!callOk) { setErrors({ submit:'Please fill all required fields.' }); return }
+    setBusy(true)
+    try {
+      const area = BLG_PINS[call.pin] || (call.pin.startsWith('560') ? 'Bengaluru' : 'Outside Bengaluru')
+      await supabase.from('leads').insert({ name:call.name, phone:call.phone, area, pain:call.issue||'Not specified', note:`Call time: ${call.callTime}`, stage:'new', priority:'medium' })
+      const rows = [['Name',call.name],['Mobile','+91 '+call.phone],['Area',area+' ('+call.pin+')'],['Concern',call.issue||'Not specified'],['Best time to call',call.callTime]]
+      const wa = `Hi PhysioDrishti, I'd like a free call.\n${rows.map(r=>r[0]+': '+r[1]).join('\n')}`
+      setDone({ title:'Free call requested 🎉', sub:`We'll call you ${call.callTime.toLowerCase()}. Send on WhatsApp so we have your details ready.`, rows, wa })
+      onSuccess(call)
+    } catch (e) { console.error(e); setErrors({ submit:'Something went wrong. Please try again.' }) }
+    finally { setBusy(false) }
+  }
+
+  const submitConsult = async () => {
+    if (!conOk) { setErrors({ submit:'Please fill all required fields.' }); return }
+    setBusy(true)
+    try {
+      const area = BLG_PINS[con.pin] || (con.pin.startsWith('560') ? 'Bengaluru' : 'Outside Bengaluru')
+      const note = [`Pain scale: ${con.painScale}/10`, con.duration && `Duration: ${con.duration}`, `Session: ${con.sessionMode}`, `Slot: ${con.date}, ${con.slot}`, con.notes && `Notes: ${con.notes}`].filter(Boolean).join(' | ')
+      await supabase.from('leads').insert({ name:con.name, phone:con.phone, area, pain:con.painAreas.join(', '), note, stage:'new', priority:'medium' })
+      const rows = [
+        ['Patient', con.name + (con.age ? ', '+con.age+' yrs' : '') + (con.gender ? ', '+con.gender : '')],
+        ['Mobile', '+91 '+con.phone],
+        ['Area', area+' ('+con.pin+')'],
+        ['Pain areas', con.painAreas.join(', ')],
+        ['Pain today', con.painScale+'/10 — '+painWords[con.painScale]],
+        ['Duration', con.duration||'Not specified'],
+        ['Session type', con.sessionMode],
+        ['Preferred slot', new Date(con.date+'T00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})+', '+con.slot],
+      ]
+      const wa = `Hi PhysioDrishti, I'd like to book a consultation.\n${rows.map(r=>r[0]+': '+r[1]).join('\n')}${con.notes ? '\nDetails: '+con.notes : ''}`
+      setDone({ title:'Consultation booked 🎉', sub:"We'll confirm your slot and fee on WhatsApp before the session.", rows, wa })
+      onSuccess(con)
+    } catch (e) { console.error(e); setErrors({ submit:'Something went wrong. Please try again.' }) }
+    finally { setBusy(false) }
+  }
+
+  const overlay = { position:'fixed', inset:0, background:'rgba(0,0,0,.6)', zIndex:999, display:'flex', alignItems:'flex-start', justifyContent:'center', padding:'16px 16px 32px', overflowY:'auto' }
+
+  // Done screen
+  if (done) return (
+    <div style={overlay} onClick={onClose}>
+      <div style={{ background:'#fff', borderRadius:16, width:'100%', maxWidth:480, marginTop:40, boxShadow:'0 24px 64px rgba(0,0,0,.25)', overflow:'hidden' }} onClick={e=>e.stopPropagation()}>
+        <div style={{ background:'linear-gradient(135deg,#12382A,#0A6B5E)', padding:'28px 24px', textAlign:'center' }}>
+          <div style={{ width:56, height:56, borderRadius:'50%', background:'rgba(255,255,255,.15)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px', fontSize:28 }}>✓</div>
+          <div className="pd" style={{ fontSize:'1.4rem', fontWeight:900, color:'#fff', marginBottom:6 }}>{done.title}</div>
+          <div className="pj" style={{ fontSize:13, color:'rgba(255,255,255,.7)', lineHeight:1.6 }}>{done.sub}</div>
         </div>
-        <div style={{ height:4, background:'#E5E9EF' }}><div style={{ height:'100%', width:`${step*50}%`, background:'#D4510E', transition:'width .4s' }}/></div>
-        <div style={{ padding:'24px 26px 22px' }}>
-          {step === 1 && (
-            <div>
-              <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:14, color:'#5C6878', marginBottom:18, lineHeight:1.6 }}>Just your name and number — we will call you back and sort everything else.</p>
-              {[['Your name','name','text','e.g. Rahul Sharma'],['WhatsApp number','phone','tel','e.g. 98XXXXXXXX']].map(([l,k,t,ph])=>(
-                <div key={k} style={{ marginBottom:14 }}>
-                  <label style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, fontWeight:700, color:'#0A6B5E', display:'block', marginBottom:5 }}>{l}</label>
-                  <input type={t} placeholder={ph} value={f[k]} onChange={e=>set(k,e.target.value)}
-                    style={{ width:'100%', padding:'11px 14px', border:'1.5px solid #DDE4EF', borderRadius:8, fontSize:14, outline:'none', fontFamily:"'Plus Jakarta Sans',sans-serif" }}/>
-                </div>
+        <div style={{ padding:'20px 24px 28px' }}>
+          <div style={{ background:'#F3F6FA', borderRadius:10, padding:'4px 0', marginBottom:20 }}>
+            {done.rows.map(([k,v]) => (
+              <div key={k} style={{ display:'flex', justifyContent:'space-between', gap:12, padding:'9px 16px', borderBottom:'1px solid #DDE4EF' }}>
+                <span className="pj" style={{ fontSize:13, color:'#5C6878' }}>{k}</span>
+                <span className="pj" style={{ fontSize:13, fontWeight:700, color:'#0D1520', textAlign:'right' }}>{v}</span>
+              </div>
+            ))}
+          </div>
+          <a href={`https://wa.me/${WA_NO}?text=${encodeURIComponent(done.wa)}`} target="_blank" rel="noopener"
+            style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:10, background:'#1FA855', color:'#fff', fontWeight:700, borderRadius:10, padding:'14px', textDecoration:'none', fontSize:15, fontFamily:"'Plus Jakarta Sans',sans-serif", marginBottom:10 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#fff" d="M12 2a10 10 0 00-8.6 15.1L2 22l5-1.3A10 10 0 1012 2zm4.5 14.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 01-3.3-2.9c-.3-.4.3-.4.7-1.3.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 00-.7.3 3 3 0 00-.9 2.2 5.2 5.2 0 001.1 2.7 11.8 11.8 0 004.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2s.2-1.1.1-1.2-.2-.2-.4-.3z"/></svg>
+            Send on WhatsApp
+          </a>
+          <button onClick={onClose} className="pj" style={{ width:'100%', padding:12, background:'transparent', border:'1.5px solid #DDE4EF', borderRadius:10, fontWeight:600, fontSize:14, cursor:'pointer', color:'#5C6878' }}>Close</button>
+        </div>
+      </div>
+    </div>
+  )
+
+  return (
+    <div style={overlay} onClick={onClose}>
+      <div style={{ background:'#fff', borderRadius:16, width:'100%', maxWidth:500, marginTop:20, boxShadow:'0 24px 64px rgba(0,0,0,.25)', overflow:'hidden' }} onClick={e=>e.stopPropagation()}>
+
+        {/* Header */}
+        <div style={{ background:'linear-gradient(135deg,#12382A,#0A6B5E)', padding:'18px 22px 0', display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+          <div>
+            <div className="pd" style={{ fontSize:'1.2rem', fontWeight:900, color:'#fff', marginBottom:12 }}>Book a free call or consultation</div>
+            {/* Tabs */}
+            <div style={{ display:'flex', gap:2 }}>
+              {[['call','Free call','30 sec'],['consult','Book consultation','2 min']].map(([m,label,t]) => (
+                <button key={m} onClick={()=>setMode(m)}
+                  style={{ padding:'9px 18px', border:'none', borderRadius:'8px 8px 0 0', background:mode===m?'#fff':'transparent', color:mode===m?'#12382A':'rgba(255,255,255,.65)', fontWeight:700, fontSize:13, cursor:'pointer', fontFamily:"'Plus Jakarta Sans',sans-serif", transition:'all .2s' }}>
+                  {label} <span style={{ fontSize:10, opacity:.75 }}>· {t}</span>
+                </button>
               ))}
-              <div style={{ marginBottom:18 }}>
-                <label style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, fontWeight:700, color:'#0A6B5E', display:'block', marginBottom:5 }}>Email <span style={{ fontWeight:400, color:'#5C6878' }}>(optional)</span></label>
-                <input type="email" placeholder="your@email.com" value={f.email} onChange={e=>set('email',e.target.value)}
-                  style={{ width:'100%', padding:'11px 14px', border:'1.5px solid #DDE4EF', borderRadius:8, fontSize:14, outline:'none', fontFamily:"'Plus Jakarta Sans',sans-serif" }}/>
-              </div>
             </div>
-          )}
-          {step === 2 && (
-            <div>
-              <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:14, color:'#5C6878', marginBottom:18, lineHeight:1.6 }}>Help us find the right specialist for you.</p>
+          </div>
+          <button onClick={onClose} style={{ background:'rgba(255,255,255,.15)', border:'none', borderRadius:8, width:32, height:32, cursor:'pointer', color:'#fff', fontSize:16, flexShrink:0, marginTop:2 }}>✕</button>
+        </div>
+
+        <div style={{ padding:'22px 22px 24px', maxHeight:'75vh', overflowY:'auto' }}>
+
+          {/* ── FREE CALL FORM ── */}
+          {mode === 'call' && (
+            <div className="fade-lp">
+              <p className="pj" style={{ fontSize:13, color:'#5C6878', marginBottom:18, lineHeight:1.6 }}>A physiotherapist calls to understand your problem. No charge, no obligation.</p>
+
               <div style={{ marginBottom:14 }}>
-                <label style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, fontWeight:700, color:'#0A6B5E', display:'block', marginBottom:5 }}>Your area in Bengaluru</label>
-                <select value={f.area} onChange={e=>set('area',e.target.value)}
-                  style={{ width:'100%', padding:'11px 14px', border:'1.5px solid #DDE4EF', borderRadius:8, fontSize:14, outline:'none', fontFamily:"'Plus Jakarta Sans',sans-serif", appearance:'none' }}>
-                  <option value="">Pick your area</option>
-                  {['Koramangala','HSR Layout','Whitefield','Indiranagar','Jayanagar','Marathahalli','JP Nagar','Electronic City','Bannerghatta Road','Yelahanka','Other'].map(a=><option key={a}>{a}</option>)}
-                </select>
+                <label style={LS}>Your name</label>
+                <input style={FS} type="text" placeholder="e.g. Rahul Sharma" value={call.name} onChange={e=>sc('name',e.target.value)} />
               </div>
               <div style={{ marginBottom:14 }}>
-                <label style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, fontWeight:700, color:'#0A6B5E', display:'block', marginBottom:8 }}>Where does it hurt?</label>
+                <label style={LS}>WhatsApp number</label>
+                <div style={{ display:'flex' }}>
+                  <span style={{ display:'flex', alignItems:'center', padding:'0 12px', border:'1.5px solid #DDE4EF', borderRight:'none', borderRadius:'8px 0 0 8px', background:'#F3F6FA', color:'#5C6878', fontWeight:600, fontSize:13, fontFamily:"'Plus Jakarta Sans',sans-serif", flexShrink:0 }}>+91</span>
+                  <input style={{ ...FS, borderRadius:'0 8px 8px 0', borderLeft:'none' }} type="tel" inputMode="numeric" maxLength={10} placeholder="10-digit number" value={call.phone} onChange={e=>sc('phone',e.target.value.replace(/\D/g,''))} />
+                </div>
+              </div>
+              <div style={{ marginBottom:6 }}>
+                <label style={LS}>PIN code</label>
+                <input style={FS} type="text" inputMode="numeric" maxLength={6} placeholder="6-digit PIN (e.g. 560034)" value={call.pin}
+                  onChange={e=>{ const v=e.target.value.replace(/\D/g,''); sc('pin',v); setCallPinNote(pinArea(v)||'') }} />
+              </div>
+              {callPinNote && <div className="pj" style={{ fontSize:12, color: callPinNote.startsWith('✓')?'#177A45':'#D4510E', marginBottom:6 }}>{callPinNote}</div>}
+              <button type="button" className="pj" onClick={()=>useGps(sc, setCallPinNote, setCallGps)}
+                style={{ background:'none', border:'none', color:'#0A6B5E', fontWeight:600, fontSize:13, cursor:'pointer', padding:'4px 0', marginBottom:14, display:'flex', alignItems:'center', gap:6 }}>
+                {callGps==='loading'?'⏳ Locating…':'◎ Use my location instead'}
+              </button>
+
+              <div style={{ marginBottom:14 }}>
+                <label style={LS}>What's troubling you? <span style={{ fontWeight:400, color:'#5C6878' }}>(optional)</span></label>
                 <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-                  {['Back / Neck','Knee / Hip','Shoulder','Ankle / Foot','Post-surgery','Something else'].map(p=>(
-                    <button key={p} onClick={()=>set('pain',p)}
-                      style={{ padding:'7px 14px', border:`1.5px solid ${f.pain===p?'#12382A':'#DDE4EF'}`, borderRadius:20, background:f.pain===p?'#12382A':'#fff', color:f.pain===p?'#fff':'#5C6878', fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-                      {p}
+                  {['Back or neck','Knee or joint','Shoulder','Sports injury','After surgery','Stroke / neuro','Something else'].map(p=>(
+                    <Chip key={p} label={p} active={call.issue===p} onClick={()=>sc('issue', call.issue===p?'':p)} />
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ marginBottom:14 }}>
+                <label style={LS}>Best time to call *</label>
+                <div style={{ display:'flex', gap:8 }}>
+                  {[['Morning','8am–12pm'],['Afternoon','12–4pm'],['Evening','4–8pm']].map(([t,sub])=>(
+                    <button key={t} type="button" onClick={()=>sc('callTime',t)}
+                      style={{ flex:1, padding:'9px 8px', border:`1.5px solid ${call.callTime===t?'#12382A':'#DDE4EF'}`, borderRadius:8, background:call.callTime===t?'#12382A':'#fff', color:call.callTime===t?'#fff':'#5C6878', fontFamily:"'Plus Jakarta Sans',sans-serif", cursor:'pointer', transition:'all .18s' }}>
+                      <div style={{ fontWeight:700, fontSize:13 }}>{t}</div>
+                      <div style={{ fontSize:10, opacity:.75 }}>{sub}</div>
                     </button>
                   ))}
                 </div>
               </div>
-              <div style={{ marginBottom:14 }}>
-                <label style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, fontWeight:700, color:'#0A6B5E', display:'block', marginBottom:5 }}>Anything else? <span style={{ fontWeight:400, color:'#5C6878' }}>(optional)</span></label>
-                <textarea value={f.note} onChange={e=>set('note',e.target.value)} placeholder="How long? Tried anything before?"
-                  style={{ width:'100%', minHeight:60, resize:'none', padding:'11px 14px', border:'1.5px solid #DDE4EF', borderRadius:8, fontSize:14, outline:'none', fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1.5 }}/>
+
+              <div style={{ display:'flex', gap:10, alignItems:'flex-start', background:'#FFF8EF', borderRadius:8, padding:'10px 12px', marginBottom:4 }}>
+                <input type="checkbox" id="call-consent" checked={call.consent} onChange={e=>sc('consent',e.target.checked)} style={{ width:16, height:16, marginTop:2, accentColor:'#12382A', flexShrink:0 }} />
+                <label htmlFor="call-consent" className="pj" style={{ fontSize:12, color:'#5C6878', lineHeight:1.6, cursor:'pointer' }}>PhysioDrishti can call and WhatsApp me about my enquiry. My details stay private.</label>
               </div>
-              <div style={{ display:'flex', gap:10, alignItems:'flex-start', background:'#FFF8EF', borderRadius:8, padding:12, marginBottom:4 }}>
-                <input type="checkbox" id="agree" checked={f.agree} onChange={e=>set('agree',e.target.checked)} style={{ width:16, height:16, marginTop:2, accentColor:'#12382A', flexShrink:0 }}/>
-                <label htmlFor="agree" style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, color:'#5C6878', lineHeight:1.6, cursor:'pointer' }}>
-                  I am happy for PhysioDrishti to contact me. My details stay private.
-                </label>
-              </div>
+              {errors.submit && <div className="pj" style={{ fontSize:12, color:'#D4510E', marginTop:8 }}>{errors.submit}</div>}
+              <button onClick={submitCall} disabled={busy}
+                style={{ width:'100%', marginTop:16, padding:14, background:callOk?'#D4510E':'#DDE4EF', color:callOk?'#fff':'#9BA8B5', border:'none', borderRadius:10, fontSize:15, fontWeight:700, cursor:callOk?'pointer':'default', fontFamily:"'Plus Jakarta Sans',sans-serif", transition:'background .2s' }}>
+                {busy?'⏳ Requesting…':'Request a free call →'}
+              </button>
+              <p className="pj" style={{ fontSize:11, color:'#9BA8B5', textAlign:'center', marginTop:8 }}>We never share your number.</p>
             </div>
           )}
-          <div style={{ display:'flex', gap:10, marginTop:18 }}>
-            {step===2 && <button onClick={()=>setStep(1)} style={{ flex:'0 0 90px', padding:13, border:'1.5px solid #DDE4EF', borderRadius:8, background:'#fff', color:'#5C6878', fontSize:14, fontWeight:600, cursor:'pointer', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>← Back</button>}
-            {step===1
-              ? <button onClick={()=>ok1&&setStep(2)} style={{ flex:1, padding:13, background:ok1?'#D4510E':'#DDE4EF', color:ok1?'#fff':'#5C6878', border:'none', borderRadius:8, fontSize:14, fontWeight:700, cursor:ok1?'pointer':'default', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>Next →</button>
-              : <button onClick={submit} style={{ flex:1, padding:13, background:ok2?'#D4510E':'#DDE4EF', color:ok2?'#fff':'#5C6878', border:'none', borderRadius:8, fontSize:14, fontWeight:700, cursor:ok2?'pointer':'default', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-                  {busy?'⏳ Booking…':'Book my free call →'}
-                </button>
-            }
-          </div>
+
+          {/* ── CONSULTATION FORM ── */}
+          {mode === 'consult' && (
+            <div className="fade-lp">
+              <div style={{ background:'#FFF3F0', border:'1px solid #F4C9BE', borderRadius:8, padding:'10px 14px', marginBottom:18 }}>
+                <div className="pj" style={{ fontSize:12, fontWeight:700, color:'#D4510E', marginBottom:2 }}>Need urgent care?</div>
+                <div className="pj" style={{ fontSize:12, color:'#5C6878', lineHeight:1.5 }}>After a bad fall, accident, or sudden numbness / weakness — go to the nearest emergency room first.</div>
+              </div>
+
+              {/* About you */}
+              <div className="pd" style={{ fontSize:'0.9rem', fontWeight:800, color:'#12382A', marginBottom:12, borderBottom:'1px solid #DDE4EF', paddingBottom:6 }}>About you</div>
+              <div style={{ marginBottom:14 }}>
+                <label style={LS}>Patient's name *</label>
+                <input style={FS} type="text" placeholder="Full name" value={con.name} onChange={e=>sk('name',e.target.value)} />
+              </div>
+              <div style={{ marginBottom:14 }}>
+                <label style={LS}>WhatsApp number *</label>
+                <div style={{ display:'flex' }}>
+                  <span style={{ display:'flex', alignItems:'center', padding:'0 12px', border:'1.5px solid #DDE4EF', borderRight:'none', borderRadius:'8px 0 0 8px', background:'#F3F6FA', color:'#5C6878', fontWeight:600, fontSize:13, fontFamily:"'Plus Jakarta Sans',sans-serif", flexShrink:0 }}>+91</span>
+                  <input style={{ ...FS, borderRadius:'0 8px 8px 0', borderLeft:'none' }} type="tel" inputMode="numeric" maxLength={10} placeholder="10-digit number" value={con.phone} onChange={e=>sk('phone',e.target.value.replace(/\D/g,''))} />
+                </div>
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:6 }}>
+                <div>
+                  <label style={LS}>Age</label>
+                  <input style={FS} type="number" min={1} max={110} placeholder="e.g. 42" value={con.age} onChange={e=>sk('age',e.target.value)} />
+                </div>
+                <div>
+                  <label style={LS}>PIN code *</label>
+                  <input style={FS} type="text" inputMode="numeric" maxLength={6} placeholder="e.g. 560034" value={con.pin}
+                    onChange={e=>{ const v=e.target.value.replace(/\D/g,''); sk('pin',v); setConPinNote(pinArea(v)||'') }} />
+                </div>
+              </div>
+              {conPinNote && <div className="pj" style={{ fontSize:12, color: conPinNote.startsWith('✓')?'#177A45':'#D4510E', marginBottom:4 }}>{conPinNote}</div>}
+              <button type="button" className="pj" onClick={()=>useGps(sk, setConPinNote, setConGps)}
+                style={{ background:'none', border:'none', color:'#0A6B5E', fontWeight:600, fontSize:13, cursor:'pointer', padding:'4px 0', marginBottom:14, display:'flex', alignItems:'center', gap:6 }}>
+                {conGps==='loading'?'⏳ Locating…':'◎ Use my location instead'}
+              </button>
+              {+con.age > 0 && +con.age < 18 && (
+                <div className="pj" style={{ fontSize:12, color:'#D4510E', background:'#FFF3F0', borderRadius:6, padding:'8px 12px', marginBottom:14 }}>A parent or guardian must be present for patients under 18.</div>
+              )}
+              <div style={{ marginBottom:14 }}>
+                <label style={LS}>Gender <span style={{ fontWeight:400, color:'#5C6878' }}>(optional)</span></label>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+                  {['Female','Male','Other','Prefer not to say'].map(g=>(
+                    <Chip key={g} label={g} active={con.gender===g} onClick={()=>sk('gender', con.gender===g?'':g)} />
+                  ))}
+                </div>
+                <label style={{ display:'flex', alignItems:'center', gap:8, marginTop:10, cursor:'pointer' }}>
+                  <input type="checkbox" checked={con.samePref} onChange={e=>sk('samePref',e.target.checked)} style={{ accentColor:'#12382A', width:15, height:15 }} />
+                  <span className="pj" style={{ fontSize:12, color:'#5C6878' }}>I'd prefer a physiotherapist of the same gender</span>
+                </label>
+              </div>
+
+              {/* What hurts */}
+              <div className="pd" style={{ fontSize:'0.9rem', fontWeight:800, color:'#12382A', margin:'18px 0 12px', borderBottom:'1px solid #DDE4EF', paddingBottom:6 }}>Where does it hurt? *</div>
+              <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:14 }}>
+                {['Back or neck','Knee or hip','Shoulder','Elbow or wrist','Ankle or foot','Head or jaw','Post-surgery','Something else'].map(a=>(
+                  <Chip key={a} label={a} active={con.painAreas.includes(a)} onClick={()=>toggleArea(a)} />
+                ))}
+              </div>
+              <div style={{ marginBottom:14 }}>
+                <label style={LS}>Pain level today</label>
+                <div style={{ display:'flex', alignItems:'baseline', gap:10, marginBottom:6 }}>
+                  <span className="pd" style={{ fontSize:'1.8rem', fontWeight:900, color:'#0D1520', minWidth:'2ch' }}>{con.painScale}</span>
+                  <span className="pj" style={{ fontSize:13, color:'#5C6878', fontWeight:600 }}>{painWords[con.painScale]}</span>
+                </div>
+                <input type="range" min={0} max={10} value={con.painScale} onChange={e=>sk('painScale',+e.target.value)}
+                  style={{ width:'100%', height:8, borderRadius:8, appearance:'none', WebkitAppearance:'none', background:`linear-gradient(90deg,#3A9A6B ${con.painScale*10}%,#DDE4EF ${con.painScale*10}%)`, cursor:'pointer' }} />
+                <div style={{ display:'flex', justifyContent:'space-between' }}>
+                  <span className="pj" style={{ fontSize:10, color:'#9BA8B5' }}>No pain</span>
+                  <span className="pj" style={{ fontSize:10, color:'#9BA8B5' }}>Worst</span>
+                </div>
+              </div>
+              <div style={{ marginBottom:14 }}>
+                <label style={LS}>How long has this been going on?</label>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+                  {['Under 2 weeks','2–6 weeks','6 weeks–6 months','Over 6 months'].map(d=>(
+                    <Chip key={d} label={d} active={con.duration===d} onClick={()=>sk('duration', con.duration===d?'':d)} />
+                  ))}
+                </div>
+              </div>
+              <div style={{ marginBottom:14 }}>
+                <label style={LS}>Tell us more <span style={{ fontWeight:400, color:'#5C6878' }}>(optional)</span></label>
+                <textarea style={{ ...FS, minHeight:60, resize:'none', lineHeight:1.6 }} placeholder="e.g. Knee pain climbing stairs since March. Had surgery 3 weeks ago." value={con.notes} onChange={e=>sk('notes',e.target.value)} />
+              </div>
+
+              {/* When and how */}
+              <div className="pd" style={{ fontSize:'0.9rem', fontWeight:800, color:'#12382A', margin:'18px 0 12px', borderBottom:'1px solid #DDE4EF', paddingBottom:6 }}>When & how *</div>
+              <div style={{ marginBottom:14 }}>
+                <label style={LS}>Session type *</label>
+                <div style={{ display:'flex', gap:8 }}>
+                  {['Home visit','Online video','Help me decide'].map(m=>(
+                    <button key={m} type="button" onClick={()=>sk('sessionMode',m)}
+                      style={{ flex:1, padding:'9px 6px', border:`1.5px solid ${con.sessionMode===m?'#12382A':'#DDE4EF'}`, borderRadius:8, background:con.sessionMode===m?'#12382A':'#fff', color:con.sessionMode===m?'#fff':'#5C6878', fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, fontWeight:700, cursor:'pointer', transition:'all .18s' }}>
+                      {m}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
+                <div>
+                  <label style={LS}>Preferred date *</label>
+                  <input style={FS} type="date" min={todayStr} value={con.date} onChange={e=>sk('date',e.target.value)} />
+                </div>
+                <div>
+                  <label style={LS}>Time *</label>
+                  <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                    {[['Morning','AM'],['Afternoon','Noon'],['Evening','PM']].map(([full,short])=>(
+                      <button key={full} type="button" onClick={()=>sk('slot',full)}
+                        style={{ padding:'7px', border:`1.5px solid ${con.slot===full?'#12382A':'#DDE4EF'}`, borderRadius:6, background:con.slot===full?'#12382A':'#fff', color:con.slot===full?'#fff':'#5C6878', fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, fontWeight:700, cursor:'pointer' }}>
+                        {short}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display:'flex', gap:10, alignItems:'flex-start', background:'#FFF8EF', borderRadius:8, padding:'10px 12px', marginBottom:4 }}>
+                <input type="checkbox" id="con-consent" checked={con.consent} onChange={e=>sk('consent',e.target.checked)} style={{ width:16, height:16, marginTop:2, accentColor:'#12382A', flexShrink:0 }} />
+                <label htmlFor="con-consent" className="pj" style={{ fontSize:12, color:'#5C6878', lineHeight:1.6, cursor:'pointer' }}>I agree that PhysioDrishti can use these details to plan my care and contact me by call and WhatsApp.</label>
+              </div>
+              {errors.submit && <div className="pj" style={{ fontSize:12, color:'#D4510E', marginTop:8 }}>{errors.submit}</div>}
+              <button onClick={submitConsult} disabled={busy}
+                style={{ width:'100%', marginTop:16, padding:14, background:conOk?'#D4510E':'#DDE4EF', color:conOk?'#fff':'#9BA8B5', border:'none', borderRadius:10, fontSize:15, fontWeight:700, cursor:conOk?'pointer':'default', fontFamily:"'Plus Jakarta Sans',sans-serif", transition:'background .2s' }}>
+                {busy?'⏳ Booking…':'Book consultation →'}
+              </button>
+              <p className="pj" style={{ fontSize:11, color:'#9BA8B5', textAlign:'center', marginTop:8 }}>We confirm your slot and fee on WhatsApp before the session.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -323,133 +578,6 @@ function CityMap({ apiKey, height = 300 }) {
           <div style={{ width:26, height:26, border:'3px solid rgba(255,255,255,.15)', borderTop:'3px solid #72D4A8', borderRadius:'50%', animation:'spin .9s linear infinite' }} />
         </div>
       )}
-    </div>
-  )
-}
-
-/* ── Booking Modal ──────────────────────────────────────────────── */
-function BookingModal({ onClose, onSuccess }) {
-  const [f, setF]     = useState({ name:'', phone:'', email:'', area:'', pain:'', note:'', agree:false })
-  const [step, setStep] = useState(1)
-  const [busy, setBusy] = useState(false)
-  const set = (k, v) => setF(p => ({ ...p, [k]: v }))
-  const ok1 = f.name.trim() && f.phone.trim()
-  const ok2 = f.area && f.pain && f.agree
-
-  const submit = async () => {
-    if (!ok2) return
-    setBusy(true)
-    try {
-      const { error } = await supabase.from('leads').insert({
-        name:  f.name,
-        phone: f.phone,
-        email: f.email || null,
-        area:  f.area,
-        pain:  f.pain,
-        note:  f.note  || null,
-        stage: 'new', priority: 'medium',
-      })
-      if (error) throw error
-      onSuccess(f)
-    } catch (err) {
-      console.error(err)
-      alert('Something went wrong. Please try again.')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  return (
-    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.6)', zIndex:999, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }} onClick={onClose}>
-      
-      <div style={{ background:'#fff', borderRadius:16, width:'100%', maxWidth:460, boxShadow:'0 24px 64px rgba(0,0,0,.25)', overflow:'hidden' }} onClick={e => e.stopPropagation()}>
-
-        {/* Header */}
-        <div style={{ background:'#12382A', padding:'20px 24px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-          <div>
-            <div className="pd" style={{ fontSize:'1.15rem', fontWeight:900, color:'#fff' }}>Book a free call</div>
-            <div className="pj" style={{ fontSize:12, color:'rgba(255,255,255,.55)', marginTop:2 }}>Step {step} of 2 · {step===1?'Your details':'What is hurting?'}</div>
-          </div>
-          <button onClick={onClose} style={{ background:'rgba(255,255,255,.15)', border:'none', borderRadius:8, width:32, height:32, cursor:'pointer', color:'#fff', fontSize:16 }}>✕</button>
-        </div>
-        <div style={{ height:4, background:'#E5E9EF' }}><div style={{ height:'100%', width:`${step*50}%`, background:'#D4510E', transition:'width .4s' }}/></div>
-
-        <div style={{ padding:'26px 26px 22px' }}>
-          {step === 1 && (
-            <div className="fade-lp">
-              <p className="pj" style={{ fontSize:14, color:'#5C6878', marginBottom:20, lineHeight:1.6 }}>
-                Just your name and number — we will call you back and sort out everything else.
-              </p>
-              {[['Your name','name','text','e.g. Rahul Sharma'],['WhatsApp number','phone','tel','e.g. 98XXXXXXXX']].map(([l,k,t,ph])=>(
-                <div key={k} style={{ marginBottom:16 }}>
-                  <label className="pj" style={{ fontSize:12, fontWeight:700, color:'#0A6B5E', display:'block', marginBottom:6 }}>{l}</label>
-                  <input className="field-lp" type={t} placeholder={ph} value={f[k]} onChange={e=>set(k,e.target.value)} />
-                </div>
-              ))}
-              <div style={{ marginBottom:20 }}>
-                <label className="pj" style={{ fontSize:12, fontWeight:700, color:'#0A6B5E', display:'block', marginBottom:6 }}>
-                  Email <span style={{ color:'#5C6878', fontWeight:400 }}>(optional)</span>
-                </label>
-                <input className="field-lp" type="email" placeholder="your@email.com" value={f.email} onChange={e=>set('email',e.target.value)} />
-              </div>
-            </div>
-          )}
-
-          {step === 2 && (
-            <div className="fade-lp">
-              <p className="pj" style={{ fontSize:14, color:'#5C6878', marginBottom:20, lineHeight:1.6 }}>
-                Help us understand what's going on so we can find the right person for you.
-              </p>
-              <div style={{ marginBottom:16 }}>
-                <label className="pj" style={{ fontSize:12, fontWeight:700, color:'#0A6B5E', display:'block', marginBottom:6 }}>Your area in Bengaluru</label>
-                <select className="field-lp" value={f.area} onChange={e=>set('area',e.target.value)} style={{ appearance:'none' }}>
-                  <option value="">Pick your area</option>
-                  {AREAS.map(a => <option key={a}>{a}</option>)}
-                  <option>Other / Outside Bengaluru</option>
-                </select>
-              </div>
-              <div style={{ marginBottom:16 }}>
-                <label className="pj" style={{ fontSize:12, fontWeight:700, color:'#0A6B5E', display:'block', marginBottom:8 }}>Where does it hurt?</label>
-                <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-                  {['Back / Neck','Knee / Hip','Shoulder','Ankle / Foot','Elbow / Wrist','Post-surgery','Something else'].map(p=>(
-                    <button key={p} onClick={()=>set('pain',p)}
-                      style={{ padding:'7px 13px', border:`1.5px solid ${f.pain===p?'#12382A':'#DDE4EF'}`, borderRadius:20, background:f.pain===p?'#12382A':'#fff', color:f.pain===p?'#fff':'#5C6878', fontSize:13, fontWeight:600, cursor:'pointer', transition:'all .18s', fontFamily:'Plus Jakarta Sans,sans-serif' }}>
-                      {p}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div style={{ marginBottom:16 }}>
-                <label className="pj" style={{ fontSize:12, fontWeight:700, color:'#0A6B5E', display:'block', marginBottom:6 }}>
-                  Anything else? <span style={{ fontWeight:400, color:'#5C6878' }}>(optional)</span>
-                </label>
-                <textarea className="field-lp" placeholder="How long have you had this? Tried anything before?" value={f.note} onChange={e=>set('note',e.target.value)} style={{ minHeight:70, resize:'none', lineHeight:1.6 }} />
-              </div>
-              <div style={{ display:'flex', gap:10, alignItems:'flex-start', background:'#FFF8EF', borderRadius:8, padding:12, marginBottom:4 }}>
-                <input type="checkbox" id="agree" checked={f.agree} onChange={e=>set('agree',e.target.checked)} style={{ width:16, height:16, marginTop:2, accentColor:'#12382A', flexShrink:0 }} />
-                <label htmlFor="agree" className="pj" style={{ fontSize:12, color:'#5C6878', lineHeight:1.6, cursor:'pointer' }}>
-                  I am happy for PhysioDrishti to contact me. My details stay private and won't be shared.
-                </label>
-              </div>
-            </div>
-          )}
-
-          <div style={{ display:'flex', gap:10, marginTop:20 }}>
-            {step === 2 && (
-              <button onClick={()=>setStep(1)} className="pj"
-                style={{ flex:'0 0 90px', padding:13, border:'1.5px solid #DDE4EF', borderRadius:8, background:'#fff', color:'#5C6878', fontSize:14, fontWeight:600, cursor:'pointer' }}>
-                ← Back
-              </button>
-            )}
-            {step === 1
-              ? <button className="btn-main" style={{ flex:1, padding:13, opacity:ok1?1:.5 }} onClick={()=>ok1&&setStep(2)}>Next →</button>
-              : <button className="btn-main" style={{ flex:1, padding:13, opacity:ok2?1:.5 }} onClick={submit}>
-                  {busy ? '⏳ Booking…' : 'Book my free call →'}
-                </button>
-            }
-          </div>
-        </div>
-      </div>
     </div>
   )
 }
