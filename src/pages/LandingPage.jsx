@@ -178,6 +178,146 @@ const FS = { width:'100%', padding:'11px 14px', border:'1.5px solid #DDE4EF', bo
 const LS = { fontSize:12, fontWeight:700, color:'#0A6B5E', display:'block', marginBottom:6, fontFamily:"'Plus Jakarta Sans',sans-serif" }
 const WA_NO = '91XXXXXXXXXX'
 
+/* ── Body Map ───────────────────────────────────────────────────── */
+const ZONE_LABELS = {
+  head:'Head', neck:'Neck',
+  'l-shoulder':'Left Shoulder','r-shoulder':'Right Shoulder',
+  chest:'Chest', abdomen:'Abdomen', pelvis:'Pelvis',
+  'l-elbow':'Left Elbow','r-elbow':'Right Elbow',
+  'l-forearm':'Left Forearm','r-forearm':'Right Forearm',
+  'l-hand':'Left Hand','r-hand':'Right Hand',
+  'l-hip':'Left Hip','r-hip':'Right Hip',
+  'l-thigh':'Left Thigh','r-thigh':'Right Thigh',
+  'l-knee':'Left Knee','r-knee':'Right Knee',
+  'l-shin':'Left Shin','r-shin':'Right Shin',
+  'l-foot':'Left Foot','r-foot':'Right Foot',
+  'upper-back':'Upper Back','mid-back':'Mid Back','lower-back':'Lower Back',
+  'l-buttock':'Left Buttock','r-buttock':'Right Buttock',
+  'l-hamstring':'Left Hamstring','r-hamstring':'Right Hamstring',
+  'l-calf':'Left Calf','r-calf':'Right Calf',
+  'l-heel':'Left Heel / Achilles','r-heel':'Right Heel / Achilles',
+}
+
+// In front view: patient's LEFT = SVG right (high cx); patient's RIGHT = SVG left (low cx)
+// In back  view: patient's LEFT = SVG left  (low  cx); patient's RIGHT = SVG right (high cx)
+const BODY_ZONES = {
+  front: [
+    { id:'head',      cx:110, cy: 28, rx:25, ry:23 },
+    { id:'neck',      cx:110, cy: 61, rx:13, ry:10 },
+    { id:'r-shoulder',cx: 60, cy: 84, rx:18, ry:14 },
+    { id:'l-shoulder',cx:160, cy: 84, rx:18, ry:14 },
+    { id:'chest',     cx:110, cy:118, rx:30, ry:22 },
+    { id:'r-elbow',   cx: 52, cy:145, rx:13, ry:13 },
+    { id:'l-elbow',   cx:168, cy:145, rx:13, ry:13 },
+    { id:'abdomen',   cx:110, cy:162, rx:26, ry:20 },
+    { id:'r-forearm', cx: 50, cy:183, rx:11, ry:18 },
+    { id:'l-forearm', cx:170, cy:183, rx:11, ry:18 },
+    { id:'pelvis',    cx:110, cy:200, rx:24, ry:14 },
+    { id:'r-hand',    cx: 52, cy:218, rx:12, ry:13 },
+    { id:'l-hand',    cx:168, cy:218, rx:12, ry:13 },
+    { id:'r-hip',     cx: 87, cy:228, rx:19, ry:15 },
+    { id:'l-hip',     cx:133, cy:228, rx:19, ry:15 },
+    { id:'r-thigh',   cx: 87, cy:272, rx:18, ry:28 },
+    { id:'l-thigh',   cx:133, cy:272, rx:18, ry:28 },
+    { id:'r-knee',    cx: 89, cy:314, rx:17, ry:15 },
+    { id:'l-knee',    cx:131, cy:314, rx:17, ry:15 },
+    { id:'r-shin',    cx: 89, cy:354, rx:13, ry:25 },
+    { id:'l-shin',    cx:131, cy:354, rx:13, ry:25 },
+    { id:'r-foot',    cx: 89, cy:404, rx:16, ry:14 },
+    { id:'l-foot',    cx:131, cy:404, rx:16, ry:14 },
+  ],
+  back: [
+    { id:'neck',        cx:110, cy: 61, rx:13, ry:10 },
+    { id:'l-shoulder',  cx: 60, cy: 84, rx:18, ry:14 },
+    { id:'r-shoulder',  cx:160, cy: 84, rx:18, ry:14 },
+    { id:'upper-back',  cx:110, cy:112, rx:30, ry:22 },
+    { id:'l-elbow',     cx: 52, cy:145, rx:13, ry:13 },
+    { id:'r-elbow',     cx:168, cy:145, rx:13, ry:13 },
+    { id:'mid-back',    cx:110, cy:158, rx:26, ry:20 },
+    { id:'l-forearm',   cx: 50, cy:183, rx:11, ry:18 },
+    { id:'r-forearm',   cx:170, cy:183, rx:11, ry:18 },
+    { id:'lower-back',  cx:110, cy:196, rx:24, ry:16 },
+    { id:'l-hand',      cx: 52, cy:218, rx:12, ry:13 },
+    { id:'r-hand',      cx:168, cy:218, rx:12, ry:13 },
+    { id:'l-buttock',   cx: 89, cy:226, rx:19, ry:16 },
+    { id:'r-buttock',   cx:131, cy:226, rx:19, ry:16 },
+    { id:'l-hamstring', cx: 89, cy:270, rx:17, ry:28 },
+    { id:'r-hamstring', cx:131, cy:270, rx:17, ry:28 },
+    { id:'l-knee',      cx: 89, cy:314, rx:17, ry:15 },
+    { id:'r-knee',      cx:131, cy:314, rx:17, ry:15 },
+    { id:'l-calf',      cx: 89, cy:354, rx:13, ry:25 },
+    { id:'r-calf',      cx:131, cy:354, rx:13, ry:25 },
+    { id:'l-foot',      cx: 89, cy:400, rx:14, ry:14 },
+    { id:'r-foot',      cx:131, cy:400, rx:14, ry:14 },
+    { id:'l-heel',      cx: 89, cy:418, rx:11, ry:11 },
+    { id:'r-heel',      cx:131, cy:418, rx:11, ry:11 },
+  ],
+}
+
+function BodyMap({ selected, onChange }) {
+  const [view, setView] = useState('front')
+  function toggle(id) {
+    const next = new Set(selected)
+    next.has(id) ? next.delete(id) : next.add(id)
+    onChange(next)
+  }
+  const zones = BODY_ZONES[view]
+  const isFront = view === 'front'
+  const oF = '#EEF2F7', oS = '#C8D0DB'
+  return (
+    <div>
+      <div style={{ display:'flex', gap:8, marginBottom:12, justifyContent:'center' }}>
+        {['front','back'].map(v=>(
+          <button key={v} type="button" onClick={()=>setView(v)}
+            style={{ padding:'7px 22px', border:`1.5px solid ${view===v?'#12382A':'#DDE4EF'}`, borderRadius:20, background:view===v?'#12382A':'#fff', color:view===v?'#fff':'#5C6878', fontSize:13, fontWeight:600, cursor:'pointer', transition:'all .18s', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+            {v==='front'?'Front view':'Back view'}
+          </button>
+        ))}
+      </div>
+      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'center', gap:4 }}>
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', paddingTop:58, minWidth:36 }}>
+          <div style={{ fontSize:9, fontWeight:800, color:'#9BA8B5', fontFamily:"'Plus Jakarta Sans',sans-serif", textAlign:'center', lineHeight:1.3 }}>YOUR<br/>{isFront?'RIGHT':'LEFT'}</div>
+          <div style={{ fontSize:14, color:'#CDD5DF', marginTop:2 }}>←</div>
+        </div>
+        <svg viewBox="0 0 220 440" width="160" style={{ display:'block', userSelect:'none', touchAction:'manipulation', flexShrink:0 }}>
+          {/* Body silhouette */}
+          <ellipse cx="110" cy="28" rx="30" ry="27" fill={oF} stroke={oS} strokeWidth="1.5"/>
+          <rect x="98" y="53" width="24" height="18" rx="4" fill={oF} stroke={oS} strokeWidth="1.5"/>
+          <rect x="72" y="68" width="76" height="165" rx="14" fill={oF} stroke={oS} strokeWidth="1.5"/>
+          <rect x="44" y="72" width="28" height="152" rx="10" fill={oF} stroke={oS} strokeWidth="1.5"/>
+          <rect x="148" y="72" width="28" height="152" rx="10" fill={oF} stroke={oS} strokeWidth="1.5"/>
+          <rect x="78" y="230" width="30" height="192" rx="12" fill={oF} stroke={oS} strokeWidth="1.5"/>
+          <rect x="112" y="230" width="30" height="192" rx="12" fill={oF} stroke={oS} strokeWidth="1.5"/>
+          {/* Tappable zones */}
+          {zones.map(z=>(
+            <ellipse key={z.id} cx={z.cx} cy={z.cy} rx={z.rx} ry={z.ry}
+              fill={selected.has(z.id)?'rgba(240,185,74,.75)':'rgba(58,154,107,.1)'}
+              stroke={selected.has(z.id)?'#D4510E':'rgba(58,154,107,.4)'}
+              strokeWidth={selected.has(z.id)?2:1}
+              onClick={()=>toggle(z.id)}
+              style={{ cursor:'pointer' }}/>
+          ))}
+        </svg>
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', paddingTop:58, minWidth:36 }}>
+          <div style={{ fontSize:9, fontWeight:800, color:'#9BA8B5', fontFamily:"'Plus Jakarta Sans',sans-serif", textAlign:'center', lineHeight:1.3 }}>YOUR<br/>{isFront?'LEFT':'RIGHT'}</div>
+          <div style={{ fontSize:14, color:'#CDD5DF', marginTop:2 }}>→</div>
+        </div>
+      </div>
+      <p style={{ fontSize:11, color:'#9BA8B5', textAlign:'center', margin:'4px 0 8px', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>Tap zones to select · tap again to deselect</p>
+      {selected.size>0&&(
+        <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:4 }}>
+          {[...selected].map(id=>(
+            <span key={id} onClick={()=>toggle(id)}
+              style={{ padding:'4px 10px', background:'#FFF8EF', border:'1.5px solid #F0B94A', borderRadius:16, fontSize:12, fontWeight:600, color:'#0D1520', cursor:'pointer', display:'inline-flex', alignItems:'center', gap:5, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+              {ZONE_LABELS[id]||id}<span style={{ fontSize:10, color:'#9BA8B5' }}>✕</span>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function Chip({ label, active, onClick }) {
   return (
     <button type="button" onClick={onClick}
@@ -206,7 +346,7 @@ function SimpleBooking({ onClose, onSuccess }) {
   const [conPinNote, setConPinNote] = useState('')
   const [conGps, setConGps] = useState('idle')
 
-  const toggleArea = (a) => setCon(p => ({ ...p, painAreas: p.painAreas.includes(a) ? p.painAreas.filter(x=>x!==a) : [...p.painAreas, a] }))
+  const [bodySelected, setBodySelected] = useState(new Set())
 
   const painWords = ['No pain','Very mild','Mild','Mild','Moderate','Moderate','Moderate','Severe','Severe','Very severe','Worst']
 
@@ -223,7 +363,7 @@ function SimpleBooking({ onClose, onSuccess }) {
 
   // Validation
   const callOk = call.name.trim().length >= 2 && /^[6-9]\d{9}$/.test(call.phone) && /^\d{6}$/.test(call.pin) && call.callTime && call.consent
-  const conOk  = con.name.trim().length >= 2 && /^[6-9]\d{9}$/.test(con.phone) && /^\d{6}$/.test(con.pin) && con.painAreas.length > 0 && con.sessionMode && con.date && con.slot && con.consent
+  const conOk  = con.name.trim().length >= 2 && /^[6-9]\d{9}$/.test(con.phone) && /^\d{6}$/.test(con.pin) && bodySelected.size > 0 && con.sessionMode && con.date && con.slot && con.consent
 
   // Today's date for min
   const todayStr = new Date().toISOString().slice(0,10)
@@ -248,12 +388,12 @@ function SimpleBooking({ onClose, onSuccess }) {
     try {
       const area = BLG_PINS[con.pin] || (con.pin.startsWith('560') ? 'Bengaluru' : 'Outside Bengaluru')
       const note = [`Pain scale: ${con.painScale}/10`, con.duration && `Duration: ${con.duration}`, `Session: ${con.sessionMode}`, `Slot: ${con.date}, ${con.slot}`, con.notes && `Notes: ${con.notes}`].filter(Boolean).join(' | ')
-      await supabase.from('leads').insert({ name:con.name, phone:con.phone, area, pain:con.painAreas.join(', '), note, stage:'new', priority:'medium' })
+      await supabase.from('leads').insert({ name:con.name, phone:con.phone, area, pain:[...bodySelected].map(id=>ZONE_LABELS[id]||id).join(', '), note, stage:'new', priority:'medium' })
       const rows = [
         ['Patient', con.name + (con.age ? ', '+con.age+' yrs' : '') + (con.gender ? ', '+con.gender : '')],
         ['Mobile', '+91 '+con.phone],
         ['Area', area+' ('+con.pin+')'],
-        ['Pain areas', con.painAreas.join(', ')],
+        ['Pain areas', [...bodySelected].map(id=>ZONE_LABELS[id]||id).join(', ')],
         ['Pain today', con.painScale+'/10 — '+painWords[con.painScale]],
         ['Duration', con.duration||'Not specified'],
         ['Session type', con.sessionMode],
@@ -437,11 +577,7 @@ function SimpleBooking({ onClose, onSuccess }) {
 
               {/* What hurts */}
               <div className="pd" style={{ fontSize:'0.9rem', fontWeight:800, color:'#12382A', margin:'18px 0 12px', borderBottom:'1px solid #DDE4EF', paddingBottom:6 }}>Where does it hurt? *</div>
-              <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:14 }}>
-                {['Back or neck','Knee or hip','Shoulder','Elbow or wrist','Ankle or foot','Head or jaw','Post-surgery','Something else'].map(a=>(
-                  <Chip key={a} label={a} active={con.painAreas.includes(a)} onClick={()=>toggleArea(a)} />
-                ))}
-              </div>
+              <BodyMap selected={bodySelected} onChange={ns=>{ setBodySelected(ns); sk('painAreas',[...ns].map(id=>ZONE_LABELS[id]||id)) }} />
               <div style={{ marginBottom:14 }}>
                 <label style={LS}>Pain level today</label>
                 <div style={{ display:'flex', alignItems:'baseline', gap:10, marginBottom:6 }}>
