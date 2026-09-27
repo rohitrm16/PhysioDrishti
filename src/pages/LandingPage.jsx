@@ -938,11 +938,6 @@ export default function LandingPage({ onGoToDashboard, onShowDoctor, mapplsKey }
               <div className="pj" style={{ fontSize:8, color: scrolled?'#5C6878':'rgba(255,255,255,.55)', letterSpacing:2, textTransform:'uppercase' }}>Online Physiotherapy</div>
             </div>
           </div>
-          <div style={{ display:'flex', alignItems:'center', gap: mob?8:20 }}>
-            <button className="btn-main" style={{ padding:'8px 18px', fontSize:13 }} onClick={()=>setShowModal(true)}>Book free call</button>
-            {!mob && <button onClick={onShowDoctor} className="pj" style={{ fontSize:13, color:scrolled?'#5C6878':'rgba(255,255,255,.6)', cursor:'pointer', background:'none', border:'none' }}>Meet the doctor →</button>}
-            {!mob && <button onClick={onGoToDashboard} className="pj" style={{ fontSize:13, color:scrolled?'#5C6878':'rgba(255,255,255,.6)', cursor:'pointer', background:'none', border:'none' }}>For clinics →</button>}
-          </div>
         </div>
       </nav>
 
