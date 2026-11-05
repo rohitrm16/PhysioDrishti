@@ -1,3 +1,12 @@
+---
+slug: appointment-policy
+title: Appointment Policy
+language: en
+source_type: policy
+body_area: null
+audience: patient
+---
+
 # Appointment Policy — PhysioDrishti
 
 ## Booking an Appointment

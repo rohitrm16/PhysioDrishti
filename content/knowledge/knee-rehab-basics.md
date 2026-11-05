@@ -1,3 +1,12 @@
+---
+slug: knee-rehab-basics
+title: Knee Rehabilitation Basics
+language: en
+source_type: education
+body_area: knee
+audience: patient
+---
+
 # Knee Rehabilitation Basics
 
 ## Common Knee Conditions We Treat

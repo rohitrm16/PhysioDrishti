@@ -1,3 +1,12 @@
+---
+slug: back-pain-red-flags
+title: Back Pain Red Flags
+language: en
+source_type: education
+body_area: back
+audience: patient
+---
+
 # Back Pain Red Flags
 
 Physiotherapists are trained to screen for serious spinal pathology before starting treatment. The following symptoms require immediate medical referral — do not proceed with physiotherapy alone.
