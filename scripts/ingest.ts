@@ -79,7 +79,7 @@ async function upsertDocument(file: string) {
 
   if (existingError) throw existingError;
 
-  if (existing?.content_hash === contentHash) {
+  if (!FRESH && existing?.content_hash === contentHash) {
     console.log(`↩︎ unchanged: ${slug}`);
     return;
   }
@@ -139,7 +139,10 @@ async function upsertDocument(file: string) {
   console.log(`✓ ingested ${slug}: ${pieces.length} chunks`);
 }
 
+const FRESH = process.argv.includes("--fresh");
+
 async function main() {
+  if (FRESH) console.log("--fresh: skipping content-hash check, re-ingesting all documents");
   const dir = path.join(process.cwd(), "content/knowledge");
   const files = (await fs.readdir(dir))
     .filter((file) => file.endsWith(".md"))
