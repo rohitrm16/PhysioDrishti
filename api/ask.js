@@ -6,7 +6,8 @@
 import crypto from 'node:crypto'
 import { admin } from '../lib/db.js'
 import { embedQuery, generate, costUsd, GEN_MODEL, EMBED_MODEL } from '../lib/gemini.js'
-import { hasRedFlag, RED_FLAG_MESSAGE } from '../lib/safety.js'
+
+import { hasRedFlag, RED_FLAG_MESSAGE, asksAboutMedication, MEDICATION_MESSAGE } from '../lib/safety.js'
 
 const MIN_SIM = Number(process.env.MIN_SIMILARITY ?? 0.55)
 
