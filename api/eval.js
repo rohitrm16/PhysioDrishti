@@ -101,7 +101,8 @@ export default async function handler(req, res) {
     const batch = all.slice(offset, offset + limit)
     const done = []
     for (const q of batch) {
-      const row = await evaluateOne(q, runId)
+      const row = await evaluateOne(q, runId) 
+            await admin.from('eval_results').delete().eq('run_id', runId).eq('question_id', q.id)
       const { error: insErr } = await admin.from('eval_results').insert(row)
       if (insErr) throw insErr
       done.push({ id: q.external_id, refusal_correct: row.refusal_correct, retrieval_hit: row.retrieval_hit, groundedness: row.groundedness })
