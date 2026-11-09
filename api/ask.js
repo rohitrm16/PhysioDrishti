@@ -57,8 +57,16 @@ export default async function handler(req, res) {
   try {
     // 1. Safety screen (rule-based, no AI)
     let t = Date.now()
-    const flagged = hasRedFlag(q)
-    await trace(session, ++step, 'check_red_flags', { question: q }, { flagged }, t)
+  
+
+        const flagged = hasRedFlag(q)
+    const medication = asksAboutMedication(q)
+    await trace(session, ++step, 'check_red_flags', { question: q }, { flagged, medication }, t)
+    if (medication && !flagged) {
+      return res.status(200).json({ refused: true, reason: 'medication', answer: MEDICATION_MESSAGE, citations: [], session })
+    }
+
+    
     if (flagged) {
       return res.status(200).json({ refused: true, reason: 'red_flag', answer: RED_FLAG_MESSAGE, citations: [], session })
     }
