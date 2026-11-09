@@ -1,67 +1,33 @@
-import { GoogleGenAI } from "@google/genai";
-import { createClient } from "@supabase/supabase-js";
+// GET  /api/ask?q=your question      (easy to test in a browser)
+// POST /api/ask  { "question": "..." }
+// Thin wrapper: the pipeline itself lives in lib/rag.js (shared with evals).
+import { answerQuestion } from '../lib/rag.js'
 
-const EMBEDDING_MODEL = "text-embedding-004";
-const EMBEDDING_DIMENSIONS = 768;
-const MATCH_COUNT = 5;
-const MATCH_THRESHOLD = 0.5;
+// Best-effort rate limit (in-memory, per server instance)
+const hits = new Map()
+function limited(ip) {
+  const now = Date.now()
+  const recent = (hits.get(ip) || []).filter((t) => now - t < 60_000)
+  recent.push(now)
+  hits.set(ip, recent)
+  return recent.length > 8
+}
 
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  if (req.method === "OPTIONS") return res.status(204).end();
-  if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
+  const q = String((req.method === 'POST' ? req.body?.question : req.query.q) || '').trim().slice(0, 500)
+  if (!q) return res.status(400).json({ error: 'Ask a question, e.g. /api/ask?q=knee pain on stairs' })
 
-  const q = req.query.q?.trim();
-  if (!q) return res.status(400).json({ error: "Missing required query parameter: q" });
-
-  const geminiKey  = process.env.GEMINI_API_KEY;
-  const supabaseUrl = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL;
-  const serviceKey  = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!geminiKey)   return res.status(500).json({ error: "GEMINI_API_KEY is not configured" });
-  if (!supabaseUrl) return res.status(500).json({ error: "SUPABASE_URL is not configured" });
-  if (!serviceKey)  return res.status(500).json({ error: "SUPABASE_SERVICE_ROLE_KEY is not configured" });
-
-  const ai = new GoogleGenAI({ apiKey: geminiKey });
-  const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+  const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown'
+  if (limited(ip)) return res.status(429).json({ error: 'Too many requests. Try again in a minute.' })
 
   try {
-    // 1. Embed the query
-    const embedResponse = await ai.models.embedContent({
-      model: EMBEDDING_MODEL,
-      contents: [q],
-      config: {
-        taskType: "RETRIEVAL_QUERY",
-        outputDimensionality: EMBEDDING_DIMENSIONS,
-      },
-    });
-
-    const embedding = embedResponse.embeddings?.[0]?.values;
-    if (!embedding) throw new Error("Gemini returned no embedding");
-
-    // 2. Vector search via match_chunks RPC (defined in supabase/migrations/)
-    const { data, error } = await supabase.rpc("match_chunks", {
-      query_embedding: embedding,
-      match_count: MATCH_COUNT,
-      match_threshold: MATCH_THRESHOLD,
-    });
-
-    if (error) throw new Error(`Supabase RPC error: ${error.message}`);
-
-    const results = (data ?? []).map((row) => ({
-      content:      row.content,
-      similarity:   row.similarity,
-      title:        row.metadata?.title ?? null,
-      slug:         row.metadata?.slug ?? null,
-      source_type:  row.metadata?.source_type ?? null,
-      body_area:    row.metadata?.body_area ?? null,
-    }));
-
-    return res.json({ query: q, results });
+    const r = await answerQuestion(q)
+    const body = { refused: r.refused, answer: r.answer, citations: r.citations, session: r.session }
+    if (r.refused) body.reason = r.reason
+    if (r.model) body.model = r.model
+    res.status(200).json(body)
   } catch (err) {
-    console.error("ask handler error:", err.message);
-    return res.status(500).json({ error: err.message });
+    console.error(err)
+    res.status(500).json({ error: 'Something went wrong. Please try again.' })
   }
 }
