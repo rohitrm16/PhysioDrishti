@@ -5,7 +5,7 @@
 //     /api/eval?key=YOUR_SECRET&auto=1
 //   Options: &limit=3 (questions per batch)  &only=q01,q27 (subset)
 import { admin } from '../lib/db.js'
-import { isAuthorised } from '../lib/auth.js'
+import { isAuthorised, setEvalSessionCookie } from '../lib/auth.js'
 import { answerQuestion } from '../lib/rag.js'
 import { judgeGroundedness } from '../lib/judge.js'
 import { scoreRetrieval, scoreRefusal } from '../lib/evalScore.js'
@@ -82,6 +82,8 @@ function page(title, body, refreshUrl) {
 
 export default async function handler(req, res) {
   if (!isAuthorised(req)) return res.status(401).json({ error: 'unauthorised' })
+  // Set cookie on first auth so key never appears in subsequent redirect URLs
+  if (req.query.key) setEvalSessionCookie(res, String(process.env.EVAL_SECRET || process.env.INGEST_SECRET || ''))
 
   const runId = String(req.query.run || newRunId())
   const offset = Math.max(0, Number(req.query.offset) || 0)
@@ -110,7 +112,8 @@ export default async function handler(req, res) {
 
     const nextOffset = offset + batch.length
     const remaining = Math.max(0, all.length - nextOffset)
-    const params = new URLSearchParams({ key: String(req.query.key || ''), run: runId, offset: String(nextOffset), limit: String(limit) })
+    // key intentionally excluded — subsequent redirects authenticate via cookie
+    const params = new URLSearchParams({ run: runId, offset: String(nextOffset), limit: String(limit) })
     if (only) params.set('only', only.join(','))
     if (auto) params.set('auto', '1')
     const nextUrl = `/api/eval?${params.toString()}`

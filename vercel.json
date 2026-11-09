@@ -1,12 +1,12 @@
 {
   "functions": {
-    "api/analytics.js": {
-      "maxDuration": 20
-    },
-    "api/ask.js": {
-      "maxDuration": 15
-    }
+    "api/analytics.js": { "maxDuration": 20 },
+    "api/ask.js":        { "maxDuration": 15 },
+    "api/eval.js":       { "maxDuration": 60 }
   },
+  "crons": [
+    { "path": "/api/cleanup", "schedule": "0 3 * * *" }
+  ],
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]

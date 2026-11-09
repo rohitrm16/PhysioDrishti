@@ -2,12 +2,9 @@ import { useState, useEffect } from 'react'
 import LandingPage from './pages/LandingPage.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import DoctorProfile from './pages/DoctorProfile.jsx'
+import { supabase } from './supabase.js'
 
-/* ── Dashboard Login Gate ─────────────────────────────────────── */
-const DEFAULT_PIN = '1234'
-const PIN_KEY     = 'pd_dashboard_pin'
-const AUTH_KEY    = 'pd_authed'
-
+/* ── Dashboard Login Gate (Supabase Auth) ─────────────────────── */
 const CSS_LOGIN = `
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
   *{box-sizing:border-box;margin:0;padding:0}
@@ -17,9 +14,11 @@ const CSS_LOGIN = `
 `
 
 function LoginGate({ onAuth }) {
-  const [pin,  setPin]  = useState('')
-  const [err,  setErr]  = useState('')
-  const [show, setShow] = useState(false)
+  const [email,   setEmail]   = useState('')
+  const [pass,    setPass]    = useState('')
+  const [err,     setErr]     = useState('')
+  const [loading, setLoading] = useState(false)
+  const [show,    setShow]    = useState(false)
 
   useEffect(() => {
     const el = document.createElement('style')
@@ -28,16 +27,20 @@ function LoginGate({ onAuth }) {
     return () => { try { document.head.removeChild(el) } catch {} }
   }, [])
 
-  const attempt = () => {
-    const stored = localStorage.getItem(PIN_KEY) || DEFAULT_PIN
-    if (pin === stored) {
-      sessionStorage.setItem(AUTH_KEY, '1')
-      onAuth()
+  const attempt = async () => {
+    if (!email || !pass) return
+    setLoading(true); setErr('')
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: pass })
+    if (error) {
+      setErr(error.message === 'Invalid login credentials' ? 'Wrong email or password.' : error.message)
+      setPass('')
     } else {
-      setErr('Incorrect PIN — try again.')
-      setPin('')
+      onAuth()
     }
+    setLoading(false)
   }
+
+  const F = { fontFamily:"'Plus Jakarta Sans',sans-serif" }
 
   return (
     <div style={{
@@ -53,33 +56,51 @@ function LoginGate({ onAuth }) {
         textAlign:'center',
       }}>
         <div style={{ fontSize:44, marginBottom:12 }}>🌿</div>
-        <div style={{ fontFamily:"'Playfair Display',serif", fontSize:'1.55rem', fontWeight:900, color:'#12382A', marginBottom:4 }}>
+        <div style={{ ...F, fontFamily:"'Playfair Display',serif", fontSize:'1.55rem', fontWeight:900, color:'#12382A', marginBottom:4 }}>
           PhysioDrishti
         </div>
-        <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, color:'#5C6878', marginBottom:32, letterSpacing:1.5, textTransform:'uppercase' }}>
+        <div style={{ ...F, fontSize:12, color:'#5C6878', marginBottom:32, letterSpacing:1.5, textTransform:'uppercase' }}>
           Clinic Dashboard
         </div>
 
+        <div style={{ textAlign:'left', marginBottom:14 }}>
+          <label style={{ ...F, fontSize:12, fontWeight:700, color:'#0A6B5E', display:'block', marginBottom:6 }}>
+            Email
+          </label>
+          <input
+            type="email"
+            value={email}
+            onChange={e => { setEmail(e.target.value); setErr('') }}
+            onKeyDown={e => e.key === 'Enter' && attempt()}
+            placeholder="staff@yourclinic.com"
+            autoFocus
+            style={{
+              width:'100%', padding:'12px 16px',
+              border:`1.5px solid ${err ? '#F5C6C6' : '#DDE4EF'}`,
+              borderRadius:9, fontSize:15, outline:'none', ...F,
+              transition:'border-color .2s', color:'#0D1520',
+            }}
+            onFocus={e => { if (!err) e.target.style.borderColor = '#3A9A6B' }}
+            onBlur={e => { if (!err) e.target.style.borderColor = '#DDE4EF' }}
+          />
+        </div>
+
         <div style={{ textAlign:'left', marginBottom:16 }}>
-          <label style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, fontWeight:700, color:'#0A6B5E', display:'block', marginBottom:6 }}>
-            Dashboard PIN
+          <label style={{ ...F, fontSize:12, fontWeight:700, color:'#0A6B5E', display:'block', marginBottom:6 }}>
+            Password
           </label>
           <div style={{ position:'relative' }}>
             <input
               type={show ? 'text' : 'password'}
-              value={pin}
-              onChange={e => { setPin(e.target.value); setErr('') }}
-              onKeyDown={e => e.key === 'Enter' && pin && attempt()}
-              placeholder="Enter your PIN"
-              autoFocus
+              value={pass}
+              onChange={e => { setPass(e.target.value); setErr('') }}
+              onKeyDown={e => e.key === 'Enter' && attempt()}
+              placeholder="••••••••"
               style={{
                 width:'100%', padding:'12px 44px 12px 16px',
                 border:`1.5px solid ${err ? '#F5C6C6' : '#DDE4EF'}`,
-                borderRadius:9, fontSize:15, outline:'none',
-                fontFamily:"'Plus Jakarta Sans',sans-serif",
-                letterSpacing: pin ? 6 : 0,
-                transition:'border-color .2s',
-                color:'#0D1520',
+                borderRadius:9, fontSize:15, outline:'none', ...F,
+                transition:'border-color .2s', color:'#0D1520',
               }}
               onFocus={e => { if (!err) e.target.style.borderColor = '#3A9A6B' }}
               onBlur={e => { if (!err) e.target.style.borderColor = '#DDE4EF' }}
@@ -95,30 +116,30 @@ function LoginGate({ onAuth }) {
         </div>
 
         {err && (
-          <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12, color:'#B83232', background:'#FFF0F0', border:'1px solid #F5C6C6', borderRadius:7, padding:'9px 14px', marginBottom:14, textAlign:'left' }}>
+          <div style={{ ...F, fontSize:12, color:'#B83232', background:'#FFF0F0', border:'1px solid #F5C6C6', borderRadius:7, padding:'9px 14px', marginBottom:14, textAlign:'left' }}>
             ⚠️ {err}
           </div>
         )}
 
         <button
           onClick={attempt}
-          disabled={!pin}
+          disabled={!email || !pass || loading}
           style={{
             width:'100%', padding:'13px',
-            background: pin ? '#12382A' : '#E5E9EF',
-            color: pin ? '#fff' : '#9BA8B5',
-            border:'none', borderRadius:9,
-            fontFamily:"'Plus Jakarta Sans',sans-serif",
+            background: (email && pass && !loading) ? '#12382A' : '#E5E9EF',
+            color: (email && pass && !loading) ? '#fff' : '#9BA8B5',
+            border:'none', borderRadius:9, ...F,
             fontSize:15, fontWeight:700,
-            cursor: pin ? 'pointer' : 'default',
+            cursor: (email && pass && !loading) ? 'pointer' : 'default',
             transition:'all .2s',
           }}
         >
-          Enter dashboard →
+          {loading ? 'Signing in…' : 'Enter dashboard →'}
         </button>
 
-        <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", marginTop:18, fontSize:11, color:'#9BA8B5', lineHeight:1.6 }}>
-          Default PIN: <strong>1234</strong><br/>Change it any time in Dashboard → Settings
+        <div style={{ ...F, marginTop:18, fontSize:11, color:'#9BA8B5', lineHeight:1.6 }}>
+          Staff accounts are managed in Supabase Auth.<br/>
+          Contact your admin if you need access.
         </div>
       </div>
     </div>
@@ -127,15 +148,29 @@ function LoginGate({ onAuth }) {
 
 /* ── App ─────────────────────────────────────────────────────── */
 export default function App() {
-  const [view,       setView]       = useState('landing')
-  const [mapplsKey,  setMapplsKey]  = useState('')
-  const [authed,     setAuthed]     = useState(() => sessionStorage.getItem(AUTH_KEY) === '1')
+  const [view,      setView]      = useState('landing')
+  const [mapplsKey, setMapplsKey] = useState('')
+  const [authed,    setAuthed]    = useState(false)
+  const [checking,  setChecking]  = useState(true)
 
-  const logout = () => {
-    sessionStorage.removeItem(AUTH_KEY)
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setAuthed(!!session)
+      setChecking(false)
+    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setAuthed(!!session)
+    })
+    return () => subscription.unsubscribe()
+  }, [])
+
+  const logout = async () => {
+    await supabase.auth.signOut()
     setAuthed(false)
     setView('landing')
   }
+
+  if (checking) return null
 
   return (
     <>
