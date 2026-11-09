@@ -67,7 +67,11 @@ export default function Evals() {
     setLoading(true); setError('')
     try {
       const res = await fetch('/api/eval-results' + (runId ? '?run=' + encodeURIComponent(runId) : ''))
-      const json = await res.json()
+      const text = await res.text()
+      let json
+      try { json = JSON.parse(text) } catch {
+        throw new Error('Eval API did not return JSON (status ' + res.status + '). Check that api/eval-results.js is deployed.')
+      }
       if (!res.ok) throw new Error(json.error || 'Failed to load')
       setData(json)
       if (!runId && json.run_id) setRun(json.run_id)

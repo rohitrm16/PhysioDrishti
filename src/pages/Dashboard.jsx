@@ -5,6 +5,7 @@
  */
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../supabase.js'
+import Evals from './Evals.jsx'
 
 const C = {
   forest:'#12382A', teal:'#0A6B5E', mint:'#3A9A6B',
@@ -999,6 +1000,7 @@ export default function Dashboard({ onGoToLanding, onLogout, mapplsKey, setMappl
     { id:'patients',  icon:'👥', label:'Patients'        },
     { id:'sessions',  icon:'📱', label:'Sessions'        },
     { id:'rankings',  icon:'🔍', label:'Search Rankings' },
+    { id:'evals',     icon:'🧪', label:'Evals'           },
     { id:'settings',  icon:'⚙️', label:'Settings'        },
   ]
 
@@ -1547,6 +1549,8 @@ export default function Dashboard({ onGoToLanding, onLogout, mapplsKey, setMappl
           )}
 
           {/* ── SETTINGS ── */}
+          {tab === 'evals' && <Evals />}
+
           {tab === 'settings' && (
             <div className="fade-d">
               <div style={{ marginBottom:18 }}>
