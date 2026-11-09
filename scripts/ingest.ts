@@ -7,7 +7,7 @@ import crypto from "node:crypto";
 import matter from "gray-matter";
 import { encodingForModel } from "js-tiktoken";
 
-const EMBEDDING_MODEL = "gemini-embedding-001";
+const EMBEDDING_MODEL = "text-embedding-004";
 const EMBEDDING_DIMENSIONS = 768;
 const MAX_CHUNK_TOKENS = 700;
 const CHUNK_OVERLAP_TOKENS = 80;
