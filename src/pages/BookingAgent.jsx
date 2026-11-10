@@ -27,6 +27,7 @@ export default function BookingAgent({ onClose, onSuccess }) {
   const [input, setInput]       = useState('')
   const [loading, setLoading]   = useState(false)
   const [sessionId, setSessionId]   = useState(null)
+  // history: simple {role, text} turns sent to api/agent
   const [history, setHistory]   = useState([])
   const [booking, setBooking]   = useState(null)
   const bottomRef = useRef(null)
@@ -55,9 +56,9 @@ export default function BookingAgent({ onClose, onSuccess }) {
         headers: { 'Content-Type':'application/json' },
         body: JSON.stringify({
           message: text,
-          session_id: sessionId || undefined,
           contact: contactSaved ? { name: contact.name.trim(), phone: contact.phone.trim() } : null,
           history,
+          language: 'en-IN',
         }),
       })
       const data = await res.json()
@@ -66,8 +67,9 @@ export default function BookingAgent({ onClose, onSuccess }) {
         return
       }
       setMessages(p => [...p, { role:'assistant', text: data.reply }])
-      setSessionId(data.session_id)
-      setHistory(data.history || [])
+      if (data.session) setSessionId(data.session)
+      // keep a rolling history of {role, text} turns for context
+      setHistory(p => [...p, { role:'user', text }, { role:'assistant', text: data.reply }])
       if (data.booking) {
         setBooking(data.booking)
         onSuccess?.(data.booking)

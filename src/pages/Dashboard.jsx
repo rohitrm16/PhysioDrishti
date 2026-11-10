@@ -7,6 +7,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../supabase.js'
 import Evals from './Evals.jsx'
 import Approvals from './Approvals.jsx'
+import Traces from './Traces.jsx'
 
 const C = {
   forest:'#12382A', teal:'#0A6B5E', mint:'#3A9A6B',
@@ -1002,6 +1003,7 @@ export default function Dashboard({ onGoToLanding, onLogout, mapplsKey, setMappl
     { id:'sessions',  icon:'📱', label:'Sessions'        },
     { id:'rankings',  icon:'🔍', label:'Search Rankings' },
     { id:'approvals', icon:'✅', label:'Approvals'        },
+    { id:'traces',    icon:'🔬', label:'Traces'          },
     { id:'evals',     icon:'🧪', label:'Evals'           },
     { id:'settings',  icon:'⚙️', label:'Settings'        },
   ]
@@ -1552,6 +1554,7 @@ export default function Dashboard({ onGoToLanding, onLogout, mapplsKey, setMappl
 
           {/* ── SETTINGS ── */}
           {tab === 'approvals' && <Approvals />}
+          {tab === 'traces' && <Traces />}
           {tab === 'evals' && <Evals />}
 
           {tab === 'settings' && (
