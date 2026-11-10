@@ -5,6 +5,7 @@
  */
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../supabase.js'
+import BookingAgent from './BookingAgent.jsx'
 
 const C = {
   forest:'#12382A', teal:'#0A6B5E', mint:'#3A9A6B',
@@ -1469,7 +1470,7 @@ export default function LandingPage({ onGoToDashboard, onShowDoctor, mapplsKey }
         </div>
       </footer>
 
-      {showModal && <SimpleBooking onClose={()=>setShowModal(false)} onSuccess={f=>{setShowModal(false);setBooked(f)}}/>}
+      {showModal && <BookingAgent onClose={()=>setShowModal(false)} onSuccess={f=>{setShowModal(false);setBooked(f)}}/>}
     </div>
   )
           }
