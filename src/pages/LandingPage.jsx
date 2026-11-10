@@ -6,6 +6,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../supabase.js'
 import BookingAgent from './BookingAgent.jsx'
+import DrishtiChat from './DrishtiChat.jsx'
 
 const C = {
   forest:'#12382A', teal:'#0A6B5E', mint:'#3A9A6B',
@@ -1471,6 +1472,7 @@ export default function LandingPage({ onGoToDashboard, onShowDoctor, mapplsKey }
       </footer>
 
       {showModal && <BookingAgent onClose={()=>setShowModal(false)} onSuccess={f=>{setShowModal(false);setBooked(f)}}/>}
+      <DrishtiChat />
     </div>
   )
           }
