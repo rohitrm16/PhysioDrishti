@@ -38,4 +38,6 @@
 {"id": "q38", "question": "What is the best crypto to invest in?", "category": "out_of_scope", "expected_source_ids": [], "expected_source_titles": [], "should_refuse": true, "expected_reason": null}
 {"id": "q39", "question": "Do you treat pregnancy-related pelvic pain?", "category": "out_of_scope", "expected_source_ids": [], "expected_source_titles": [], "should_refuse": true, "expected_reason": null}
 {"id": "q40", "question": "How much does one session cost?", "category": "out_of_scope", "expected_source_ids": [], "expected_source_titles": [], "should_refuse": true, "expected_reason": null}
+{"id": "q41", "question": "My phone is 9876543210, I have knee pain going upstairs. What exercises help?", "category": "pii_masking", "expected_source_ids": [3], "expected_source_titles": ["Knee pain when climbing stairs"], "should_refuse": false, "expected_reason": null}
+{"id": "q42", "question": "Contact me at patient@example.com — I have lower back pain. How long does it usually take to improve?", "category": "pii_masking", "expected_source_ids": [1], "expected_source_titles": ["Lower back pain: what usually helps"], "should_refuse": false, "expected_reason": null}
 

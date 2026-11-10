@@ -860,6 +860,72 @@ function CityMap({ apiKey, height = 300 }) {
 }
 
 /* ── Landing Page ─────────────────────────────────────────────── */
+function AskBox() {
+  const [q, setQ] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [result, setResult] = useState(null)
+  const [err, setErr] = useState('')
+
+  const submit = async () => {
+    const text = q.trim()
+    if (!text || loading) return
+    setLoading(true); setResult(null); setErr('')
+    try {
+      const res = await fetch('/api/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: text }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setErr(data.error || 'Something went wrong. Please try again.'); return }
+      setResult(data)
+    } catch {
+      setErr('Could not reach the server. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div>
+      <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
+        <input
+          className="pj"
+          type="text"
+          value={q}
+          onChange={e => setQ(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && submit()}
+          placeholder="e.g. How long does lower back pain take to heal?"
+          disabled={loading}
+          style={{ flex:1, minWidth:200, padding:'14px 16px', border:'1.5px solid #DDE4EF', borderRadius:10, fontSize:14, fontFamily:"'Plus Jakarta Sans',sans-serif", outline:'none', color:'#0D1520', background:'#fff' }}
+        />
+        <button
+          onClick={submit}
+          disabled={loading || !q.trim()}
+          className="pj"
+          style={{ padding:'14px 24px', background: q.trim() && !loading ? '#12382A' : '#DDE4EF', color: q.trim() && !loading ? '#fff' : '#9BA8B5', border:'none', borderRadius:10, fontSize:14, fontWeight:700, cursor: q.trim() && !loading ? 'pointer' : 'default', transition:'background .2s', whiteSpace:'nowrap', flexShrink:0 }}
+        >{loading ? '…' : 'Ask →'}</button>
+      </div>
+      {err && <div className="pj" style={{ fontSize:13, color:'#D4510E', marginTop:12 }}>{err}</div>}
+      {result && (
+        <div style={{ marginTop:20, padding:'18px 20px', background: result.refused ? '#FFF3EF' : '#F3FBF7', borderRadius:12, border:`1px solid ${result.refused ? '#F4A574' : '#A8DFC0'}` }}>
+          {result.refused && (
+            <div className="pj" style={{ fontSize:11, fontWeight:800, color:'#D4510E', marginBottom:8, textTransform:'uppercase', letterSpacing:1 }}>
+              {result.reason === 'red_flag' ? '🚨 Seek urgent care' : result.reason === 'medication' ? '💊 Medication question' : 'Outside our scope'}
+            </div>
+          )}
+          <div className="pj" style={{ fontSize:14, lineHeight:1.8, color:'#0D1520', whiteSpace:'pre-wrap' }}>{result.answer}</div>
+          {result.citations?.length > 0 && (
+            <div className="pj" style={{ fontSize:11, color:'#5C6878', marginTop:12, borderTop:'1px solid rgba(0,0,0,.07)', paddingTop:10 }}>
+              Sources: {result.citations.map(c => c.title).join(' · ')}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function LandingPage({ onGoToDashboard, onShowDoctor, mapplsKey }) {
   const [showModal, setShowModal] = useState(false)
   const [booked, setBooked]       = useState(null)
@@ -1087,6 +1153,18 @@ export default function LandingPage({ onGoToDashboard, onShowDoctor, mapplsKey }
             </div>
 
           </div>
+        </div>
+      </section>
+
+      {/* Ask Drishti */}
+      <section style={{ padding:'64px 5%', background:'#fff' }}>
+        <div style={{ maxWidth:720, margin:'0 auto' }}>
+          <div style={{ textAlign:'center', marginBottom:28 }}>
+            <div className="pj" style={{ fontSize:11, fontWeight:800, letterSpacing:3, textTransform:'uppercase', color:'#D4510E', marginBottom:12 }}>AI Assistant</div>
+            <h2 className="pd" style={{ fontSize:'2rem', fontWeight:900, marginBottom:10 }}>Ask Drishti</h2>
+            <p className="pj" style={{ fontSize:14, color:'#5C6878', lineHeight:1.7 }}>Have a question about your pain or recovery? Ask and get an instant answer backed by our knowledge base.</p>
+          </div>
+          <AskBox />
         </div>
       </section>
 
