@@ -2,6 +2,10 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
+  test: {
+    environment: 'node',
+    include: ['evals/**/*.test.{js,ts}'],
+  },
   plugins: [react()],
   server: {
     // Proxy /api/* to the Vercel dev server when running `vercel dev`
