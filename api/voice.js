@@ -1,4 +1,4 @@
-// POST /api/voice  { audio: base64, mime, history?, contact? }
+// POST /api/voice  { audio: base64, mime, history?, contact?, state? }
 // Browser audio -> Sarvam STT -> agent -> Sarvam TTS -> audio back.
 // Every stage is traced under one session id.
 import { runAgent } from '../lib/agent.js'
@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Use POST' })
   if (await isRateLimited('voice:' + clientIp(req), 6)) return res.status(429).json({ error: 'Too many requests. Try again in a minute.' })
 
-  const { audio, mime, history, contact } = req.body || {}
+  const { audio, mime, history, contact, state } = req.body || {}
   let buffer
   try { buffer = Buffer.from(String(audio || ''), 'base64') } catch { buffer = Buffer.alloc(0) }
   if (!buffer.length) return res.status(400).json({ error: 'No audio received' })
@@ -29,11 +29,12 @@ export default async function handler(req, res) {
     await tracer.log('stt', { bytes: buffer.length, mime: String(mime || '') }, { transcript, language: stt.language }, t, { model: STT_MODEL })
 
     if (!transcript) {
+      await tracer.flush()
       return res.status(200).json({ session: tracer.session, transcript: '', reply: 'Sorry, I did not catch that. Please try again.', audio: null })
     }
 
     // 2. Agent (tools + LLM), reply in the patient language
-    const r = await runAgent({ message: transcript, history: Array.isArray(history) ? history : [], contact, language: stt.language, channel: 'voice', tracer })
+    const r = await runAgent({ message: transcript, history: Array.isArray(history) ? history : [], contact, language: stt.language, channel: 'voice', state, tracer })
 
     // 3. Text to speech (falls back to text-only if it fails)
     t = Date.now()
@@ -47,13 +48,15 @@ export default async function handler(req, res) {
       await tracer.log('tts', { language: stt.language }, { error: String(err.message || err).slice(0, 200) }, t, { model: TTS_MODEL })
     }
 
+    await tracer.flush()
     res.status(200).json({
       session: tracer.session, transcript, language: stt.language, reply: r.reply,
-      refused: r.refused, reason: r.reason, citations: r.citations, booking: r.booking,
+      refused: r.refused, reason: r.reason, citations: r.citations, booking: r.booking, state: r.state,
       audio: speech?.base64 ? { mime: speech.mime, base64: speech.base64 } : null,
     })
   } catch (err) {
     console.error(err)
+    await tracer.flush()
     res.status(500).json({ error: 'Something went wrong. Please try again.' })
   }
 }
