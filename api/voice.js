@@ -1,4 +1,4 @@
-// POST /api/voice  { audio: base64, mime, history?, contact?, state? }
+// POST /api/voice  { audio: base64, mime, history?, contact? }
 // Browser audio -> Sarvam STT -> agent -> Sarvam TTS -> audio back.
 // Every stage is traced under one session id.
 import { runAgent } from '../lib/agent.js'
@@ -51,7 +51,7 @@ export default async function handler(req, res) {
     await tracer.flush()
     res.status(200).json({
       session: tracer.session, transcript, language: stt.language, reply: r.reply,
-      refused: r.refused, reason: r.reason, citations: r.citations, booking: r.booking, state: r.state,
+      refused: r.refused, reason: r.reason, citations: r.citations, booking: r.booking, exercises: r.exercises, state: r.state,
       audio: speech?.base64 ? { mime: speech.mime, base64: speech.base64 } : null,
     })
   } catch (err) {
