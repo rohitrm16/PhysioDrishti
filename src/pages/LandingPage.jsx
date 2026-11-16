@@ -7,6 +7,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../supabase.js'
 import BookingAgent from './BookingAgent.jsx'
 import VoiceAssistant from '../VoiceAssistant.jsx'
+import { GuidedSessionsSection } from '../GuidedSession.jsx'
 
 const C = {
   forest:'#12382A', teal:'#0A6B5E', mint:'#3A9A6B',
@@ -29,12 +30,6 @@ const HOW_IT_WORKS = [
   { step:'02', icon:'🩺', title:'We find the right fit',desc:'We match you with a specialist near you or set up a video call if you prefer to stay home.' },
   { step:'03', icon:'💬', title:'Start your session',  desc:'Speak to your physiotherapist, get a plan made just for you, and start feeling better.' },
   { step:'04', icon:'🌟', title:'Get back to normal',  desc:'Follow your plan, track progress, and get back to the activities you love.' },
-]
-
-const REVIEWS = [
-  { name:'Meera R.', area:'Koramangala', pain:'Back pain for 3 years', result:'Pain-free in 6 weeks', stars:5 },
-  { name:'Rahul S.', area:'HSR Layout',  pain:'Knee pain after surgery',result:'Walking normally again',stars:5 },
-  { name:'Priya K.', area:'Whitefield',  pain:'Frozen shoulder',        result:'Full movement restored',stars:5 },
 ]
 
 const PHYSIOS = [
@@ -87,30 +82,6 @@ function haversineKm(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
 }
 
-// Fallback ticker shown before Supabase loads
-const TICKER_FALLBACK = [
-  'Rahul from Koramangala just booked a back pain session',
-  'Priya from Indiranagar booked a knee recovery session',
-  'Suresh from Whitefield booked an online consultation',
-  'Anitha from HSR Layout booked a shoulder assessment',
-  'Meera from Jayanagar just started her recovery plan',
-]
-
-// Format a real booking row into a natural ticker string
-function formatTick(b) {
-  const firstName = (b.name || 'Someone').split(' ')[0]
-  const area      = b.area ? `from ${b.area}` : 'in Bengaluru'
-  const pain      = b.pain || 'physiotherapy'
-  const minsAgo   = Math.round((Date.now() - new Date(b.created_at).getTime()) / 60000)
-  const timeStr   = minsAgo < 2  ? 'just now'
-                  : minsAgo < 60 ? `${minsAgo} minutes ago`
-                  : minsAgo < 120? '1 hour ago'
-                  : `${Math.round(minsAgo/60)} hours ago`
-  const actions   = ['just booked a session','booked a free call','requested a consultation','just signed up']
-  const action    = actions[b.id % actions.length] || 'just booked'
-  return `${firstName} ${area} ${action} for ${pain} · ${timeStr}`
-}
-
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -132,20 +103,17 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:#FDFAF3;color:#0D1520
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
 @keyframes spin{to{transform:rotate(360deg)}}
-@keyframes ticker{0%{opacity:0;transform:translateY(-6px)}10%,90%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(6px)}}
 .star{color:#FBBF24}
 @media(max-width:767px){
   .hero-cols{flex-direction:column!important}
   .pain-grid{grid-template-columns:1fr 1fr!important}
   .steps-grid{grid-template-columns:1fr 1fr!important}
   .market-cols{flex-direction:column!important}
-  .review-grid{grid-template-columns:1fr!important}
   .footer-cols{grid-template-columns:1fr!important}
 }
 @media(min-width:768px){
   .pain-grid{grid-template-columns:repeat(3,1fr)}
   .steps-grid{grid-template-columns:repeat(4,1fr)}
-  .review-grid{grid-template-columns:repeat(3,1fr)}
   .market-cols{display:flex}
   .footer-cols{grid-template-columns:1fr}
   .challenge-grid{grid-template-columns:repeat(2,1fr)}
@@ -931,9 +899,6 @@ function AskBox() {
 export default function LandingPage({ onGoToDashboard, onShowDoctor, mapplsKey }) {
   const [showModal, setShowModal] = useState(false)
   const [booked, setBooked]       = useState(null)
-  const [tickIdx, setTickIdx]     = useState(0)
-  const [liveLeads, setLiveLeads] = useState(TICKER_FALLBACK)
-  const [totalToday, setTotalToday] = useState(null)
   const [w, setW]                 = useState(window.innerWidth)
   const [scrolled, setScrolled]   = useState(false)
   const [pinInput, setPinInput]   = useState('')
@@ -950,38 +915,6 @@ export default function LandingPage({ onGoToDashboard, onShowDoctor, mapplsKey }
     return () => { window.removeEventListener('resize', onR); window.removeEventListener('scroll', onS) }
   }, [])
 
-  useEffect(() => {
-    const t = setInterval(() => setTickIdx(p => (p + 1) % liveLeads.length), 3500)
-    return () => clearInterval(t)
-  }, [liveLeads])
-
-  // Fetch real recent bookings from Supabase
-  useEffect(() => {
-    const fetchLeads = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('leads')
-          .select('id, name, area, pain, created_at')
-          .order('created_at', { ascending: false })
-          .limit(10)
-        if (!error && data && data.length > 0) {
-          setLiveLeads(data.map(formatTick))
-          // Count bookings from today
-          const today = new Date().toDateString()
-          const todayCount = data.filter(b =>
-            new Date(b.created_at).toDateString() === today
-          ).length
-          if (todayCount > 0) setTotalToday(todayCount)
-        }
-      } catch (e) {
-        // silently keep fallback data
-      }
-    }
-    fetchLeads()
-    // Refresh every 2 minutes
-    const interval = setInterval(fetchLeads, 120000)
-    return () => clearInterval(interval)
-  }, [])
 
   useEffect(() => {
     const el = document.createElement('style')
@@ -1018,7 +951,6 @@ export default function LandingPage({ onGoToDashboard, onShowDoctor, mapplsKey }
             { '@type': 'MedicalTherapy', name: 'Post-Surgery Rehabilitation' },
             { '@type': 'MedicalTherapy', name: 'Online Physiotherapy Sessions' },
           ],
-          aggregateRating: { '@type': 'AggregateRating', ratingValue: '4.9', bestRating: '5', reviewCount: '247' },
           priceRange: '₹₹',
         },
         {
@@ -1098,28 +1030,6 @@ export default function LandingPage({ onGoToDashboard, onShowDoctor, mapplsKey }
         </div>
       )}
 
-      {/* Ticker — clickable → dashboard */}
-      <div
-        onClick={onGoToDashboard}
-        style={{ background:'#12382A', padding:'7px 5%', cursor:'pointer', transition:'background .2s' }}
-        onMouseEnter={e => e.currentTarget.style.background = '#1A4D35'}
-        onMouseLeave={e => e.currentTarget.style.background = '#12382A'}
-        title="View all bookings in dashboard"
-      >
-        <div style={{ maxWidth:1160, margin:'0 auto', display:'flex', alignItems:'center', gap:12 }}>
-          <span style={{ background:'#D4510E', color:'#fff', padding:'2px 8px', borderRadius:4, fontWeight:700, fontSize:10, textTransform:'uppercase', letterSpacing:1, flexShrink:0, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>Live</span>
-          {totalToday !== null && (
-            <span style={{ background:'rgba(255,255,255,.15)', color:'rgba(255,255,255,.85)', padding:'2px 10px', borderRadius:4, fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:10, fontWeight:700, flexShrink:0 }}>
-              {totalToday} booking{totalToday !== 1 ? 's' : ''} today
-            </span>
-          )}
-          <span className="pj" style={{ fontSize:12, color:'rgba(255,255,255,.7)', animation:'ticker 3.5s ease infinite', display:'inline-block', flex:1 }}>{liveLeads[tickIdx % liveLeads.length]}</span>
-          <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:11, color:'rgba(255,255,255,.4)', flexShrink:0, display:'flex', alignItems:'center', gap:4 }}>
-            View in dashboard <span style={{ fontSize:13 }}>→</span>
-          </span>
-        </div>
-      </div>
-
       {/* Hero */}
       <section style={{ padding:'72px 5% 80px', background:'linear-gradient(140deg,#12382A 0%,#1E4D35 60%,#0D3828 100%)', position:'relative', overflow:'hidden' }}>
         <div style={{ position:'absolute', top:-100, right:-80, width:480, height:480, borderRadius:'50%', background:'rgba(255,255,255,.03)' }}/>
@@ -1148,7 +1058,7 @@ export default function LandingPage({ onGoToDashboard, onShowDoctor, mapplsKey }
                 <button className="btn-ghost" onClick={onGoToDashboard}>I am a clinic</button>
               </div>
               <div style={{ display:'flex', gap:28, flexWrap:'wrap' }}>
-                {[['⭐ 4.9','Rating'],['🏥 3,400+','Sessions done'],['📍 10+','Cities across India'],['📱','Online & at home']].map(([v,l])=>(
+                {[['📱','Online & at home'],['🏠','Home visits'],['🩺','Qualified physios'],['⚡','Fast response']].map(([v,l])=>(
                   <div key={l}><div className="pj" style={{ fontSize:'1.1rem', fontWeight:800, color:'#fff' }}>{v}</div><div className="pj" style={{ fontSize:11, color:'rgba(255,255,255,.5)' }}>{l}</div></div>
                 ))}
               </div>
@@ -1338,7 +1248,7 @@ export default function LandingPage({ onGoToDashboard, onShowDoctor, mapplsKey }
           <div style={{ textAlign:'center', marginBottom:46 }}>
             <div className="pj" style={{ fontSize:11, fontWeight:800, letterSpacing:3, textTransform:'uppercase', color:'#D4510E', marginBottom:12 }}>We can help with</div>
             <h2 className="pd" style={{ fontSize:'2.2rem', fontWeight:900 }}>Pain we treat</h2>
-            <p className="pj" style={{ color:'#5C6878', fontSize:15, marginTop:10, maxWidth:460, margin:'10px auto 0' }}>We've helped thousands of people across India get back to their normal lives.</p>
+            <p className="pj" style={{ color:'#5C6878', fontSize:15, marginTop:10, maxWidth:460, margin:'10px auto 0' }}>Qualified physiotherapists available online and at home across India.</p>
           </div>
           <div className="pain-grid" style={{ display:'grid', gap:20 }}>
             {PAIN_AREAS.map(p=>(
@@ -1352,6 +1262,9 @@ export default function LandingPage({ onGoToDashboard, onShowDoctor, mapplsKey }
           </div>
         </div>
       </section>
+
+      {/* Guided home-exercise sessions */}
+      <GuidedSessionsSection onBook={() => window.dispatchEvent(new CustomEvent('drishti:open', { detail: { message: 'I would like to book a session' } }))} />
 
       {/* How it works */}
       <section style={{ padding:'72px 5%', background:'#F3F6FA' }}>
@@ -1419,32 +1332,13 @@ export default function LandingPage({ onGoToDashboard, onShowDoctor, mapplsKey }
         </div>
       </section>
 
-      {/* Reviews */}
-      <section style={{ padding:'72px 5%', background:'#fff' }}>
-        <div style={{ maxWidth:1160, margin:'0 auto' }}>
-          <div style={{ textAlign:'center', marginBottom:42 }}>
-            <div className="pj" style={{ fontSize:11, fontWeight:800, letterSpacing:3, textTransform:'uppercase', color:'#D4510E', marginBottom:12 }}>Real patients, real results</div>
-            <h2 className="pd" style={{ fontSize:'2.2rem', fontWeight:900 }}>What people say</h2>
-          </div>
-          <div className="review-grid" style={{ display:'grid', gap:20 }}>
-            { REVIEWS.map(r=>(
-              <div key={r.name} className="card-lp" style={{ padding:24 }}>
-                <div style={{ marginBottom:12 }}>{'★★★★★'.split('').map((s,i)=><span key={i} className="star">{s}</span>)}</div>
-                <div className="pd" style={{ fontSize:'1rem', fontWeight:700, marginBottom:4 }}>{r.pain}</div>
-                <div className="pj" style={{ fontSize:13, color:'#0A6B5E', fontWeight:700, marginBottom:14 }}>✓ {r.result}</div>
-                <div className="pj" style={{ fontSize:13, color:'#5C6878' }}>{r.name} · {r.area}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
 
       {/* Final CTA */}
       <section style={{ padding:'72px 5%', background:'linear-gradient(135deg,#12382A,#0D3828)', textAlign:'center' }}>
         <div style={{ maxWidth:560, margin:'0 auto' }}>
           <h2 className="pd" style={{ fontSize:'2.2rem', fontWeight:900, color:'#fff', marginBottom:14 }}>Pain is holding you back.<br /><em style={{ color:'#F4A574' }}>We can change that.</em></h2>
-          <p className="pj" style={{ color:'rgba(255,255,255,.7)', fontSize:16, marginBottom:32, lineHeight:1.7 }}>Join thousands of people across India who got back to a pain-free life.</p>
+          <p className="pj" style={{ color:'rgba(255,255,255,.7)', fontSize:16, marginBottom:32, lineHeight:1.7 }}>Expert physiotherapists available online and at home. Get a personalised plan and start your recovery today.</p>
           <button className="btn-main" style={{ padding:'15px 40px', fontSize:17 }} onClick={()=>setShowModal(true)}>Book my free call →</button>
         </div>
       </section>

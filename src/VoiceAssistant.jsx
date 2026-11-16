@@ -5,19 +5,26 @@
  * used only by the booking tool, and never shown to the AI model.
  */
 import { useState, useRef, useEffect } from 'react'
+import { figureSvg } from './exerciseFigures.js'
+import GuidedSession from './GuidedSession.jsx'
 
 const C = { forest:'#12382A', saffron:'#D4510E', ink:'#0D1520', gray:'#5C6878', light:'#F3F6FA', border:'#DDE4EF', red:'#B83232', green:'#177A45' }
 const font = "'Plus Jakarta Sans',sans-serif"
 const MAX_SECONDS = 25
 
 // Guideline-based home exercises returned by the agent (clinician-approved only)
-function ExerciseCard({ data }) {
+function ExerciseCard({ data, onStart }) {
   const [openIdx, setOpenIdx] = useState(0)
   return (
     <div style={{ marginTop:10, border:`1px solid ${C.border}`, borderRadius:10, overflow:'hidden', background:'#fff' }}>
       <div style={{ background:'#EDF7F2', padding:'8px 10px' }}>
         <div style={{ fontWeight:800, fontSize:12, color:C.forest }}>🏠 Home exercises · {data.label}</div>
         <div style={{ fontSize:10, color:C.gray, marginTop:2 }}>Based on {data.source}</div>
+        {onStart && (
+          <button onClick={onStart} style={{ marginTop:8, width:'100%', fontFamily:font, fontSize:12, fontWeight:800, color:'#fff', background:C.saffron, border:'none', borderRadius:8, padding:'8px 10px', cursor:'pointer' }}>
+            ▶ Start guided session
+          </button>
+        )}
       </div>
       {data.items.map((e, i) => (
         <div key={e.slug} style={{ borderTop:`1px solid ${C.border}` }}>
@@ -27,6 +34,10 @@ function ExerciseCard({ data }) {
           </button>
           {openIdx === i && (
             <div style={{ padding:'0 10px 10px', fontSize:12, lineHeight:1.5 }}>
+              {figureSvg(e.slug) && (
+                <div style={{ background:C.light, borderRadius:8, padding:'6px 8px', marginBottom:8 }}
+                  dangerouslySetInnerHTML={{ __html: figureSvg(e.slug, { animate: !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) }) }} />
+              )}
               <div style={{ color:C.gray, marginBottom:6 }}>{e.purpose}</div>
               <ol style={{ margin:'0 0 6px', paddingLeft:18 }}>{e.steps.map((st, j) => <li key={j} style={{ marginBottom:3 }}>{st}</li>)}</ol>
               <div><b>How much:</b> {e.dose}</div>
@@ -68,6 +79,8 @@ async function postJson(url, body) {
 
 export default function VoiceAssistant() {
   const [open, setOpen] = useState(false)
+  const [guided, setGuided] = useState(null)        // exercise data for a guided session
+  const [pending, setPending] = useState(null)      // message to send once the chat opens
   const [messages, setMessages] = useState([
     { role:'assistant', text:'Hi, I am Drishti. Ask about your pain, get guideline-based home exercises, or book a session. Tap the mic to speak in English, Hindi, Kannada or other Indian languages.' },
   ])
@@ -172,18 +185,35 @@ export default function VoiceAssistant() {
     }
   }
 
+  // Other parts of the site can open Drishti, e.g. "Book a session" after a guided exercise session
+  useEffect(() => {
+    const h = (e) => { setOpen(true); if (e.detail?.message) setPending(e.detail.message) }
+    window.addEventListener('drishti:open', h)
+    return () => window.removeEventListener('drishti:open', h)
+  }, [])
+  useEffect(() => {
+    if (open && pending && !busy) { const m = pending; setPending(null); sendText(m) }
+  }, [open, pending, busy]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const btn = (bg, color = '#fff') => ({ fontFamily:font, fontSize:13, fontWeight:700, border:'none', borderRadius:20, padding:'10px 14px', cursor:'pointer', background:bg, color })
+
+  const guidedView = guided && (
+    <GuidedSession condition={guided.condition} label={guided.label} exercises={guided.items}
+      onClose={() => setGuided(null)}
+      onBook={() => { setGuided(null); setOpen(true); setPending('I would like to book a session') }} />
+  )
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} aria-label="Talk to Drishti"
+      <>{guidedView}<button onClick={() => setOpen(true)} aria-label="Talk to Drishti"
         style={{ position:'fixed', right:20, bottom:20, zIndex:900, ...btn(C.saffron), padding:'14px 20px', boxShadow:'0 8px 24px rgba(0,0,0,.25)' }}>
         🎙 Talk to Drishti
-      </button>
+      </button></>
     )
   }
 
   return (
+    <>{guidedView}
     <div style={{ position:'fixed', right:16, bottom:16, zIndex:900, width:'min(400px, 92vw)', height:'min(640px, 78vh)', background:'#fff', borderRadius:16, boxShadow:'0 16px 48px rgba(0,0,0,.3)', display:'flex', flexDirection:'column', overflow:'hidden' }}>
       <div style={{ background:C.forest, color:'#fff', padding:'14px 16px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
         <div>
@@ -200,7 +230,7 @@ export default function VoiceAssistant() {
               background:m.role === 'user' ? C.saffron : '#fff', color:m.role === 'user' ? '#fff' : C.ink,
               border:m.role === 'user' ? 'none' : `1px solid ${m.reason === 'red_flag' ? C.red : C.border}` }}>
               {m.text}
-              {m.exercises?.items?.length > 0 && <ExerciseCard data={m.exercises} />}
+              {m.exercises?.items?.length > 0 && <ExerciseCard data={m.exercises} onStart={() => setGuided(m.exercises)} />}
               {m.booking && (
                 <div style={{ marginTop:8, padding:8, borderRadius:8, background:'#EDF7F2', color:C.green, fontWeight:700, fontSize:12 }}>
                   ✅ Request sent for {m.booking.when} ({m.booking.mode}). A clinician will confirm on WhatsApp.
@@ -252,5 +282,6 @@ export default function VoiceAssistant() {
         </div>
       </div>
     </div>
+    </>
   )
 }
