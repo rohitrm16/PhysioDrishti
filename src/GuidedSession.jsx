@@ -7,6 +7,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { figureSvg, figureCaption } from './exerciseFigures.js'
 import { TRACKING, canTrack, loadPoseLandmarker, createRepCounter, visible, drawSkeleton } from './poseTracker.js'
+import { nextScale, scaledReps } from './recovery.js'
 
 const C = { forest:'#12382A', saffron:'#D4510E', teal:'#0A6B5E', mint:'#3FE08F', ink:'#0D1520', gray:'#5C6878', light:'#F3F6FA', border:'#DDE4EF', red:'#B23131', redSoft:'#F8E3E3', green:'#177A45', greenSoft:'#E3F3EA', cream:'#FDFAF3' }
 const font = "'Plus Jakarta Sans', system-ui, sans-serif"
@@ -23,11 +24,12 @@ const SIDE_LABELS = { 2: ['Left side', 'Right side'], 4: ['Front', 'Back', 'Left
 const firstInt = (s, d) => { const m = String(s || '').match(/\d+/); return m ? Number(m[0]) : d }
 
 // Exercises -> ordered steps (one per side), skipping anything not meant for a timed session
-export function buildSteps(exercises) {
+export function buildSteps(exercises, scale = 1) {
   const steps = []
   for (const e of exercises || []) {
-    const reps = e.reps ?? firstInt(e.dose, 8)
-    if (!reps) continue
+    const full = e.reps ?? firstInt(e.dose, 8)
+    if (!full) continue
+    const reps = scaledReps(full, scale)
     const hold = e.hold_seconds ?? 3
     const sides = SIDE_LABELS[e.sides] ? e.sides : 1
     for (let i = 0; i < sides; i++) {
@@ -37,11 +39,11 @@ export function buildSteps(exercises) {
   return steps
 }
 
-const store = {
+export const store = {
   get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d } catch { return d } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)) } catch { /* private mode */ } },
 }
-function deviceId() {
+export function deviceId() {
   let id = store.get('pd-device', null)
   if (!id) { id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2)); store.set('pd-device', id) }
   return id
@@ -92,7 +94,7 @@ const SCREEN_QS = [
   { key:'pregnant', q:'Are you pregnant, or did you give birth in the last 6 weeks?', items:[] },
 ]
 
-export default function GuidedSession({ condition, label, exercises: given, onClose, onBook }) {
+export default function GuidedSession({ condition, label, exercises: given, onClose, onBook, onProgress }) {
   const [screen, setScreen] = useState('screen')       // screen | blocked | pain | setup | play | done
   const [answers, setAnswers] = useState({})
   const [blockReason, setBlockReason] = useState(null)
@@ -109,7 +111,7 @@ export default function GuidedSession({ condition, label, exercises: given, onCl
   useEffect(() => {
     if (given) return
     let alive = true
-    fetch('/api/exercises?condition=' + encodeURIComponent(condition))
+    fetch('/api/recovery?action=exercises&condition=' + encodeURIComponent(condition))
       .then((r) => r.json()).then((j) => { if (alive) setData(j) })
       .catch(() => { if (alive) setLoadErr('Could not load exercises. Please check your internet and try again.') })
     return () => { alive = false }
@@ -120,7 +122,8 @@ export default function GuidedSession({ condition, label, exercises: given, onCl
     return () => { document.body.style.overflow = prev }
   }, [])
 
-  const steps = useMemo(() => buildSteps(data?.exercises), [data])
+  const dose = useMemo(() => nextScale(store.get('pd-sessions', []).filter((h) => h.condition === condition)), [condition])
+  const steps = useMemo(() => buildSteps(data?.exercises, dose.scale), [data, dose])
   const walk = (data?.exercises || []).find((e) => (e.reps ?? 1) === 0)
   const anyTrackable = steps.some((s) => canTrack(s.ex.slug))
   const history = store.get('pd-sessions', []).filter((h) => h.condition === condition)
@@ -132,19 +135,29 @@ export default function GuidedSession({ condition, label, exercises: given, onCl
     else setScreen('pain')
   }
 
-  const finish = (r) => { setResult(r); setScreen('done'); try { window.speechSynthesis.cancel() } catch { /* ignore */ } }
-
-  const save = async () => {
-    const entry = { at: new Date().toISOString(), condition, pain_before: painBefore, pain_after: painAfter, stopped: result.stoppedForPain }
-    store.set('pd-sessions', [...store.get('pd-sessions', []), entry].slice(-30))
-    setSaved(true)
-    try {
-      await fetch('/api/session-log', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({
-        device_id: deviceId(), condition, mode: result.mode, items: result.done,
-        pain_before: painBefore, pain_after: painAfter, stopped_for_pain: result.stoppedForPain, duration_s: result.seconds,
-      }) })
-    } catch { /* offline is fine: it is kept on this phone */ }
+  // The session is recorded on this phone as soon as it ends (so closing early never loses it),
+  // then updated with the pain score. One anonymous summary is sent to the server.
+  const entryId = useRef(null), posted = useRef(false)
+  const finish = (r) => {
+    setResult(r); setScreen('done'); try { window.speechSynthesis.cancel() } catch { /* ignore */ }
+    entryId.current = String(Date.now())
+    const entry = { id: entryId.current, at: new Date().toISOString(), condition, pain_before: painBefore, pain_after: null, stopped: r.stoppedForPain,
+      items: r.done.map((d) => ({ slug: d.slug, target: d.target, done: d.done })), scale: dose.scale, seconds: r.seconds, mode: r.mode }
+    store.set('pd-sessions', [...store.get('pd-sessions', []), entry].slice(-120))
   }
+  const post = (after) => {
+    if (posted.current || !result) return
+    posted.current = true
+    fetch('/api/recovery', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({
+      action:'session', device_id: deviceId(), condition, mode: result.mode, items: result.done.map((d) => ({ slug: d.slug, target: d.target, done: d.done })),
+      pain_before: painBefore, pain_after: after, stopped_for_pain: result.stoppedForPain, duration_s: result.seconds, rep_scale: dose.scale,
+    }) }).catch(() => { /* offline is fine: it is kept on this phone */ })
+  }
+  const save = () => {
+    store.set('pd-sessions', store.get('pd-sessions', []).map((e) => (e.id === entryId.current ? { ...e, pain_after: painAfter } : e)))
+    setSaved(true); post(painAfter)
+  }
+  const close = () => { if (screen === 'done') post(saved ? painAfter : null); onClose() }
 
   const answered = SCREEN_QS.every((s) => typeof answers[s.key] === 'boolean')
 
@@ -158,7 +171,7 @@ export default function GuidedSession({ condition, label, exercises: given, onCl
             <div style={{ fontSize:11, fontWeight:800, letterSpacing:2, textTransform:'uppercase', color:C.saffron }}>Guided session</div>
             <div style={{ fontFamily:serif, fontWeight:900, fontSize:22, color:C.forest }}>{title}</div>
           </div>
-          <button onClick={onClose} aria-label="Close session" style={{ ...btn('#fff', C.ink), border:`1px solid ${C.border}`, padding:'8px 12px', fontSize:14 }}>✕</button>
+          <button onClick={close} aria-label="Close session" style={{ ...btn('#fff', C.ink), border:`1px solid ${C.border}`, padding:'8px 12px', fontSize:14 }}>✕</button>
         </div>
 
         {screen === 'screen' && (
@@ -221,6 +234,7 @@ export default function GuidedSession({ condition, label, exercises: given, onCl
 
         {screen === 'setup' && (
           <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+            {dose.reason && <div style={{ fontSize:13, background:'#FBF0D9', color:'#7A4E00', borderRadius:10, padding:'10px 12px' }}>{dose.reason} {dose.scale < 1 && `(${Math.round(dose.scale * 100)}% of the full plan)`}</div>}
             <div style={{ fontWeight:700, fontSize:15 }}>Today's session · {steps.length} sets · about {Math.max(5, Math.round(steps.reduce((t, s) => t + s.reps * (s.hold + 5), 0) / 60))} minutes</div>
             <ol style={{ margin:0, paddingLeft:20, fontSize:14, lineHeight:1.8 }}>
               {(data.exercises || []).filter((e) => (e.reps ?? 1) !== 0).map((e) => (
@@ -279,8 +293,9 @@ export default function GuidedSession({ condition, label, exercises: given, onCl
               </div>
             )}
             <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
-              <button onClick={onBook} style={{ ...btn(C.saffron), flex:1 }}>Book a session</button>
-              <button onClick={onClose} style={{ ...btn('#fff', C.ink), border:`1px solid ${C.border}`, flex:1 }}>Close</button>
+              <button onClick={() => { post(saved ? painAfter : null); onBook() }} style={{ ...btn(C.saffron), flex:1 }}>Book a session</button>
+              {onProgress && saved && <button onClick={() => { post(painAfter); onProgress() }} style={{ ...btn(C.forest), flex:'1 1 100%' }}>📈 See my progress</button>}
+              <button onClick={close} style={{ ...btn('#fff', C.ink), border:`1px solid ${C.border}`, flex:1 }}>Close</button>
             </div>
           </div>
         )}
@@ -477,34 +492,5 @@ function Player({ steps, useCamera, voice, onFinish }) {
         <b>How much:</b> {step.ex.dose} <span style={{ color:C.red }}>⚠️ {step.ex.stop_if}</span>
       </div>
     </div>
-  )
-}
-
-// ── landing page section: pick your pain ────────────────────────────────────
-export function GuidedSessionsSection({ onBook }) {
-  const [open, setOpen] = useState(null)
-  return (
-    <section style={{ padding:'64px 5%', background:'#fff' }}>
-      <div style={{ maxWidth:1080, margin:'0 auto' }}>
-        <div style={{ textAlign:'center', marginBottom:32 }}>
-          <div style={{ fontFamily:font, fontSize:11, fontWeight:800, letterSpacing:3, textTransform:'uppercase', color:C.saffron, marginBottom:12 }}>Exercise at home</div>
-          <h2 style={{ fontFamily:serif, fontSize:'2rem', fontWeight:900, margin:'0 0 10px', color:C.ink }}>A guided session for your pain</h2>
-          <p style={{ fontFamily:font, fontSize:14, color:C.gray, lineHeight:1.7, maxWidth:560, margin:'0 auto' }}>Follow along with Drishti, or let your phone's camera count your reps. Based on ICMR guidelines and reviewed by our physiotherapist. Video never leaves your phone.</p>
-        </div>
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', gap:16 }}>
-          {SESSION_CONDITIONS.map((c) => (
-            <button key={c.key} onClick={() => setOpen(c)}
-              style={{ textAlign:'left', background:C.cream, border:`1px solid ${C.border}`, borderRadius:18, padding:16, cursor:'pointer', fontFamily:font, display:'flex', flexDirection:'column', gap:8 }}>
-              <div style={{ background:'#fff', borderRadius:12, padding:'8px 10px', '--fig-ink':C.ink, '--fig-accent':C.saffron, '--fig-prop':'#C9D4CE' }}
-                dangerouslySetInnerHTML={{ __html: figureSvg(c.demo, { animate: true }) }} />
-              <div style={{ fontFamily:serif, fontWeight:800, fontSize:18, color:C.forest }}>{c.label}</div>
-              <div style={{ fontSize:13, color:C.gray }}>{c.sub}</div>
-              <div style={{ fontSize:13, fontWeight:800, color:C.saffron }}>Start session →</div>
-            </button>
-          ))}
-        </div>
-      </div>
-      {open && <GuidedSession condition={open.key} label={open.label} onClose={() => setOpen(null)} onBook={() => { setOpen(null); onBook?.() }} />}
-    </section>
   )
 }

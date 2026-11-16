@@ -7,7 +7,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../supabase.js'
 import BookingAgent from './BookingAgent.jsx'
 import VoiceAssistant from '../VoiceAssistant.jsx'
-import { GuidedSessionsSection } from '../GuidedSession.jsx'
+import { GuidedSessionsSection } from '../MyRecovery.jsx'
 
 const C = {
   forest:'#12382A', teal:'#0A6B5E', mint:'#3A9A6B',
