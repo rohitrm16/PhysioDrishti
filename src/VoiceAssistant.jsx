@@ -5,10 +5,59 @@
  * used only by the booking tool, and never shown to the AI model.
  */
 import { useState, useRef, useEffect } from 'react'
+import { figureSvg } from './exerciseFigures.js'
+import GuidedSession from './GuidedSession.jsx'
 
 const C = { forest:'#12382A', saffron:'#D4510E', ink:'#0D1520', gray:'#5C6878', light:'#F3F6FA', border:'#DDE4EF', red:'#B83232', green:'#177A45' }
 const font = "'Plus Jakarta Sans',sans-serif"
 const MAX_SECONDS = 25
+
+// Guideline-based home exercises returned by the agent (clinician-approved only)
+function ExerciseCard({ data, onStart }) {
+  const [openIdx, setOpenIdx] = useState(0)
+  return (
+    <div style={{ marginTop:10, border:`1px solid ${C.border}`, borderRadius:10, overflow:'hidden', background:'#fff' }}>
+      <div style={{ background:'#EDF7F2', padding:'8px 10px' }}>
+        <div style={{ fontWeight:800, fontSize:12, color:C.forest }}>🏠 Home exercises · {data.label}</div>
+        <div style={{ fontSize:10, color:C.gray, marginTop:2 }}>Based on {data.source}</div>
+        {onStart && (
+          <button onClick={onStart} style={{ marginTop:8, width:'100%', fontFamily:font, fontSize:12, fontWeight:800, color:'#fff', background:C.saffron, border:'none', borderRadius:8, padding:'8px 10px', cursor:'pointer' }}>
+            ▶ Start guided session
+          </button>
+        )}
+      </div>
+      {data.items.map((e, i) => (
+        <div key={e.slug} style={{ borderTop:`1px solid ${C.border}` }}>
+          <button onClick={() => setOpenIdx(openIdx === i ? -1 : i)} aria-expanded={openIdx === i}
+            style={{ width:'100%', textAlign:'left', background:'none', border:'none', cursor:'pointer', padding:'8px 10px', fontFamily:font, fontSize:12, fontWeight:700, color:C.ink, display:'flex', justifyContent:'space-between', gap:8 }}>
+            <span>{i + 1}. {e.name}</span><span style={{ color:C.gray }}>{openIdx === i ? '−' : '+'}</span>
+          </button>
+          {openIdx === i && (
+            <div style={{ padding:'0 10px 10px', fontSize:12, lineHeight:1.5 }}>
+              {figureSvg(e.slug) && (
+                <div style={{ background:C.light, borderRadius:8, padding:'6px 8px', marginBottom:8 }}
+                  dangerouslySetInnerHTML={{ __html: figureSvg(e.slug, { animate: !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) }) }} />
+              )}
+              <div style={{ color:C.gray, marginBottom:6 }}>{e.purpose}</div>
+              <ol style={{ margin:'0 0 6px', paddingLeft:18 }}>{e.steps.map((st, j) => <li key={j} style={{ marginBottom:3 }}>{st}</li>)}</ol>
+              <div><b>How much:</b> {e.dose}</div>
+              <div style={{ color:C.red, marginTop:4 }}>⚠️ {e.stop_if}</div>
+              {e.avoid_if && <div style={{ color:C.gray, marginTop:4 }}><b>Note:</b> {e.avoid_if}</div>}
+            </div>
+          )}
+        </div>
+      ))}
+      {data.avoid?.length > 0 && (
+        <div style={{ borderTop:`1px solid ${C.border}`, padding:'8px 10px', fontSize:11, color:C.ink }}>
+          <b>Try to avoid:</b> {data.avoid.join(' · ')}
+        </div>
+      )}
+      <div style={{ borderTop:`1px solid ${C.border}`, padding:'8px 10px', fontSize:10, color:C.gray, background:C.light }}>
+        {data.disclaimer} Stop and seek help if pain is sharp, spreads, or you feel numbness or weakness.
+      </div>
+    </div>
+  )
+}
 
 function blobToBase64(blob) {
   return new Promise((resolve, reject) => {
@@ -30,8 +79,10 @@ async function postJson(url, body) {
 
 export default function VoiceAssistant() {
   const [open, setOpen] = useState(false)
+  const [guided, setGuided] = useState(null)        // exercise data for a guided session
+  const [pending, setPending] = useState(null)      // message to send once the chat opens
   const [messages, setMessages] = useState([
-    { role:'assistant', text:'Hi, I am Drishti. Ask about your pain or book a session. Tap the mic to speak in English, Hindi, Kannada or other Indian languages.' },
+    { role:'assistant', text:'Hi, I am Drishti. Ask about your pain, get guideline-based home exercises, or book a session. Tap the mic to speak in English, Hindi, Kannada or other Indian languages.' },
   ])
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
@@ -41,6 +92,8 @@ export default function VoiceAssistant() {
   const [contact, setContact] = useState({ name:'', phone:'' })
   const [showContact, setShowContact] = useState(false)
   const [pendingAudio, setPendingAudio] = useState(null)
+  const [convState, setConvState] = useState({})
+  const [awaitingContact, setAwaitingContact] = useState(false)
   const recRef = useRef(null)
   const chunksRef = useRef([])
   const timerRef = useRef(null)
@@ -52,22 +105,36 @@ export default function VoiceAssistant() {
   const contactPayload = () => (contact.phone.trim() ? { name:contact.name.trim(), phone:contact.phone.trim() } : null)
 
   const handleReply = (r) => {
-    setMessages((m) => [...m, { role:'assistant', text:r.reply, booking:r.booking, refused:r.refused, reason:r.reason }])
-    if (/contact box/i.test(r.reply || '')) setShowContact(true)
+    if (r.state) setConvState(r.state)
+    setMessages((m) => [...m, { role:'assistant', text:r.reply, booking:r.booking, exercises:r.exercises, refused:r.refused, reason:r.reason }])
+    if (/contact box/i.test(r.reply || '')) { setShowContact(true); setAwaitingContact(true) }
+    if (r.booking) setAwaitingContact(false)
     if (r.audio?.base64) {
       const audio = new Audio('data:' + r.audio.mime + ';base64,' + r.audio.base64)
       audio.play().catch(() => setPendingAudio(audio))
     }
   }
 
-  const sendText = async () => {
-    const text = input.trim()
+  const sendText = async (preset) => {
+    const text = (typeof preset === 'string' ? preset : input).trim()
     if (!text || busy) return
     setInput(''); setError(''); setBusy(true)
     setMessages((m) => [...m, { role:'user', text }])
     try {
-      handleReply(await postJson('/api/agent', { message:text, history:history(), contact:contactPayload() }))
+      handleReply(await postJson('/api/agent', { message:text, history:history(), contact:contactPayload(), state:convState }))
     } catch (e) { setError(String(e.message || e)) } finally { setBusy(false) }
+  }
+
+  // Save contact details; if Drishti was waiting for them, continue the booking automatically
+  const saveContact = () => {
+    const phone = contact.phone.trim()
+    if (!/^(?:\+?91[\s-]?|0)?[6-9]\d{4}[\s-]?\d{5}$/.test(phone)) { setError('Please enter a valid 10-digit Indian mobile number.'); return }
+    if (!contact.name.trim()) { setError('Please enter your name.'); return }
+    setError(''); setShowContact(false)
+    if (awaitingContact) {
+      setAwaitingContact(false)
+      sendText('I have added my name and WhatsApp number. Please go ahead and book the slot I chose.')
+    }
   }
 
   const sendVoice = async (blob) => {
@@ -75,7 +142,7 @@ export default function VoiceAssistant() {
     setMessages((m) => [...m, { role:'user', text:'🎙 …', pending:true }])
     try {
       const audio = await blobToBase64(blob)
-      const r = await postJson('/api/voice', { audio, mime:blob.type, history:history(), contact:contactPayload() })
+      const r = await postJson('/api/voice', { audio, mime:blob.type, history:history(), contact:contactPayload(), state:convState })
       setMessages((m) => {
         const copy = [...m]
         const idx = copy.findLastIndex ? copy.findLastIndex((x) => x.pending) : copy.length - 1
@@ -118,18 +185,35 @@ export default function VoiceAssistant() {
     }
   }
 
+  // Other parts of the site can open Drishti, e.g. "Book a session" after a guided exercise session
+  useEffect(() => {
+    const h = (e) => { setOpen(true); if (e.detail?.message) setPending(e.detail.message) }
+    window.addEventListener('drishti:open', h)
+    return () => window.removeEventListener('drishti:open', h)
+  }, [])
+  useEffect(() => {
+    if (open && pending && !busy) { const m = pending; setPending(null); sendText(m) }
+  }, [open, pending, busy]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const btn = (bg, color = '#fff') => ({ fontFamily:font, fontSize:13, fontWeight:700, border:'none', borderRadius:20, padding:'10px 14px', cursor:'pointer', background:bg, color })
+
+  const guidedView = guided && (
+    <GuidedSession condition={guided.condition} label={guided.label} exercises={guided.items}
+      onClose={() => setGuided(null)}
+      onBook={() => { setGuided(null); setOpen(true); setPending('I would like to book a session') }} />
+  )
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} aria-label="Talk to Drishti"
+      <>{guidedView}<button onClick={() => setOpen(true)} aria-label="Talk to Drishti"
         style={{ position:'fixed', right:20, bottom:20, zIndex:900, ...btn(C.saffron), padding:'14px 20px', boxShadow:'0 8px 24px rgba(0,0,0,.25)' }}>
         🎙 Talk to Drishti
-      </button>
+      </button></>
     )
   }
 
   return (
+    <>{guidedView}
     <div style={{ position:'fixed', right:16, bottom:16, zIndex:900, width:'min(400px, 92vw)', height:'min(640px, 78vh)', background:'#fff', borderRadius:16, boxShadow:'0 16px 48px rgba(0,0,0,.3)', display:'flex', flexDirection:'column', overflow:'hidden' }}>
       <div style={{ background:C.forest, color:'#fff', padding:'14px 16px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
         <div>
@@ -142,10 +226,11 @@ export default function VoiceAssistant() {
       <div style={{ flex:1, overflowY:'auto', padding:14, background:C.light }}>
         {messages.map((m, i) => (
           <div key={i} style={{ display:'flex', justifyContent:m.role === 'user' ? 'flex-end' : 'flex-start', marginBottom:8 }}>
-            <div style={{ maxWidth:'82%', fontFamily:font, fontSize:13, lineHeight:1.55, padding:'9px 12px', borderRadius:12,
+            <div style={{ maxWidth:m.exercises ? '96%' : '82%', fontFamily:font, fontSize:13, lineHeight:1.55, padding:'9px 12px', borderRadius:12,
               background:m.role === 'user' ? C.saffron : '#fff', color:m.role === 'user' ? '#fff' : C.ink,
               border:m.role === 'user' ? 'none' : `1px solid ${m.reason === 'red_flag' ? C.red : C.border}` }}>
               {m.text}
+              {m.exercises?.items?.length > 0 && <ExerciseCard data={m.exercises} onStart={() => setGuided(m.exercises)} />}
               {m.booking && (
                 <div style={{ marginTop:8, padding:8, borderRadius:8, background:'#EDF7F2', color:C.green, fontWeight:700, fontSize:12 }}>
                   ✅ Request sent for {m.booking.when} ({m.booking.mode}). A clinician will confirm on WhatsApp.
@@ -154,6 +239,14 @@ export default function VoiceAssistant() {
             </div>
           </div>
         ))}
+        {messages.length === 1 && !busy && (
+          <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:8 }}>
+            {['Exercises for knee pain at home', 'Exercises for lower back pain', 'Neck pain from laptop work', 'Book a session'].map((q) => (
+              <button key={q} onClick={() => sendText(q)}
+                style={{ fontFamily:font, fontSize:11, fontWeight:600, color:C.forest, background:'#fff', border:`1px solid ${C.border}`, borderRadius:16, padding:'6px 10px', cursor:'pointer' }}>{q}</button>
+            ))}
+          </div>
+        )}
         {busy && <div style={{ fontFamily:font, fontSize:12, color:C.gray }}>Drishti is thinking…</div>}
         {pendingAudio && <button onClick={() => { pendingAudio.play(); setPendingAudio(null) }} style={{ ...btn(C.forest), marginTop:6 }}>▶ Play reply</button>}
         <div ref={endRef} />
@@ -170,7 +263,11 @@ export default function VoiceAssistant() {
             <input placeholder="Name" value={contact.name} onChange={(e) => setContact({ ...contact, name:e.target.value })}
               style={{ flex:1, minWidth:0, fontFamily:font, fontSize:12, padding:'8px 10px', border:`1px solid ${C.border}`, borderRadius:8 }} />
             <input placeholder="WhatsApp number" inputMode="tel" value={contact.phone} onChange={(e) => setContact({ ...contact, phone:e.target.value })}
+              onKeyDown={(e) => e.key === 'Enter' && saveContact()}
               style={{ flex:1, minWidth:0, fontFamily:font, fontSize:12, padding:'8px 10px', border:`1px solid ${C.border}`, borderRadius:8 }} />
+            <button onClick={saveContact} disabled={busy} style={{ ...btn(C.saffron), padding:'8px 12px', fontSize:12, whiteSpace:'nowrap', opacity:busy ? .5 : 1 }}>
+              {awaitingContact ? 'Save & book ➤' : 'Save'}
+            </button>
           </div>
         )}
         <div style={{ display:'flex', gap:6, alignItems:'center' }}>
@@ -181,9 +278,10 @@ export default function VoiceAssistant() {
           <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sendText()}
             placeholder={recording ? 'Listening…' : 'Type a message'} disabled={recording}
             style={{ flex:1, minWidth:0, fontFamily:font, fontSize:13, padding:'10px 12px', border:`1px solid ${C.border}`, borderRadius:20 }} />
-          <button onClick={sendText} disabled={busy || !input.trim()} style={{ ...btn(C.saffron), opacity:busy || !input.trim() ? .5 : 1 }}>➤</button>
+          <button onClick={() => sendText()} disabled={busy || !input.trim()} style={{ ...btn(C.saffron), opacity:busy || !input.trim() ? .5 : 1 }}>➤</button>
         </div>
       </div>
     </div>
+    </>
   )
 }

@@ -7,15 +7,15 @@ export const config = { maxDuration: 60 }
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Use POST' })
-  const { message, history, contact, language } = req.body || {}
+  const { message, history, contact, language, state } = req.body || {}
   if (!String(message || '').trim()) return res.status(400).json({ error: 'message is required' })
   if (await isRateLimited('agent:' + clientIp(req), 10)) return res.status(429).json({ error: 'Too many requests. Try again in a minute.' })
 
   try {
-    const r = await runAgent({ message, history: Array.isArray(history) ? history : [], contact, language: language || 'en-IN', channel: 'agent' })
+    const r = await runAgent({ message, history: Array.isArray(history) ? history : [], contact, language: language || 'en-IN', channel: 'agent', state })
     res.status(200).json({
       session: r.session, question: r.question, reply: r.reply, refused: r.refused, reason: r.reason,
-      citations: r.citations, booking: r.booking, model: r.model,
+      citations: r.citations, booking: r.booking, exercises: r.exercises, model: r.model, state: r.state,
     })
   } catch (err) {
     console.error(err)
