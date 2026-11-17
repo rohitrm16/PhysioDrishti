@@ -34,11 +34,11 @@ export const FIGURES = {
     ],
   },
   straight_leg_raise: {
-    caption: 'One knee bent. Lift the straight leg to the height of the bent knee.',
+    caption: 'Both legs straight. Lift one straight leg about a foot off the floor, hold, then lower.',
     props: mat, hi: ['leg1'], head: 7,
     poses: [
-      { H: [26, 90], N: [40, 95], P: [78, 95], K2: [100, 74], A2: [114, 96], T2: [122, 96], K1: [104, 95], A1: [130, 95], T1: [131, 88], E1: [56, 96], W1: [70, 97] },
-      { H: [26, 90], N: [40, 95], P: [78, 95], K2: [100, 74], A2: [114, 96], T2: [122, 96], K1: [102, 84], A1: [126, 73], T1: [123, 67], E1: [56, 96], W1: [70, 97] },
+      { H: [26, 90], N: [40, 95], P: [78, 95], K2: [104, 96], A2: [130, 96], T2: [131, 89], K1: [104, 95], A1: [130, 95], T1: [131, 88], E1: [56, 96], W1: [70, 97] },
+      { H: [26, 90], N: [40, 95], P: [78, 95], K2: [104, 96], A2: [130, 96], T2: [131, 89], K1: [102, 86], A1: [127, 77], T1: [125, 70], E1: [56, 96], W1: [70, 97] },
     ],
   },
   seated_knee_extension: {
