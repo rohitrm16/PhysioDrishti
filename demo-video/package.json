@@ -25,6 +25,7 @@
   "scripts": {
     "dev": "remotion studio",
     "build": "remotion bundle",
+    "render": "remotion render Demo out/demo.mp4 --props=./demo-script.json",
     "upgrade": "remotion upgrade",
     "lint": "eslint src && tsc"
   },
