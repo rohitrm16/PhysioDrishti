@@ -91,7 +91,6 @@ function PainScale({ value, onChange, label }) {
 const SCREEN_QS = [
   { key:'urgent', q:'Do you have any of these right now?', items:['Numbness around the groin or buttocks','Loss of bladder or bowel control','New weakness in an arm or leg','Fever, or unexplained weight loss with the pain','Chest pain or trouble breathing','Severe pain after a fall or accident'] },
   { key:'surgery', q:'In the last 3 months, have you had any of these?', items:['Surgery on this area','A fracture or broken bone','A new injury that has not been checked'] },
-  { key:'pregnant', q:'Are you pregnant, or did you give birth in the last 6 weeks?', items:[] },
 ]
 
 export default function GuidedSession({ condition, label, exercises: given, onClose, onBook, onProgress }) {
@@ -131,7 +130,7 @@ export default function GuidedSession({ condition, label, exercises: given, onCl
 
   const submitScreen = () => {
     if (answers.urgent) { setBlockReason('urgent'); setScreen('blocked') }
-    else if (answers.surgery || answers.pregnant) { setBlockReason('clearance'); setScreen('blocked') }
+    else if (answers.surgery) { setBlockReason('clearance'); setScreen('blocked') }
     else setScreen('pain')
   }
 
@@ -203,7 +202,7 @@ export default function GuidedSession({ condition, label, exercises: given, onCl
             ) : (
               <>
                 <div style={{ fontWeight:800, fontSize:17, color:C.forest, marginBottom:6 }}>Let's get you assessed first</div>
-                <p style={{ margin:'0 0 12px', fontSize:14 }}>After recent surgery, a fracture, a new injury, or during pregnancy, exercises need to be set by your doctor or a physiotherapist after an assessment. A general routine could set your recovery back.</p>
+                <p style={{ margin:'0 0 12px', fontSize:14 }}>After recent surgery, a fracture, or a new injury, exercises need to be set by your doctor or a physiotherapist after an assessment. A general routine could set your recovery back.</p>
                 <button onClick={onBook} style={btn(C.saffron)}>Book a session</button>
               </>
             )}
