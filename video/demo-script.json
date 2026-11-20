@@ -1,0 +1,256 @@
+{
+  "project": "PhysioDrishti",
+  "site": "https://physiodrishti.vercel.app",
+  "repo": "https://github.com/rohitrm16/PhysioDrishti",
+  "version": "2026-11-19",
+  "notes": [
+    "Record one scene at a time; a mistake then costs only that scene.",
+    "Use a test name and test phone number on screen, never real patient data.",
+    "Questions and knowledge-base articles shown in evals are synthetic test data."
+  ],
+  "scripts": [
+    {
+      "id": "patient-journey",
+      "title": "Script 1: The patient's journey",
+      "audience": [
+        "clinics",
+        "patients",
+        "product people"
+      ],
+      "duration_seconds": 160,
+      "device": "phone (portrait)",
+      "persona": {
+        "name": "Asha",
+        "age": 52,
+        "city": "Bengaluru",
+        "condition": "knee pain on stairs"
+      },
+      "prep": [
+        "Test one booking end to end and approve it on the dashboard.",
+        "Test the camera coach once (phone propped side-on, about 2 m away).",
+        "Do one short knee session a day for 2-3 days so My progress shows a streak and pain chart.",
+        "Do Not Disturb on, battery above 50%, brightness up, reload the site so the chat is empty."
+      ],
+      "scenes": [
+        {
+          "n": 1,
+          "start": "0:00",
+          "end": "0:15",
+          "title": "The problem",
+          "on_screen": "Landing page, slow scroll to the challenges section.",
+          "voiceover": "Most people with joint pain are given home exercises, but they stop doing them and can't tell whether they're improving. PhysioDrishti is built to fix that."
+        },
+        {
+          "n": 2,
+          "start": "0:15",
+          "end": "0:40",
+          "title": "Ask Drishti",
+          "on_screen": "Tap Talk to Drishti. Type: \"My knee hurts on the stairs. What can I do at home?\" Answer with citations, then the exercise card with the moving figure.",
+          "user_input": "My knee hurts on the stairs. What can I do at home?",
+          "voiceover": "Asha asks Drishti, our assistant. Answers come from our physiotherapy articles and Indian national guidelines, and she gets exercises a physiotherapist has approved."
+        },
+        {
+          "n": 3,
+          "start": "0:40",
+          "end": "0:55",
+          "title": "Voice in Hindi",
+          "on_screen": "Tap the mic and speak in Hindi. The spoken reply plays.",
+          "user_input": "Ghutne mein dard hai, kya karun?",
+          "voiceover": "She can also just talk, in Hindi, Kannada or English."
+        },
+        {
+          "n": 4,
+          "start": "0:55",
+          "end": "1:35",
+          "title": "Guided session",
+          "on_screen": "Start guided session. Safety check (all No). Pain 4/10. Camera coach on: skeleton overlay, rep count, hold countdown. Finish. Pain after 3/10.",
+          "voiceover": "A safety check comes first. Then the camera coach counts her reps and holds. It runs entirely on her phone, and no video is uploaded. If her pain went up, tomorrow's session would automatically be lighter."
+        },
+        {
+          "n": 5,
+          "start": "1:35",
+          "end": "1:55",
+          "title": "My progress",
+          "on_screen": "See my progress: streak, week calendar, pain chart, goal 'Climbing stairs' 3 to 5, milestones.",
+          "voiceover": "She can see her progress: her streak, her pain coming down, and her stairs goal getting easier. That's what keeps people going."
+        },
+        {
+          "n": 6,
+          "start": "1:55",
+          "end": "2:10",
+          "title": "Share with physiotherapist",
+          "on_screen": "Share with my physiotherapist. Tick consent. Shared.",
+          "voiceover": "If she chooses, her physiotherapist can see all of this between visits."
+        },
+        {
+          "n": 7,
+          "start": "2:10",
+          "end": "2:30",
+          "title": "Book a session",
+          "on_screen": "In chat: \"Book a session\". Pick a slot. Fill the contact box. Save & book. Green 'Request sent' card.",
+          "user_input": "Book a session",
+          "voiceover": "Booking takes three taps. A clinician approves it and confirms on WhatsApp."
+        },
+        {
+          "n": 8,
+          "start": "2:30",
+          "end": "2:40",
+          "title": "End card",
+          "on_screen": "PhysioDrishti logo and URL.",
+          "voiceover": "PhysioDrishti: guided, measurable physiotherapy at home."
+        }
+      ],
+      "optional_scenes": [
+        {
+          "insert_after": 2,
+          "duration_seconds": 15,
+          "title": "Safety",
+          "on_screen": "Type: \"I can't control my bladder and my back hurts\". Emergency call-112 reply.",
+          "user_input": "I can't control my bladder and my back hurts",
+          "voiceover": "Warning signs are caught instantly, and Drishti gives no advice, only the emergency message."
+        }
+      ]
+    },
+    {
+      "id": "ai-engineering",
+      "title": "Script 2: Under the hood, the AI engineering",
+      "audience": [
+        "interviewers",
+        "engineers"
+      ],
+      "duration_seconds": 245,
+      "device": "phone for chat and voice, tablet for the dashboard; cut between them",
+      "stack": [
+        "React",
+        "Vite",
+        "Vercel serverless",
+        "Supabase (Postgres, pgvector, Auth, RLS)",
+        "Gemini",
+        "Sarvam STT/TTS",
+        "MediaPipe",
+        "Upstash"
+      ],
+      "prep": [
+        "Ask one Hindi voice question beforehand so a voice trace exists for scene 6.",
+        "Share the eval review page (run comparison table) before recording scene 7.",
+        "Open Traces right after each phone action so the newest conversation is at the top."
+      ],
+      "scenes": [
+        {
+          "n": 1,
+          "start": "0:00",
+          "end": "0:20",
+          "title": "Title and stack",
+          "on_screen": "Title card: 'PhysioDrishti: RAG + tool-calling agent + voice, with evals and tracing', plus one line listing the stack.",
+          "voiceover": "React and Vercel serverless functions, Supabase with pgvector, Gemini for the AI, and Sarvam for Indian-language voice. Everything that touches safety is enforced in code."
+        },
+        {
+          "n": 2,
+          "start": "0:20",
+          "end": "1:00",
+          "title": "RAG with citations",
+          "on_screen": "Phone: ask the question, answer shows [1][2] citations. Dashboard > Traces > open that conversation: check_red_flags, embed_query, retrieve (similarity scores), generate.",
+          "user_input": "Should I stay in bed when my back hurts?",
+          "voiceover": "The question becomes a 768-dimension embedding, and pgvector finds the closest article sections. Anything under the similarity cut-off is dropped, so the answer comes only from relevant sources, with citations. Every step is logged with timing and cost."
+        },
+        {
+          "n": 3,
+          "start": "1:00",
+          "end": "1:25",
+          "title": "Refusals and fixed replies",
+          "on_screen": "Ask the two questions below: off-topic reply, then reception pricing reply. Trace shows the guard ran and no AI call was made (about 0.3 s).",
+          "user_input": [
+            "What is the best crypto?",
+            "How much does a session cost?"
+          ],
+          "voiceover": "If nothing relevant is found, Drishti declines instead of guessing. Sensitive topics like surgery problems, pregnancy and pricing get fixed replies our physiotherapist wrote. Code picks those before the AI runs, so they can't drift."
+        },
+        {
+          "n": 4,
+          "start": "1:25",
+          "end": "2:05",
+          "title": "Agent and tool calling",
+          "on_screen": "Phone: request below, slots offered, pick one, Save & book, green card. Trace: llm, suggest_slots, llm, create_booking with tool inputs and outputs.",
+          "user_input": "Book a session tomorrow evening",
+          "voiceover": "The booking assistant is an agent. Gemini decides which of five tools to call, but each tool enforces the rules: only slots it actually offered, contact details required, and every booking held for clinician approval. If a tool fails, Drishti says so honestly instead of pretending it worked."
+        },
+        {
+          "n": 5,
+          "start": "2:05",
+          "end": "2:30",
+          "title": "Human in the loop",
+          "on_screen": "Dashboard > Approvals > approve the booking > WhatsApp draft.",
+          "voiceover": "A human approves every booking. That's the human-in-the-loop step, and it leaves an audit trail."
+        },
+        {
+          "n": 6,
+          "start": "2:30",
+          "end": "2:55",
+          "title": "Voice pipeline",
+          "on_screen": "Phone: mic, ask in Hindi, spoken reply. Trace: stt, agent steps, tts, with timings.",
+          "voiceover": "Voice runs as a pipeline: Sarvam speech-to-text, the same agent and tools, then Sarvam text-to-speech. A text message costs about 7 paise; a voice turn costs about 40 paise."
+        },
+        {
+          "n": 7,
+          "start": "2:55",
+          "end": "3:40",
+          "title": "Evals",
+          "on_screen": "Eval review page: run comparison table, then one card with the answer, judge score and reason, and the 'compare with earlier run' toggle.",
+          "voiceover": "46 test questions, scored automatically on every change: retrieval, groundedness from an AI judge, refusal accuracy, latency and cost. A physiotherapist reviewed the answers too. Run 1 missed two emergency questions. I fixed that in code, and red flags went to all caught and refusal accuracy to 100%. The evals also caught a regression I introduced, and I fixed it in the next run.",
+          "metrics": {
+            "run_1": {
+              "date": "2026-11-09",
+              "questions": 40,
+              "red_flags": "4/6",
+              "groundedness": 0.82,
+              "refusal_accuracy": "95%",
+              "hit_at_5": "100%"
+            },
+            "run_2": {
+              "date": "2026-11-16",
+              "questions": 46,
+              "red_flags": "6/6",
+              "groundedness": 1.0,
+              "refusal_accuracy": "98%",
+              "hit_at_5": "97%"
+            },
+            "run_3": {
+              "date": "2026-11-19",
+              "questions": 46,
+              "red_flags": "5/5 (q30 moved to surgeon referral)",
+              "groundedness": 1.0,
+              "refusal_accuracy": "100%",
+              "hit_at_5": "100%"
+            }
+          }
+        },
+        {
+          "n": 8,
+          "start": "3:40",
+          "end": "3:55",
+          "title": "Privacy",
+          "on_screen": "Traces: a message where the phone number shows as [PHONE].",
+          "voiceover": "Phone numbers and emails are masked before any AI call or log. Staff pages need a login, and row-level security protects the database."
+        },
+        {
+          "n": 9,
+          "start": "3:55",
+          "end": "4:05",
+          "title": "End card",
+          "on_screen": "Links to the site and GitHub.",
+          "voiceover": "PhysioDrishti: measured, safe and human-reviewed. Code and evals are on GitHub."
+        }
+      ]
+    }
+  ],
+  "recording_tips": [
+    "Patient scenes on the phone in portrait; dashboard scenes on the tablet in landscape.",
+    "For the camera coach, have someone film you exercising on a second phone, or film the screen only.",
+    "Edit in CapCut or Clipchamp; add captions; trim long pauses but keep one wait so the speed is honest.",
+    "Export a full cut for portfolio and interviews and a 60-second cut for LinkedIn."
+  ],
+  "before_posting": [
+    "No real phone numbers or patient names on screen.",
+    "If showing the eval page, use a link that has been shared."
+  ]
+}
